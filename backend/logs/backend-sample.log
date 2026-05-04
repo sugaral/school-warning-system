@@ -1,0 +1,712 @@
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +36ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mThrottlerModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDiscoveryModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mWarningModule dependencies initialized[39m[38;5;3m +5ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mScheduleModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSchedulerModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mJwtModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mRequestsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mOrgsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mStudentsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mClassesModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTeachersModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSchedulesModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mCourseClassesModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUsersModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mReportsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuditModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mCoursesModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTeachingAdminModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mStudentAdminModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mClassMonitorModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mViceDeanModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSystemConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mWarningCasesModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAttendanceModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mJobsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mRulesModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mStatsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTeacherModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mWarningsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mRbacModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/}:[39m[38;5;3m +140ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mFilesController {/}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/files/images, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/files/images, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/files/:id/download, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/files/:id/download, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/files/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/files/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPermissionController {/admin/permissions}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/permissions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/permissions/my, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/permissions, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/permissions/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/permissions/:id/roles, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/permissions/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/permissions/by-resource, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mRoleController {/admin/roles}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/roles, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/roles/:code, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/roles/:code, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/roles/:role/permissions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/roles/:role/permissions, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/roles/:role/permissions/:permissionId, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/roles/assign, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/roles/assign/:userRoleId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/roles/assign/:userRoleId, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/roles/user/:userId, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/roles/my, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/login-security, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/captcha, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/recovery/options, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/send_code, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/recovery/send-email-code, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/recovery/send-sms-code, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/send_login_code, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/verify_code, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/recovery/reset-password, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/login_admin, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/register, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/roles, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mConfigController {/admin/config}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/email, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/email, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/sms, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/sms, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/import-templates, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/import-templates/:type, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/test-email, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/calendar-exclusions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/test-sms, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/calendar-exclusions, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/calendar-exclusions/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/templates, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/templates/bootstrap, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/templates, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/templates/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/templates/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mNotificationOpenController {/admin/config/open}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/open/email/send, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/config/open/sms/send, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAttendanceController {/attendance}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/attendance/sessions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/attendance/sessions, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/attendance/checkin, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/attendance/sessions/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/attendance/sessions/:id/attendance, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/attendance/sessions/:id/records, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/attendance/sessions/:id/status, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/attendance/sessions/:id/students/:student_id/status, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mWarningCasesController {/warning-cases}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/warning-cases, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/warning-cases/summary, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/warning-cases/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/warning-cases/:id/logs, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/warning-cases/high-risk, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/warning-cases/:id/assign, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/warning-cases/:id/accept, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/warning-cases/:id/complete, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mWarningsController {/warnings}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/warnings/jobs/run_daily_warning, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/warnings/test/create-absent-records, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/warnings, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/warnings/:id/ack, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/warnings/courses, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mWarningsAdminController {/admin/warnings}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/warnings/student, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/warnings/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/warnings/batch-delete, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/warnings/clear, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mRequestsController {/}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/leave_requests, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/leave_requests, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/leave_requests/:id/approve, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/makeup_requests, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/makeup_requests, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/makeup_requests/:id/approve, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/appeals, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/appeals, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/appeals/:id/handle, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mJobsController {/jobs}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/jobs/process_and_generate_warnings, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/jobs/run_daily_warning, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/jobs/rescan_all_violations, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/jobs/process_ended_sessions, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mRulesController {/warning-rules}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/warning-rules, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/warning-rules, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/warning-rules/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/warning-rules/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mStudentsController {/student}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/login, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/bind-email, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/today, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/weekly, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/courses, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/warnings, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/warnings/:id/confirm, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/teachers, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/leave_requests, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/leave_requests, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/appeals, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/appeals, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/profile, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/profile, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/bind-phone, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/change-password, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/bind-class, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/available-classes, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/class-change-requests, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/class-change-requests, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/preferences, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/preferences, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/notifications, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student/notifications/:id/read, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mStudentsAdminController {/admin/students}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/students, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/students/export-accounts, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/students/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/students, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/students/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/students/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/students/batch-delete, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/students/:id/unbind-wechat, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/students/classes/list, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/students/import, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/students/batch-create, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mClassesAdminController {/admin/classes}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/classes, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/classes/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/classes, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/classes/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/classes/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mOrgsController {/orgs}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/orgs, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/orgs, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/orgs/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/orgs/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/orgs/:orgId/majors, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/orgs/:orgId/majors, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/orgs/majors/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/orgs/majors/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTeachersAdminController {/admin/teachers}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/teachers, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/teachers/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/teachers, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/teachers/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/teachers/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHeadTeacherController {/head-teacher}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/head-teacher/binding-status, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/head-teacher/stats, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/head-teacher/warnings, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/head-teacher/orgs, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/head-teacher/classes/:orgId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/head-teacher/bind-class, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/head-teacher/bindable-classes, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/head-teacher/class-change-requests, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/head-teacher/class-change-requests/:id/review, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mSchedulesAdminController {/admin/schedules}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/schedules, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/schedules/import, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/schedules/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/schedules/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mSchedulesController {/schedules}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/schedules, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mCourseClassesAdminController {/admin/course-classes}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/course-classes, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/course-classes, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/course-classes/import, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/course-classes/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/course-classes/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUsersController {/admin/users}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/users, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/users, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/users/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/users/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/users/:id/disable, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/users/:id/enable, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/users/:id/password, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/users/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/users/:id/roles, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/users/:id/permissions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mReportsController {/admin/reports}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/reports/generate/daily, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/reports/generate/weekly, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/reports/generate/monthly, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/reports/generate/semester, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/reports/history, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/reports/delete/:id, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/reports/download/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuditController {/admin/audit}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/audit/operations, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/audit/operations/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/audit/notifications, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/audit/security-events, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/audit/security-events/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/audit/export, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mFeedbackController {/}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/feedback, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/feedback/submit, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/feedback, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/feedback/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/feedback/:id/handle, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mStatsController {/admin/stats}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/stats, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/stats/summary, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/stats/org-warnings, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/stats/warning-trend, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/stats/level-distribution, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/stats/user-type-distribution, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/stats/system-health, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/stats/system2, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/stats/system, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mCoursesController {/admin/courses}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/courses, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/courses, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/courses/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/courses/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTeachingAdminController {/teaching-admin}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teaching-admin/school-stats, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teaching-admin/grades, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teaching-admin/grades, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teaching-admin/grades/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teaching-admin/grades/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teaching-admin/students, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teaching-admin/students/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teaching-admin/courses, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teaching-admin/grades/stats, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teaching-admin/grades/export, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teaching-admin/grades/import-template, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teaching-admin/grades/import-template, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teaching-admin/grades/import, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mStudentAdminController {/student-admin}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student-admin/bind-org, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student-admin/dashboard, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student-admin/rules-override, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student-admin/rules-override, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student-admin/notification-strategy, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student-admin/notification-strategy, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student-admin/stats-1, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/student-admin/stats-2, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mClassMonitorController {/class-monitor}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/class-monitor/stats, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/class-monitor/warnings, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/class-monitor/members, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/class-monitor/notifications, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/class-monitor/notifications, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/class-monitor/activities, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTeacherController {/teacher}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teacher/binding-status, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teacher/bind-org, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teacher/bind-courses, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teacher/orgs, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teacher/courses, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teacher/classes, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teacher/my-bindings, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teacher/sessions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teacher/sessions, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teacher/sessions/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teacher/sessions/:id/attendance, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teacher/sessions/:id/records, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teacher/sessions/:id/students/:student_id/status, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teacher/profile, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teacher/profile, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teacher/org-change-requests, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/teacher/org-change-requests, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mViceDeanController {/vice-dean}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/vice-dean/special-approvals, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/vice-dean/approvals/:id/approve, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:55:47 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/vice-dean/approvals/:id/reject, POST} route[39m[38;5;3m +0ms[39m
+Failed to connect to database: PrismaClientInitializationError: Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+    at r (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:112:2493)
+    at async Proxy.onModuleInit (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:25:13)
+    at async Promise.all (index 0)
+    at async callModuleInitHook (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\hooks\on-module-init.hook.js:43:5)
+    at async NestApplication.callInitHook (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\nest-application-context.js:252:13)
+    at async NestApplication.init (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\nest-application.js:103:9)
+    at async NestApplication.listen (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\nest-application.js:175:13)
+    at async bootstrap (C:\Users\WS\Desktop\cursor-x\backend\dist\main.js:136:5) {
+  clientVersion: '5.15.0',
+  errorCode: 'P1001'
+}
+Failed to connect to database: PrismaClientInitializationError: Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+    at r (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:112:2493)
+    at async Proxy.onModuleInit (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:25:13)
+    at async Promise.all (index 0)
+    at async callModuleInitHook (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\hooks\on-module-init.hook.js:43:5)
+    at async NestApplication.callInitHook (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\nest-application-context.js:252:13)
+    at async NestApplication.init (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\nest-application.js:103:9)
+    at async NestApplication.listen (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\nest-application.js:175:13)
+    at async bootstrap (C:\Users\WS\Desktop\cursor-x\backend\dist\main.js:136:5) {
+  clientVersion: '5.15.0',
+  errorCode: 'P1001'
+}
+Failed to connect to database: PrismaClientInitializationError: Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+    at r (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:112:2493)
+    at async Proxy.onModuleInit (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:25:13)
+    at async Promise.all (index 0)
+    at async callModuleInitHook (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\hooks\on-module-init.hook.js:43:5)
+    at async NestApplication.callInitHook (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\nest-application-context.js:252:13)
+    at async NestApplication.init (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\nest-application.js:103:9)
+    at async NestApplication.listen (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\nest-application.js:175:13)
+    at async bootstrap (C:\Users\WS\Desktop\cursor-x\backend\dist\main.js:136:5) {
+  clientVersion: '5.15.0',
+  errorCode: 'P1001'
+}
+Failed to connect to database: PrismaClientInitializationError: Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+    at r (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:112:2493)
+    at async Proxy.onModuleInit (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:25:13)
+    at async Promise.all (index 0)
+    at async callModuleInitHook (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\hooks\on-module-init.hook.js:43:5)
+    at async NestApplication.callInitHook (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\nest-application-context.js:252:13)
+    at async NestApplication.init (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\nest-application.js:103:9)
+    at async NestApplication.listen (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\nest-application.js:175:13)
+    at async bootstrap (C:\Users\WS\Desktop\cursor-x\backend\dist\main.js:136:5) {
+  clientVersion: '5.15.0',
+  errorCode: 'P1001'
+}
+Failed to connect to database: PrismaClientInitializationError: Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+    at r (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:112:2493)
+    at async Proxy.onModuleInit (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:25:13)
+    at async Promise.all (index 0)
+    at async callModuleInitHook (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\hooks\on-module-init.hook.js:43:5)
+    at async NestApplication.callInitHook (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\nest-application-context.js:252:13)
+    at async NestApplication.init (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\nest-application.js:103:9)
+    at async NestApplication.listen (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@nestjs\core\nest-application.js:175:13)
+    at async bootstrap (C:\Users\WS\Desktop\cursor-x\backend\dist\main.js:136:5) {
+  clientVersion: '5.15.0',
+  errorCode: 'P1001'
+}
+[32m[Nest] 34560  - [39m2026/04/04 00:56:03 [32m    LOG[39m [38;5;3m[AttendanceSchedulerService] [39m[32m启动定时扫描任务...[39m
+[32m[Nest] 34560  - [39m2026/04/04 00:56:03 [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +4ms[39m
+prisma:error 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+Failed to connect to database: PrismaClientInitializationError: 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+    at In.handleRequestError (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:7177)
+    at In.handleAndLogRequestError (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:6211)
+    at In.request (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:5919)
+    at async l (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:127:11167)
+    at async Proxy.checkHealthOrThrow (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:48:13)
+    at async Proxy.checkHealth (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:62:13)
+    at async AttendanceSchedulerService.runScheduledScan (C:\Users\WS\Desktop\cursor-x\backend\dist\scheduler\attendance-scheduler.service.js:63:27)
+    at async AttendanceSchedulerService.startScheduler (C:\Users\WS\Desktop\cursor-x\backend\dist\scheduler\attendance-scheduler.service.js:35:9) {
+  clientVersion: '5.15.0',
+  errorCode: undefined
+}
+[33m[Nest] 34560  - [39m2026/04/04 00:56:06 [33m   WARN[39m [38;5;3m[AttendanceSchedulerService] [39m[33m数据库不可用，跳过本轮定时扫描[39m
+prisma:error 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+Failed to connect to database: PrismaClientInitializationError: 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+    at In.handleRequestError (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:7177)
+    at In.handleAndLogRequestError (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:6211)
+    at In.request (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:5919)
+    at async l (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:127:11167)
+    at async Proxy.checkHealthOrThrow (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:48:13)
+    at async Proxy.ensureConnected (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:43:13)
+    at async ConfigService.reloadConfig (C:\Users\WS\Desktop\cursor-x\backend\dist\config\config.service.js:53:13)
+    at async ConfigService.getConfig (C:\Users\WS\Desktop\cursor-x\backend\dist\config\config.service.js:27:13)
+    at async ConfigService.getNumberConfig (C:\Users\WS\Desktop\cursor-x\backend\dist\config\config.service.js:47:23)
+    at async AttendanceSchedulerService.scheduleNextRun (C:\Users\WS\Desktop\cursor-x\backend\dist\scheduler\attendance-scheduler.service.js:46:37) {
+  clientVersion: '5.15.0',
+  errorCode: undefined
+}
+[31m[Nest] 34560  - [39m2026/04/04 00:56:09 [31m  ERROR[39m [38;5;3m[ConfigService] [39m[31m鍔犺浇閰嶇疆澶辫触:[39m
+[31m[Nest] 34560  - [39m2026/04/04 00:56:09 [31m  ERROR[39m [38;5;3m[ConfigService] [39mPrismaClientInitializationError: 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+    at In.handleRequestError [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:122:7177[90m)[39m
+    at In.handleAndLogRequestError [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:122:6211[90m)[39m
+    at In.request [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:122:5919[90m)[39m
+    at async l [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:127:11167[90m)[39m
+    at async Proxy.checkHealthOrThrow [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\shared\prisma.service.js:48:13[90m)[39m
+    at async Proxy.ensureConnected [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\shared\prisma.service.js:43:13[90m)[39m
+    at async ConfigService.reloadConfig [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\config\config.service.js:53:13[90m)[39m
+    at async ConfigService.getConfig [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\config\config.service.js:27:13[90m)[39m
+    at async ConfigService.getNumberConfig [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\config\config.service.js:47:23[90m)[39m
+    at async AttendanceSchedulerService.scheduleNextRun [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\scheduler\attendance-scheduler.service.js:46:37[90m)[39m {
+  clientVersion: [32m'5.15.0'[39m,
+  errorCode: [90mundefined[39m
+}
+[32m[Nest] 34560  - [39m2026/04/04 00:56:09 [32m    LOG[39m [38;5;3m[AttendanceSchedulerService] [39m[32m下次扫描将在 5 分钟后执行[39m
+Failed to connect to database: Error: DB health check timeout (3000ms)
+    at Timeout._onTimeout (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:50:68)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[31m[Nest] 34560  - [39m2026/04/04 00:56:22 [31m  ERROR[39m [38;5;3m[ConfigService] [39m[31m鍔犺浇閰嶇疆澶辫触:[39m
+[31m[Nest] 34560  - [39m2026/04/04 00:56:22 [31m  ERROR[39m [38;5;3m[ConfigService] [39mError: DB health check timeout (3000ms)
+    at Timeout._onTimeout [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\shared\prisma.service.js:50:68[90m)[39m
+[90m    at listOnTimeout (node:internal/timers:605:17)[39m
+[90m    at process.processTimers (node:internal/timers:541:7)[39m
+prisma:error 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+prisma:error 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+Failed to connect to database: PrismaClientInitializationError: 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+    at In.handleRequestError (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:7177)
+    at In.handleAndLogRequestError (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:6211)
+    at In.request (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:5919)
+    at async l (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:127:11167)
+    at async Proxy.checkHealthOrThrow (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:48:13)
+    at async Proxy.ensureConnected (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:43:13)
+    at async ConfigService.reloadConfig (C:\Users\WS\Desktop\cursor-x\backend\dist\config\config.service.js:53:13)
+    at async ConfigService.getSectionConfig (C:\Users\WS\Desktop\cursor-x\backend\dist\config\config.service.js:34:13)
+    at async AuthController.getLoginSecurityConfig (C:\Users\WS\Desktop\cursor-x\backend\dist\auth\auth.controller.js:176:33)
+    at async AuthController.getAdminLoginSecurity (C:\Users\WS\Desktop\cursor-x\backend\dist\auth\auth.controller.js:503:31) {
+  clientVersion: '5.15.0',
+  errorCode: undefined
+}
+[31m[Nest] 34560  - [39m2026/04/04 00:56:24 [31m  ERROR[39m [38;5;3m[ConfigService] [39m[31m鍔犺浇閰嶇疆澶辫触:[39m
+[31m[Nest] 34560  - [39m2026/04/04 00:56:24 [31m  ERROR[39m [38;5;3m[ConfigService] [39mPrismaClientInitializationError: 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+    at In.handleRequestError [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:122:7177[90m)[39m
+    at In.handleAndLogRequestError [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:122:6211[90m)[39m
+    at In.request [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:122:5919[90m)[39m
+    at async l [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:127:11167[90m)[39m
+    at async Proxy.checkHealthOrThrow [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\shared\prisma.service.js:48:13[90m)[39m
+    at async Proxy.ensureConnected [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\shared\prisma.service.js:43:13[90m)[39m
+    at async ConfigService.reloadConfig [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\config\config.service.js:53:13[90m)[39m
+    at async ConfigService.getSectionConfig [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\config\config.service.js:34:13[90m)[39m
+    at async AuthController.getLoginSecurityConfig [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\auth\auth.controller.js:176:33[90m)[39m
+    at async AuthController.getAdminLoginSecurity [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\auth\auth.controller.js:503:31[90m)[39m {
+  clientVersion: [32m'5.15.0'[39m,
+  errorCode: [90mundefined[39m
+}
+prisma:error 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+Failed to connect to database: PrismaClientInitializationError: 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+    at In.handleRequestError (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:7177)
+    at In.handleAndLogRequestError (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:6211)
+    at In.request (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:5919)
+    at async l (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:127:11167)
+    at async Proxy.checkHealthOrThrow (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:48:13)
+    at async Proxy.ensureConnected (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:43:13)
+    at async ConfigService.reloadConfig (C:\Users\WS\Desktop\cursor-x\backend\dist\config\config.service.js:53:13)
+    at async ConfigService.getSectionConfig (C:\Users\WS\Desktop\cursor-x\backend\dist\config\config.service.js:34:13)
+    at async AuthController.getLoginSecurityConfig (C:\Users\WS\Desktop\cursor-x\backend\dist\auth\auth.controller.js:177:24)
+    at async AuthController.getAdminLoginSecurity (C:\Users\WS\Desktop\cursor-x\backend\dist\auth\auth.controller.js:503:31) {
+  clientVersion: '5.15.0',
+  errorCode: undefined
+}
+[31m[Nest] 34560  - [39m2026/04/04 00:56:27 [31m  ERROR[39m [38;5;3m[ConfigService] [39m[31m鍔犺浇閰嶇疆澶辫触:[39m
+[31m[Nest] 34560  - [39m2026/04/04 00:56:27 [31m  ERROR[39m [38;5;3m[ConfigService] [39mPrismaClientInitializationError: 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+    at In.handleRequestError [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:122:7177[90m)[39m
+    at In.handleAndLogRequestError [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:122:6211[90m)[39m
+    at In.request [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:122:5919[90m)[39m
+    at async l [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:127:11167[90m)[39m
+    at async Proxy.checkHealthOrThrow [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\shared\prisma.service.js:48:13[90m)[39m
+    at async Proxy.ensureConnected [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\shared\prisma.service.js:43:13[90m)[39m
+    at async ConfigService.reloadConfig [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\config\config.service.js:53:13[90m)[39m
+    at async ConfigService.getSectionConfig [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\config\config.service.js:34:13[90m)[39m
+    at async AuthController.getLoginSecurityConfig [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\auth\auth.controller.js:177:24[90m)[39m
+    at async AuthController.getAdminLoginSecurity [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\auth\auth.controller.js:503:31[90m)[39m {
+  clientVersion: [32m'5.15.0'[39m,
+  errorCode: [90mundefined[39m
+}
+Failed to connect to database: Error: DB health check timeout (3000ms)
+    at Timeout._onTimeout (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:50:68)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[33m[Nest] 34560  - [39m2026/04/04 01:01:12 [33m   WARN[39m [38;5;3m[AttendanceSchedulerService] [39m[33m数据库不可用，跳过本轮定时扫描[39m
+prisma:error 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+prisma:error 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+Failed to connect to database: PrismaClientInitializationError: 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+    at In.handleRequestError (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:7177)
+    at In.handleAndLogRequestError (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:6211)
+    at In.request (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:5919)
+    at async l (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:127:11167)
+    at async Proxy.checkHealthOrThrow (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:48:13)
+    at async Proxy.ensureConnected (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:43:13)
+    at async ConfigService.reloadConfig (C:\Users\WS\Desktop\cursor-x\backend\dist\config\config.service.js:53:13)
+    at async ConfigService.getConfig (C:\Users\WS\Desktop\cursor-x\backend\dist\config\config.service.js:27:13)
+    at async ConfigService.getNumberConfig (C:\Users\WS\Desktop\cursor-x\backend\dist\config\config.service.js:47:23)
+    at async AttendanceSchedulerService.scheduleNextRun (C:\Users\WS\Desktop\cursor-x\backend\dist\scheduler\attendance-scheduler.service.js:46:37) {
+  clientVersion: '5.15.0',
+  errorCode: undefined
+}
+[31m[Nest] 34560  - [39m2026/04/04 01:01:14 [31m  ERROR[39m [38;5;3m[ConfigService] [39m[31m鍔犺浇閰嶇疆澶辫触:[39m
+[31m[Nest] 34560  - [39m2026/04/04 01:01:14 [31m  ERROR[39m [38;5;3m[ConfigService] [39mPrismaClientInitializationError: 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+    at In.handleRequestError [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:122:7177[90m)[39m
+    at In.handleAndLogRequestError [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:122:6211[90m)[39m
+    at In.request [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:122:5919[90m)[39m
+    at async l [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:127:11167[90m)[39m
+    at async Proxy.checkHealthOrThrow [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\shared\prisma.service.js:48:13[90m)[39m
+    at async Proxy.ensureConnected [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\shared\prisma.service.js:43:13[90m)[39m
+    at async ConfigService.reloadConfig [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\config\config.service.js:53:13[90m)[39m
+    at async ConfigService.getConfig [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\config\config.service.js:27:13[90m)[39m
+    at async ConfigService.getNumberConfig [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\config\config.service.js:47:23[90m)[39m
+    at async AttendanceSchedulerService.scheduleNextRun [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\scheduler\attendance-scheduler.service.js:46:37[90m)[39m {
+  clientVersion: [32m'5.15.0'[39m,
+  errorCode: [90mundefined[39m
+}
+[32m[Nest] 34560  - [39m2026/04/04 01:01:14 [32m    LOG[39m [38;5;3m[AttendanceSchedulerService] [39m[32m下次扫描将在 5 分钟后执行[39m
+Failed to connect to database: Error: DB health check timeout (3000ms)
+    at Timeout._onTimeout (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:50:68)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[33m[Nest] 34560  - [39m2026/04/04 01:06:17 [33m   WARN[39m [38;5;3m[AttendanceSchedulerService] [39m[33m数据库不可用，跳过本轮定时扫描[39m
+prisma:error 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+prisma:error 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+Failed to connect to database: PrismaClientInitializationError: 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+    at In.handleRequestError (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:7177)
+    at In.handleAndLogRequestError (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:6211)
+    at In.request (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:122:5919)
+    at async l (C:\Users\WS\Desktop\cursor-x\backend\node_modules\@prisma\client\runtime\library.js:127:11167)
+    at async Proxy.checkHealthOrThrow (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:48:13)
+    at async Proxy.ensureConnected (C:\Users\WS\Desktop\cursor-x\backend\dist\shared\prisma.service.js:43:13)
+    at async ConfigService.reloadConfig (C:\Users\WS\Desktop\cursor-x\backend\dist\config\config.service.js:53:13)
+    at async ConfigService.getConfig (C:\Users\WS\Desktop\cursor-x\backend\dist\config\config.service.js:27:13)
+    at async ConfigService.getNumberConfig (C:\Users\WS\Desktop\cursor-x\backend\dist\config\config.service.js:47:23)
+    at async AttendanceSchedulerService.scheduleNextRun (C:\Users\WS\Desktop\cursor-x\backend\dist\scheduler\attendance-scheduler.service.js:46:37) {
+  clientVersion: '5.15.0',
+  errorCode: undefined
+}
+[31m[Nest] 34560  - [39m2026/04/04 01:06:19 [31m  ERROR[39m [38;5;3m[ConfigService] [39m[31m鍔犺浇閰嶇疆澶辫触:[39m
+[31m[Nest] 34560  - [39m2026/04/04 01:06:19 [31m  ERROR[39m [38;5;3m[ConfigService] [39mPrismaClientInitializationError: 
+Invalid `prisma.$queryRawUnsafe()` invocation:
+
+
+Can't reach database server at `db-host:3306`
+
+Please make sure your database server is running at `db-host:3306`.
+    at In.handleRequestError [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:122:7177[90m)[39m
+    at In.handleAndLogRequestError [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:122:6211[90m)[39m
+    at In.request [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:122:5919[90m)[39m
+    at async l [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mnode_modules\[4m@prisma\client[24m\runtime\library.js:127:11167[90m)[39m
+    at async Proxy.checkHealthOrThrow [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\shared\prisma.service.js:48:13[90m)[39m
+    at async Proxy.ensureConnected [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\shared\prisma.service.js:43:13[90m)[39m
+    at async ConfigService.reloadConfig [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\config\config.service.js:53:13[90m)[39m
+    at async ConfigService.getConfig [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\config\config.service.js:27:13[90m)[39m
+    at async ConfigService.getNumberConfig [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\config\config.service.js:47:23[90m)[39m
+    at async AttendanceSchedulerService.scheduleNextRun [90m(C:\Users\WS\Desktop\cursor-x\backend\[39mdist\scheduler\attendance-scheduler.service.js:46:37[90m)[39m {
+  clientVersion: [32m'5.15.0'[39m,
+  errorCode: [90mundefined[39m
+}
+[32m[Nest] 34560  - [39m2026/04/04 01:06:19 [32m    LOG[39m [38;5;3m[AttendanceSchedulerService] [39m[32m下次扫描将在 5 分钟后执行[39m
+^C

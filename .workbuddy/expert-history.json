@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "sessions": {
+    "8a4be163b07a40b5a4a54b54798a4fb6": [
+      {
+        "expertId": "APMPerformanceExpert",
+        "name": "安迪",
+        "profession": "应用性能专家",
+        "avatarUrl": "https://acc-1258344699.cos.accelerate.myqcloud.com/workbuddy/experts/avatars/02-Engineering/APMPerformanceExpert/APMPerformanceExpert.png",
+        "promptUrl": "https://acc-1258344699.cos.accelerate.myqcloud.com/workbuddy/experts/experts/02-Engineering/APMPerformanceExpert/APMPerformanceExpert_zh.md",
+        "usedAt": 1776942393365,
+        "industryId": "02-Engineering"
+      }
+    ]
+  },
+  "lastUpdated": 1776949287391
+}

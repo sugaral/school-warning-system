@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node *)",
+      "Bash(C:\\\\Users\\\\WS\\\\.claude\\\\plans\\\\playful-marinating-chipmunk-agent-aea805ba57fe4fec1.md)",
+      "Bash(npx tsc *)",
+      "Bash(npx jest *)",
+      "Bash(docker system df *)",
+      "Bash(docker volume *)",
+      "Bash(docker stats *)",
+      "Bash(dir \"C:\\\\Users\\\\WS\\\\AppData\\\\Local\\\\Docker\\\\wsl\")",
+      "Bash(dir \"C:\\\\Users\\\\WS\\\\AppData\\\\Local\\\\Docker\\\\wsl\\\\data\")",
+      "Bash(dir /s \"C:\\\\Users\\\\WS\\\\Desktop\\\\cursor-x\\\\backend\\\\node_modules\\\\.cache\")",
+      "Bash(findstr \"bytes\")",
+      "Bash(dir /s \"C:\\\\Users\\\\WS\\\\.npm\")",
+      "Bash(dir /s \"C:\\\\Windows\\\\Temp\")",
+      "Bash(npx prisma *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:3307)",
+      "Bash(findstr :3307)",
+      "Bash(npm run *)",
+      "Bash(npx --no-install prisma generate)",
+      "Bash(npm ci *)"
+    ]
+  }
+}
