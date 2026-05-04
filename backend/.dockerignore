@@ -1,0 +1,48 @@
+# 压缩包
+*.rar
+*.zip
+*.tar
+*.tar.gz
+*.7z
+
+# 编译产物
+dist/
+node_modules/
+
+# IDE / 系统文件
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# 日志
+*.log
+logs/
+
+# 测试
+test/
+tests/
+__tests__/
+*.spec.ts
+*.test.ts
+coverage/
+
+# 文档
+docs/
+*.md
+!README.md
+
+# 环境配置
+.env
+.env.*

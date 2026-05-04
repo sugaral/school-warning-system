@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+coverage/
+admin-frontend/dist/
+backend/dist/
+
+# Environment files
+.env
+.env.local
+*.local
+backend/.env
+backend/.env.local
+
+# Logs and runtime files
+*.log
+backend/*.log
+admin-frontend/*.log
+backend/logs/
+
+# Archives
+*.rar
+
+# IDE / tool configs (personal, not project-level)
+.claude/
+.workbuddy/
+.vscode/

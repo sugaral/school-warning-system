@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>登录静态预览</title>
+  <link rel="stylesheet" href="./login-static-preview.css" />
+</head>
+<body>
+  <main class="preview-shell">
+    <div class="preview-badge">WARNSYS / STATIC LOGIN PREVIEW</div>
+
+    <section class="feature-orbit" aria-label="系统功能静态展示">
+      <article class="feature-card feature-card--top-left">
+        <span class="feature-card__index">01</span>
+        <span class="feature-card__eyebrow">Risk Signals</span>
+        <h3>预警识别</h3>
+        <p>围绕缺勤、迟到、规则窗口和风险升级机制，持续识别学生学业风险。</p>
+        <span class="feature-card__tag">规则驱动</span>
+      </article>
+
+      <article class="feature-card feature-card--top-right">
+        <span class="feature-card__index">02</span>
+        <span class="feature-card__eyebrow">Approval Chain</span>
+        <h3>审批流转</h3>
+        <p>请假、申诉、学籍变更和特殊审批都在统一入口内完成处理与留痕。</p>
+        <span class="feature-card__tag">流程闭环</span>
+      </article>
+
+      <article class="feature-card feature-card--mid-left">
+        <span class="feature-card__index">03</span>
+        <span class="feature-card__eyebrow">Intervention Desk</span>
+        <h3>高风险干预</h3>
+        <p>对红色、严重预警和高风险个案进行分配、接手、处理和跟踪总结。</p>
+        <span class="feature-card__tag">多角色协同</span>
+      </article>
+
+      <article class="feature-card feature-card--mid-right">
+        <span class="feature-card__index">04</span>
+        <span class="feature-card__eyebrow">Trace Center</span>
+        <h3>审计留痕</h3>
+        <p>所有关键操作、消息发送、安全事件都可追踪，适合答辩验收与治理回溯。</p>
+        <span class="feature-card__tag">可追溯</span>
+      </article>
+
+      <article class="feature-card feature-card--bottom-left">
+        <span class="feature-card__index">05</span>
+        <span class="feature-card__eyebrow">Schedule Hub</span>
+        <h3>课表与签到</h3>
+        <p>支持课表管理、二维码签到、应签到名单、提前结束签到和自动补缺勤。</p>
+        <span class="feature-card__tag">教学场景</span>
+      </article>
+
+      <article class="feature-card feature-card--bottom-right">
+        <span class="feature-card__index">06</span>
+        <span class="feature-card__eyebrow">Mobile Bridge</span>
+        <h3>小程序联动</h3>
+        <p>学生可通过微信小程序查看课表、请假申诉、通知预警和个人资料。</p>
+        <span class="feature-card__tag">微信入口</span>
+      </article>
+    </section>
+
+    <section class="center-panel">
+      <div class="login-card">
+        <div class="login-card__intro">
+          <p class="eyebrow">WARNSYS ADMIN</p>
+          <h1>账号登录</h1>
+          <p class="intro">
+            去掉了启动转圈和动态激活，打开页面就直接看到登录框。周围功能卡片整体外扩，避免和中心框贴得太近。
+          </p>
+        </div>
+
+        <form class="login-form">
+          <label class="form-item">
+            <span>账号</span>
+            <input type="text" placeholder="请输入学号或账号" />
+          </label>
+
+          <label class="form-item">
+            <span>密码</span>
+            <input type="password" placeholder="请输入密码" />
+          </label>
+
+          <label class="form-item">
+            <span>图形验证码</span>
+            <div class="verify-row">
+              <input type="text" placeholder="请输入验证码" />
+              <button type="button" class="captcha-box">AB7K</button>
+            </div>
+          </label>
+
+          <div class="remember-row">
+            <label class="remember-check">
+              <input type="checkbox" checked />
+              <span>记住密码</span>
+            </label>
+            <button type="button" class="link-button">找回密码</button>
+          </div>
+
+          <div class="action-row">
+            <button type="button" class="primary-button">登录</button>
+            <button type="button" class="ghost-button">注册</button>
+          </div>
+        </form>
+
+        <div class="login-footnote">
+          <span>静态预览版</span>
+          <span>中间框无旋转、无激活动画</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,2922 @@
+﻿import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { PinoLogger } from 'nestjs-pino';
+import * as https from 'https';
+import * as querystring from 'querystring';
+import { AuthGuard, Public } from '../shared/auth.guard';
+import {
+  hashPassword,
+  isBcryptHash,
+  verifyPassword,
+} from '../shared/password.util';
+import {
+  isValidMainlandMobile,
+  isWeakPassword,
+  normalizeMobile,
+} from '../shared/account-security.util';
+import {
+  CHANGE_REQUEST_OPEN_PENDING_STATUSES,
+  CHANGE_REQUEST_STATUS,
+  normalizeChangeRequestStatus,
+} from '../shared/change-request-status.util';
+import {
+  normalizeFileIdList,
+  parseOptionalFileIds,
+} from '../shared/file.util';
+import { PrismaService } from '../shared/prisma.service';
+
+class StudentLoginDto {
+  student_no!: string;
+  name!: string;
+  password?: string;
+  wx_code?: string;
+}
+
+class BindWechatDto {
+  wx_code!: string;
+}
+
+class BindEmailDto {
+  email!: string;
+  ticket!: string;
+}
+
+class BindPhoneDto {
+  mobile!: string;
+  ticket?: string;
+}
+
+class ChangePasswordDto {
+  ticket!: string;
+  new_password!: string;
+}
+
+class CreateClassChangeRequestDto {
+  target_class_id!: string;
+  reason!: string;
+  head_teacher_user_id?: string;
+  evidence_file_id?: string;
+  evidence_file_ids?: string[];
+}
+
+@Controller('student')
+@UseGuards(AuthGuard)
+export class StudentsController {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly logger: PinoLogger,
+  ) {
+    this.logger.setContext('StudentsController');
+  }
+
+  private getAuthenticatedUserId(req: any) {
+    const rawUserId = req.user?.sub ?? req.user?.userId;
+    if (
+      rawUserId === undefined ||
+      rawUserId === null ||
+      String(rawUserId).trim() === ''
+    ) {
+      return null;
+    }
+
+    return String(rawUserId).trim();
+  }
+
+  private async getAuthenticatedStudentProfileId(req: any) {
+    const rawStudentId = req.user?.student_id;
+    if (
+      rawStudentId !== undefined &&
+      rawStudentId !== null &&
+      String(rawStudentId).trim() !== ''
+    ) {
+      return String(rawStudentId).trim();
+    }
+
+    const userId = this.getAuthenticatedUserId(req);
+    if (!userId) {
+      return null;
+    }
+
+    const studentProfile = await this.prisma.student_profiles.findUnique({
+      where: { user_id: BigInt(userId) },
+      select: { id: true },
+    });
+
+    return studentProfile?.id?.toString() || null;
+  }
+
+  private encodeLeaveReason(leaveType: string, reason: string) {
+    return `[${leaveType}] ${reason}`;
+  }
+
+  private decodeLeaveReason(rawReason: string | null | undefined) {
+    const text = String(rawReason || '').trim();
+    const matched = text.match(/^\[([^\]]+)\]\s*(.*)$/);
+    if (!matched) {
+      return {
+        leaveType: '请假',
+        reason: text,
+      };
+    }
+
+    return {
+      leaveType: matched[1] || '请假',
+      reason: matched[2] || '',
+    };
+  }
+
+  private async createStudentToken(student: {
+    id: bigint;
+    user_id?: bigint;
+    wx_openid?: string | null;
+    users?: { id: bigint; wx_openid?: string | null } | null;
+  }) {
+    const userId = student.user_id?.toString() || student.users?.id?.toString();
+    if (!userId) {
+      throw new BadRequestException('学生账号信息不完整');
+    }
+
+    const wxOpenid =
+      String(student.wx_openid || student.users?.wx_openid || '').trim() || null;
+
+    return this.jwtService.signAsync({
+      sub: userId,
+      user_type: 'student',
+      student_id: student.id.toString(),
+      wx_openid: wxOpenid,
+    });
+  }
+
+  private normalizeEmailAddress(email: string) {
+    return String(email || '').trim().toLowerCase();
+  }
+
+  private async isMobileInUse(
+    mobile: string,
+    excludeUserId?: bigint,
+    excludeStudentId?: bigint,
+  ): Promise<boolean> {
+    const [existingUser, existingStudent] = await Promise.all([
+      this.prisma.users.findFirst({
+        where: {
+          mobile,
+          ...(excludeUserId ? { id: { not: excludeUserId } } : {}),
+        },
+        select: { id: true },
+      }),
+      this.prisma.student_profiles.findFirst({
+        where: {
+          mobile,
+          ...(excludeStudentId ? { id: { not: excludeStudentId } } : {}),
+        },
+        select: { id: true },
+      }),
+    ]);
+
+    return !!existingUser || !!existingStudent;
+  }
+
+  private isValidEmail(email: string) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.normalizeEmailAddress(email));
+  }
+
+  private parseChallengeTicket(ticket: string) {
+    const match = /^ticket_(\d+)_\d+$/.exec(String(ticket || '').trim());
+    if (!match) {
+      throw new BadRequestException('无效的验证码票据');
+    }
+    return BigInt(match[1]);
+  }
+
+  private parseOptionalFileId(value: unknown) {
+    const normalized = String(value || '').trim();
+    if (!normalized) {
+      return null;
+    }
+
+    if (!/^\d+$/.test(normalized)) {
+      throw new BadRequestException('图片参数不合法');
+    }
+
+    return BigInt(normalized);
+  }
+
+  private mergeOptionalFileIds(value: unknown, legacyValue?: unknown) {
+    return Array.from(
+      new Map(
+        [
+          ...parseOptionalFileIds(value, '图片参数'),
+          ...parseOptionalFileIds(legacyValue, '图片参数'),
+        ].map((item) => [item.toString(), item]),
+      ).values(),
+    );
+  }
+
+  private async consumeStudentEmailTicket(
+    student: {
+      id: bigint;
+      user_id: bigint;
+      email?: string | null;
+      users?: { email?: string | null } | null;
+    },
+    ticket: string,
+    expectedPurpose: 'bind_email' | 'student_change_mobile' | 'student_change_password',
+  ) {
+    const challengeId = this.parseChallengeTicket(ticket);
+    const challenge = await this.prisma.auth_challenges.findUnique({
+      where: { id: challengeId },
+    });
+
+    if (!challenge) {
+      throw new BadRequestException('验证码票据不存在');
+    }
+
+    const targetEmail = this.normalizeEmailAddress(
+      student.email || student.users?.email || '',
+    );
+    if (!this.isValidEmail(targetEmail)) {
+      throw new BadRequestException('当前账号未绑定有效邮箱');
+    }
+
+    if (
+      challenge.status !== 'verified' ||
+      !challenge.verified_at ||
+      challenge.expire_at.getTime() < Date.now() ||
+      String(challenge.channel || '').toLowerCase() !== 'email' ||
+      String(challenge.purpose || '').toLowerCase() !== expectedPurpose ||
+      this.normalizeEmailAddress(challenge.target || '') !== targetEmail
+    ) {
+      throw new BadRequestException('验证码票据已失效，请重新验证');
+    }
+
+    return challenge;
+  }
+
+  private getStoredFileIds(value: unknown, legacyValue?: unknown) {
+    return normalizeFileIdList(value, legacyValue);
+  }
+
+  private parseLeaveDateTime(value: unknown, endOfDay = false) {
+    const normalized = String(value || '').trim();
+    if (!normalized) {
+      throw new Error('missing_leave_datetime');
+    }
+
+    const parsed = new Date(normalized);
+    if (Number.isNaN(parsed.getTime())) {
+      throw new Error('invalid_leave_datetime');
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+      if (endOfDay) {
+        parsed.setHours(23, 59, 59, 999);
+      } else {
+        parsed.setHours(0, 0, 0, 0);
+      }
+    }
+
+    return parsed;
+  }
+
+  private formatDateTime(value?: Date | null) {
+    if (!value) {
+      return '';
+    }
+
+    const date = new Date(value);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}年${month}月${day}日 ${hours}:${minutes}`;
+  }
+
+  private getLevelText(level: string): string {
+    const map: Record<string, string> = {
+      yellow: '黄色预警',
+      orange: '橙色预警',
+      red: '红色预警',
+      severe: '严重预警',
+    };
+    return map[level] || level;
+  }
+
+  private getWindowText(window: string): string {
+    const map: Record<string, string> = {
+      day: '日',
+      week: '周',
+      month: '月',
+      term: '学期',
+    };
+    return map[window] || window;
+  }
+
+  private getWarningStatusText(status: string): string {
+    const map: Record<string, string> = {
+      open: '待确认',
+      student_acknowledged: '已确认',
+      acknowledged: '已确认',
+      closed: '已关闭',
+    };
+    return map[status] || status;
+  }
+
+  private getLegacyWarningStatus(status: string) {
+    if (status === 'open') {
+      return 'pending';
+    }
+    if (status === 'acknowledged' || status === 'student_acknowledged') {
+      return 'processing';
+    }
+    return 'closed';
+  }
+
+  private isStudentSelfAcknowledged(warning: {
+    status?: string | null;
+    acknowledged_at?: Date | null;
+    updated_at?: Date | null;
+    acknowledged_by?: bigint | null;
+  }, studentUserId?: bigint | null) {
+    if (!studentUserId || warning?.status === 'closed') {
+      return false;
+    }
+
+    if (
+      !warning?.acknowledged_by ||
+      warning.acknowledged_by.toString() !== studentUserId.toString()
+    ) {
+      return false;
+    }
+
+    if (!warning.acknowledged_at) {
+      return false;
+    }
+
+    if (!warning.updated_at) {
+      return true;
+    }
+
+    return new Date(warning.updated_at).getTime() <= new Date(warning.acknowledged_at).getTime();
+  }
+
+  private serializeLoginStudent(student: any) {
+    return {
+      id: student.id.toString(),
+      name: student.users?.name || '',
+      student_no: student.student_no,
+      class_name: student.classes?.class_name || '未绑定班级',
+      gender: student.gender,
+      wx_openid: student.wx_openid,
+      mobile: student.mobile || '',
+      email: student.email || '',
+    };
+  }
+
+  private isPlaceholderStudentNo(value?: string | null) {
+    const normalized = String(value || '').trim().toLowerCase();
+    return /^student_\d+$/.test(normalized) || /^user_\d+$/.test(normalized);
+  }
+
+  private resolveProfileAccount(student: any) {
+    const studentNo = String(student?.student_no || '').trim();
+    if (studentNo && !this.isPlaceholderStudentNo(studentNo)) {
+      return studentNo;
+    }
+
+    const mobile = String(student?.users?.mobile || '').trim();
+    if (mobile) {
+      return mobile;
+    }
+
+    const email = String(student?.users?.email || '').trim();
+    if (email) {
+      return email;
+    }
+
+    return student?.users?.id ? `user_${student.users.id.toString()}` : '';
+  }
+
+  private resolveDisplayMobile(
+    primaryValue?: string | null,
+    fallbackValue?: string | null,
+  ) {
+    const primary = normalizeMobile(primaryValue) || '';
+    if (primary && isValidMainlandMobile(primary)) {
+      return primary;
+    }
+
+    const fallback = normalizeMobile(fallbackValue) || '';
+    if (fallback && isValidMainlandMobile(fallback)) {
+      return fallback;
+    }
+
+    return '';
+  }
+
+  private async findStudentProfileForLogin(account: string) {
+    const normalizedAccount = String(account || '').trim();
+    if (!normalizedAccount) {
+      return null;
+    }
+
+    const normalizedEmail = this.normalizeEmailAddress(normalizedAccount);
+    const directStudent = await this.prisma.student_profiles.findFirst({
+      where: {
+        OR: [
+          { student_no: normalizedAccount },
+          { mobile: normalizedAccount },
+          ...(this.isValidEmail(normalizedEmail) ? [{ email: normalizedEmail }] : []),
+        ],
+      },
+      include: {
+        users: true,
+        classes: true,
+      },
+    });
+
+    if (directStudent) {
+      return directStudent;
+    }
+
+    const matchedUser = await this.prisma.users.findFirst({
+      where: {
+        OR: [
+          { mobile: normalizedAccount },
+          ...(this.isValidEmail(normalizedEmail) ? [{ email: normalizedEmail }] : []),
+        ],
+      },
+      select: { id: true },
+    });
+
+    if (!matchedUser) {
+      return null;
+    }
+
+    return this.prisma.student_profiles.findUnique({
+      where: { user_id: matchedUser.id },
+      include: {
+        users: true,
+        classes: true,
+      },
+    });
+  }
+
+  private async loadWeChatMiniappConfig() {
+    const envAppId = process.env.WECHAT_MINIAPP_APP_ID || process.env.WX_APP_ID;
+    const envAppSecret =
+      process.env.WECHAT_MINIAPP_APP_SECRET || process.env.WX_APP_SECRET;
+
+    if (envAppId && envAppSecret) {
+      return {
+        appId: envAppId,
+        appSecret: envAppSecret,
+      };
+    }
+
+    const rows = await this.prisma.system_settings.findMany({
+      where: {
+        setting_key: {
+          in: ['wechat', 'miniapp', 'mini_program', 'basic'],
+        },
+      },
+    });
+
+    const merged: Record<string, any> = {};
+    for (const row of rows) {
+      try {
+        const parsed = JSON.parse(row.setting_val);
+        if (parsed && typeof parsed === 'object') {
+          Object.assign(merged, parsed);
+        }
+      } catch {
+        // ignore invalid JSON rows
+      }
+    }
+
+    return {
+      appId: String(
+        merged.wechatAppId ||
+          merged.wxAppId ||
+          merged.miniappAppId ||
+          merged.miniProgramAppId ||
+          merged.appId ||
+          '',
+      ).trim(),
+      appSecret: String(
+        merged.wechatAppSecret ||
+          merged.wxAppSecret ||
+          merged.miniappAppSecret ||
+          merged.miniProgramAppSecret ||
+          merged.appSecret ||
+          '',
+      ).trim(),
+    };
+  }
+
+  private async getWeChatOpenid(code: string): Promise<string | null> {
+    const cleanCode = String(code || '').trim();
+    if (!cleanCode) {
+      return null;
+    }
+
+    const { appId, appSecret } = await this.loadWeChatMiniappConfig();
+    if (!appId || !appSecret) {
+      this.logger.warn('[微信] 缺少小程序 appId/appSecret（学生登录流程中获取 openid）');
+      return null;
+    }
+
+    return new Promise((resolve) => {
+      const params = querystring.stringify({
+        appid: appId,
+        secret: appSecret,
+        js_code: cleanCode,
+        grant_type: 'authorization_code',
+      });
+
+      const url = `https://api.weixin.qq.com/sns/jscode2session?${params}`;
+
+      const request = https.get(url, (res) => {
+          let data = '';
+          res.on('data', (chunk) => {
+            data += chunk;
+          });
+          res.on('end', () => {
+            try {
+              const result = JSON.parse(data);
+              if (result?.errcode) {
+                this.logger.warn('[微信] jscode2session 失败（学生流程）: 错误码=%d 错误信息=%s', result.errcode, result.errmsg || '');
+              }
+              resolve(result?.openid ? String(result.openid) : null);
+            } catch (error) {
+              this.logger.warn('[微信] 解析 jscode2session 响应失败（学生流程）: %s', String(error));
+              resolve(null);
+            }
+          });
+        });
+
+      request.on('error', (error) => {
+        this.logger.warn('[微信] jscode2session 请求错误（学生流程）: %s', String(error));
+        resolve(null);
+      });
+      request.setTimeout(8000, () => {
+        request.destroy();
+        this.logger.warn('[微信] jscode2session 请求超时（学生流程）');
+        resolve(null);
+      });
+    });
+  }
+
+  private async bindWechatOpenidForStudent(
+    student: {
+      id: bigint;
+      user_id: bigint;
+      wx_openid?: string | null;
+      users?: { id: bigint; name?: string | null } | null;
+      classes?: { class_name?: string | null } | null;
+      student_no?: string | null;
+      gender?: string | null;
+      mobile?: string | null;
+      email?: string | null;
+    },
+    openid: string,
+    traceId?: string,
+  ) {
+    if (student.wx_openid && student.wx_openid !== openid) {
+      return {
+        code: 400,
+        message: '该学生已绑定其他微信账号，请先在管理端解绑',
+        data: null,
+        trace_id: traceId,
+      };
+    }
+
+    const existingStudentWithOpenid =
+      await this.prisma.student_profiles.findFirst({
+        where: {
+          wx_openid: openid,
+          id: { not: student.id },
+        },
+        select: { id: true },
+      });
+
+    if (existingStudentWithOpenid) {
+      return {
+        code: 400,
+        message: '该微信账号已绑定其他学生，请先在管理端解绑',
+        data: null,
+        trace_id: traceId,
+      };
+    }
+
+    let nextStudent = student;
+    const shouldUpdateUserOpenid = !student.wx_openid;
+
+    if (shouldUpdateUserOpenid) {
+      await this.prisma.$transaction([
+        this.prisma.student_profiles.update({
+          where: { id: student.id },
+          data: { wx_openid: openid },
+        }),
+        this.prisma.users.update({
+          where: { id: student.user_id },
+          data: { wx_openid: openid },
+        }),
+      ]);
+      nextStudent = {
+        ...student,
+        wx_openid: openid,
+      };
+    }
+
+    const token = await this.createStudentToken(nextStudent);
+
+    return {
+      code: 0,
+      message: '微信绑定成功',
+      data: {
+        token,
+        student: this.serializeLoginStudent(nextStudent),
+      },
+      trace_id: traceId,
+    };
+  }
+
+  @Public()
+  @Post('login')
+  async login(@Body() dto: StudentLoginDto, @Req() req: any) {
+    let openid: string | null = null;
+
+    if (dto.wx_code) {
+      openid = await this.getWeChatOpenid(dto.wx_code);
+
+      if (openid) {
+        const existingStudent = await this.prisma.student_profiles.findFirst({
+          where: {
+            wx_openid: openid,
+            status: 'active',
+          },
+          include: {
+            users: true,
+            classes: true,
+          },
+        });
+
+        if (existingStudent && !dto.student_no) {
+          const token = await this.createStudentToken(existingStudent);
+
+          return {
+            code: 0,
+            message: '登录成功',
+            data: {
+              token,
+              student: this.serializeLoginStudent(existingStudent),
+            },
+            trace_id: req.trace_id,
+          };
+        }
+      }
+    }
+
+    if (!dto.student_no || !dto.name) {
+      return {
+        code: 400,
+        message: '请输入学号或账号和姓名进行登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const student = await this.findStudentProfileForLogin(String(dto.student_no).trim());
+
+    if (!student) {
+      return {
+        code: 404,
+        message: '学生不存在或账号未绑定班级',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (student.status !== 'active' || student.users?.status !== 'active') {
+      return {
+        code: 403,
+        message: '学生账号已被禁用',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if ((student.users?.name || '').trim() !== String(dto.name || '').trim()) {
+      return {
+        code: 401,
+        message: '姓名不匹配',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (!dto.password) {
+      return {
+        code: 400,
+        message: '请输入密码',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (student.users.password_hash) {
+      const passwordOk = await verifyPassword(
+        dto.password,
+        student.users.password_hash,
+      );
+
+      if (!passwordOk) {
+        return {
+          code: 401,
+          message: '密码错误',
+          data: null,
+          trace_id: req.trace_id,
+        };
+      }
+
+      const postLoginUpdates: any[] = [];
+      if (!isBcryptHash(student.users.password_hash)) {
+        postLoginUpdates.push(
+          this.prisma.users.update({
+            where: { id: student.users.id },
+            data: {
+              password_hash: await hashPassword(dto.password),
+            },
+          }),
+        );
+      }
+      if (student.initial_password) {
+        postLoginUpdates.push(
+          this.prisma.student_profiles.update({
+            where: { id: student.id },
+            data: { initial_password: null },
+          }),
+        );
+      }
+      if (postLoginUpdates.length > 0) {
+        await this.prisma.$transaction(postLoginUpdates);
+      }
+    } else if (student.initial_password) {
+      if (dto.password !== student.initial_password) {
+        return {
+          code: 401,
+          message: '密码错误',
+          data: null,
+          trace_id: req.trace_id,
+        };
+      }
+
+      await this.prisma.$transaction([
+        this.prisma.users.update({
+          where: { id: student.users.id },
+          data: {
+            password_hash: await hashPassword(dto.password),
+          },
+        }),
+        this.prisma.student_profiles.update({
+          where: { id: student.id },
+          data: { initial_password: null },
+        }),
+      ]);
+    } else {
+      return {
+        code: 401,
+        message: '当前账号尚未设置密码，请联系管理员',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (openid) {
+      const bindResult = await this.bindWechatOpenidForStudent(
+        {
+          ...student,
+          user_id: student.user_id,
+        },
+        openid,
+        req.trace_id,
+      );
+
+      if (bindResult.code !== 0) {
+        return bindResult;
+      }
+
+      student.wx_openid = openid;
+    }
+
+    const token = await this.createStudentToken(student);
+
+    return {
+      code: 0,
+      message: '登录成功',
+      data: {
+        token,
+        student: this.serializeLoginStudent(student),
+      },
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Post('bind-wechat')
+  async bindWechat(@Body() dto: BindWechatDto, @Req() req: any) {
+    const userId = this.getAuthenticatedUserId(req);
+    const userType = String(req.user?.user_type || '').trim();
+    if (!userId || userType !== 'student') {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const wxCode = String(dto.wx_code || '').trim();
+    if (!wxCode) {
+      return {
+        code: 400,
+        message: '微信登录凭证不能为空',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const openid = await this.getWeChatOpenid(wxCode);
+    if (!openid) {
+      return {
+        code: 400,
+        message: '获取微信身份失败，请稍后重试',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const student = await this.prisma.student_profiles.findUnique({
+      where: { user_id: BigInt(userId) },
+      include: {
+        users: true,
+        classes: true,
+      },
+    });
+
+    if (student) {
+      return this.bindWechatOpenidForStudent(
+        {
+          ...student,
+          user_id: student.user_id,
+        },
+        openid,
+        req.trace_id,
+      );
+    }
+
+    const user = await this.prisma.users.findUnique({
+      where: { id: BigInt(userId) },
+      select: {
+        id: true,
+        name: true,
+        mobile: true,
+        email: true,
+        status: true,
+        user_type: true,
+        wx_openid: true,
+      },
+    });
+
+    if (!user || user.user_type !== 'student') {
+      return {
+        code: 404,
+        message: '学生不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (user.status !== 'active') {
+      return {
+        code: 403,
+        message: '学生账号已被禁用',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (user.wx_openid && user.wx_openid !== openid) {
+      return {
+        code: 400,
+        message: '该学生已绑定其他微信账号，请先在管理端解绑',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (!user.wx_openid) {
+      const [existingStudentWithOpenid, existingUserWithOpenid] = await Promise.all([
+        this.prisma.student_profiles.findFirst({
+          where: { wx_openid: openid },
+          select: { id: true },
+        }),
+        this.prisma.users.findFirst({
+          where: {
+            wx_openid: openid,
+            id: { not: user.id },
+          },
+          select: { id: true },
+        }),
+      ]);
+
+      if (existingStudentWithOpenid || existingUserWithOpenid) {
+        return {
+          code: 400,
+          message: '该微信账号已绑定其他学生，请先在管理端解绑',
+          data: null,
+          trace_id: req.trace_id,
+        };
+      }
+
+      await this.prisma.users.update({
+        where: { id: user.id },
+        data: { wx_openid: openid },
+      });
+    }
+
+    const token = await this.jwtService.signAsync({
+      sub: user.id.toString(),
+      user_type: 'student',
+      wx_openid: openid,
+    });
+
+    return {
+      code: 0,
+      message: '微信绑定成功',
+      data: {
+        token,
+        student: {
+          id: '',
+          name: user.name,
+          student_no: user.mobile || user.email || `user_${user.id.toString()}`,
+          class_name: '未绑定班级',
+          gender: '',
+          wx_openid: openid,
+          mobile: user.mobile || '',
+          email: user.email || '',
+        },
+      },
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Post('bind-email')
+  async bindEmail(@Body() dto: BindEmailDto, @Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const email = this.normalizeEmailAddress(dto.email);
+    const ticket = String(dto.ticket || '').trim();
+
+    if (!this.isValidEmail(email)) {
+      return {
+        code: 400,
+        message: '请输入有效的邮箱地址',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (!ticket) {
+      return {
+        code: 400,
+        message: '验证码票据不能为空',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const challengeId = this.parseChallengeTicket(ticket);
+    const challenge = await this.prisma.auth_challenges.findUnique({
+      where: { id: challengeId },
+    });
+
+    if (!challenge) {
+      return {
+        code: 400,
+        message: '验证码票据不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (
+      challenge.status !== 'verified' ||
+      !challenge.verified_at ||
+      String(challenge.channel || '').toLowerCase() !== 'email' ||
+      String(challenge.purpose || '').toLowerCase() !== 'bind_email'
+    ) {
+      return {
+        code: 400,
+        message: '验证码票据已失效，请重新获取验证码',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (this.normalizeEmailAddress(challenge.target) !== email) {
+      return {
+        code: 400,
+        message: '邮箱与验证码发送目标不一致',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (Date.now() - challenge.verified_at.getTime() > 10 * 60 * 1000) {
+      return {
+        code: 400,
+        message: '验证码票据已过期，请重新获取验证码',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const student = await this.prisma.student_profiles.findUnique({
+      where: { id: BigInt(studentId) },
+      include: {
+        users: true,
+      },
+    });
+
+    if (!student) {
+      return {
+        code: 404,
+        message: '学生不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const [existingUser, existingStudent] = await Promise.all([
+      this.prisma.users.findFirst({
+        where: {
+          email,
+          id: { not: student.user_id },
+        },
+        select: { id: true },
+      }),
+      this.prisma.student_profiles.findFirst({
+        where: {
+          email,
+          id: { not: student.id },
+        },
+        select: { id: true },
+      }),
+    ]);
+
+    if (existingUser || existingStudent) {
+      return {
+        code: 400,
+        message: '该邮箱已被其他账号绑定',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.student_profiles.update({
+        where: { id: student.id },
+        data: { email },
+      }),
+      this.prisma.users.update({
+        where: { id: student.user_id },
+        data: { email },
+      }),
+      this.prisma.auth_challenges.update({
+        where: { id: challengeId },
+        data: { status: 'used' },
+      }),
+    ]);
+
+    return {
+      code: 0,
+      message: '邮箱绑定成功',
+      data: { email },
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Get('today')
+  async getTodayStatus(@Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const record = await this.prisma.daily_records.findFirst({
+      where: {
+        student_id: BigInt(studentId),
+        record_date: today,
+      },
+    });
+
+    return {
+      code: 0,
+      message: 'ok',
+      data: {
+        attendance: record?.attendance_status || 'unknown',
+      },
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Get('weekly')
+  async getWeeklyTrend(@Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+
+    const records = await this.prisma.daily_records.findMany({
+      where: {
+        student_id: BigInt(studentId),
+        record_date: {
+          gte: sevenDaysAgo,
+          lte: today,
+        },
+      },
+      orderBy: { record_date: 'asc' },
+    });
+
+    const trend = [];
+    for (let i = 6; i >= 0; i -= 1) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+
+      const current = records.find(
+        (item) =>
+          item.record_date.toISOString().slice(0, 10) ===
+          date.toISOString().slice(0, 10),
+      );
+
+      trend.push({
+        date: `${date.getMonth() + 1}/${date.getDate()}`,
+        attendance: current?.attendance_status || 'unknown',
+      });
+    }
+
+    return {
+      code: 0,
+      message: 'ok',
+      data: trend,
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Get('courses')
+  async getStudentCourses(@Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const student = await this.prisma.student_profiles.findUnique({
+      where: { id: BigInt(studentId) },
+    });
+
+    if (!student) {
+      return {
+        code: 404,
+        message: '学生不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const courseClasses = await this.prisma.course_classes.findMany({
+      where: {
+        class_id: student.class_id,
+      },
+      include: {
+        courses: true,
+      },
+      orderBy: {
+        course_id: 'asc',
+      },
+    });
+
+    const courseMap = new Map<string, { id: string; course_name: string }>();
+    for (const item of courseClasses) {
+      const id = item.course_id.toString();
+      if (!courseMap.has(id)) {
+        courseMap.set(id, {
+          id,
+          course_name: item.courses?.course_name || '未命名课程',
+        });
+      }
+    }
+
+    return {
+      code: 0,
+      message: 'ok',
+      data: Array.from(courseMap.values()),
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Get('warnings')
+  async getStudentWarnings(
+    @Query('course_id') courseId: string,
+    @Query('level') level: string,
+    @Query('status') status: string,
+    @Req() req: any,
+  ) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const whereCondition: any = {
+      student_id: BigInt(studentId),
+    };
+
+    if (level) {
+      whereCondition.level = String(level).trim();
+    }
+
+    const normalizedStatus = String(status || '').trim();
+
+    if (normalizedStatus && normalizedStatus !== 'open') {
+      whereCondition.status = normalizedStatus;
+    } else {
+      whereCondition.status = {
+        in: ['open', 'acknowledged', 'closed'],
+      };
+    }
+
+    const [warnings, student, totalCount] =
+      await Promise.all([
+        this.prisma.warnings.findMany({
+          where: whereCondition,
+          orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
+        }),
+        this.prisma.student_profiles.findUnique({
+          where: { id: BigInt(studentId) },
+          include: {
+            users: true,
+            classes: {
+              include: {
+                orgs: true,
+              },
+            },
+          },
+        }),
+        this.prisma.warnings.count({
+          where: {
+            student_id: BigInt(studentId),
+          },
+        }),
+      ]);
+
+    const items = warnings.map((warning: any) => {
+      const detail = (warning.trigger_detail_json as Record<string, any>) || {};
+      const createdAt = this.formatDateTime(warning.created_at);
+      const periodStart = this.formatDateTime(warning.period_start);
+      const studentSelfAcknowledged = this.isStudentSelfAcknowledged(
+        warning,
+        student?.user_id || null,
+      );
+      const effectiveStatus =
+        studentSelfAcknowledged
+          ? 'student_acknowledged'
+          : warning.status === 'acknowledged'
+            && student?.user_id
+            && warning.acknowledged_by
+            && warning.acknowledged_by.toString() !== student.user_id.toString()
+              ? 'closed'
+              : warning.status;
+      const legacyStatus = this.getLegacyWarningStatus(effectiveStatus);
+
+      return {
+        id: warning.id.toString(),
+        level: warning.level,
+        level_text: this.getLevelText(warning.level),
+        warning_level: warning.level,
+        warning_level_text: this.getLevelText(warning.level),
+        window: warning.window,
+        window_text: this.getWindowText(warning.window),
+        trigger_summary: warning.trigger_summary,
+        warning_reason: warning.trigger_summary,
+        course_name: detail.course_name || '',
+        violation_type: detail.violation_type || '',
+        violation_time: detail.violation_time || periodStart,
+        violation_count: detail.violation_count || 0,
+        status: effectiveStatus,
+        status_text: this.getWarningStatusText(effectiveStatus),
+        legacy_status: legacyStatus,
+        org_name: student?.classes?.orgs?.name || '',
+        class_name: student?.classes?.class_name || '',
+        course_id: String(detail.course_id || '').trim(),
+        created_at: createdAt,
+        created_at_raw: warning.created_at,
+        period_start: periodStart,
+        period_start_raw: warning.period_start,
+        updated_at_raw: warning.updated_at,
+        acknowledged_at_raw: warning.acknowledged_at,
+        displayText: `${this.getLevelText(warning.level)} - ${
+          detail.course_name || '未命名课程'
+        } - ${periodStart}`,
+      };
+    });
+
+    const courseFilteredItems =
+      courseId && courseId !== 'all'
+        ? items.filter((item) => String(item.course_id || '').trim() === String(courseId).trim())
+        : items;
+
+    const filteredItems = normalizedStatus
+      ? courseFilteredItems.filter((item) => item.status === normalizedStatus)
+      : courseFilteredItems;
+    const openCount = courseFilteredItems.filter((item) => item.status === 'open').length;
+    const acknowledgedCount = courseFilteredItems.filter((item) => item.status === 'acknowledged').length;
+    const closedCount = courseFilteredItems.filter((item) => item.status === 'closed').length;
+
+    return {
+      code: 0,
+      message: 'ok',
+      data: {
+        items: filteredItems,
+        total_count: courseFilteredItems.length,
+        open_count: openCount,
+        list: filteredItems.map((item) => ({
+          id: item.id,
+          warning_level: item.warning_level,
+          course_name: item.course_name,
+          warning_reason: item.warning_reason,
+          status: item.legacy_status,
+          created_at: item.created_at,
+        })),
+        stats: {
+          total: courseFilteredItems.length,
+          pending: openCount,
+          processing: acknowledgedCount,
+          closed: closedCount,
+        },
+      },
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Post('warnings/:id/confirm')
+  async confirmStudentWarning(@Param('id') id: string, @Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const warning = await this.prisma.warnings.findFirst({
+      where: {
+        id: BigInt(id),
+        student_id: BigInt(studentId),
+      },
+      select: {
+        id: true,
+        status: true,
+        acknowledged_at: true,
+        acknowledged_by: true,
+        updated_at: true,
+      },
+    });
+
+    if (!warning) {
+      return {
+        code: 404,
+        message: '预警不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const studentUserId = BigInt(req.user.sub);
+
+    if (warning.status === 'closed') {
+      return {
+        code: 400,
+        message: '该预警已关闭，无法确认',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (
+      warning.status === 'acknowledged' &&
+      warning.acknowledged_by &&
+      warning.acknowledged_by.toString() !== studentUserId.toString()
+    ) {
+      return {
+        code: 0,
+        message: '该预警已由老师确认',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (this.isStudentSelfAcknowledged(warning, studentUserId)) {
+      return {
+        code: 0,
+        message: '确认成功',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    await this.prisma.warnings.update({
+      where: { id: warning.id },
+      data: {
+        status: 'open',
+        acknowledged_at: new Date(),
+        acknowledged_by: studentUserId,
+        updated_at: new Date(),
+      },
+    });
+
+    return {
+      code: 0,
+      message: '确认成功',
+      data: null,
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Get('teachers')
+  async getTeachers(@Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const student = await this.prisma.student_profiles.findUnique({
+      where: { id: BigInt(studentId) },
+      include: { classes: true },
+    });
+
+    if (!student) {
+      return {
+        code: 404,
+        message: '学生不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (!student.class_id) {
+      return {
+        code: 400,
+        message: '学生未绑定班级',
+        data: [],
+        trace_id: req.trace_id,
+      };
+    }
+
+    const teachers: Array<{ id: string; name: string; type: string }> = [];
+
+    if (student.classes?.counselor_user_id) {
+      const counselor = await this.prisma.users.findUnique({
+        where: { id: student.classes.counselor_user_id },
+        select: { id: true, name: true },
+      });
+
+      if (counselor) {
+        teachers.push({
+          id: counselor.id.toString(),
+          name: counselor.name,
+          type: '班主任',
+        });
+      }
+    }
+
+    const courseClasses = await this.prisma.course_classes.findMany({
+      where: { class_id: student.class_id },
+      include: {
+        users: true,
+      },
+    });
+
+    for (const item of courseClasses) {
+      if (!item.users) {
+        continue;
+      }
+
+      const exists = teachers.some(
+        (teacher) => teacher.id === item.users.id.toString(),
+      );
+      if (!exists) {
+        teachers.push({
+          id: item.users.id.toString(),
+          name: item.users.name,
+          type: '授课老师',
+        });
+      }
+    }
+
+    return {
+      code: 0,
+      message: 'ok',
+      data: teachers,
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Get('leave_requests')
+  async getStudentLeaveRequests(@Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const leaveRequests = await this.prisma.leave_requests.findMany({
+      where: { student_id: BigInt(studentId) },
+      orderBy: { created_at: 'desc' },
+    });
+
+    return {
+      code: 0,
+      message: 'ok',
+      data: {
+        list: leaveRequests.map((item) => {
+          const parsed = this.decodeLeaveReason(item.reason);
+          const proofFileIds = this.getStoredFileIds(
+            (item as any).proof_file_ids_json,
+            item.proof_file_id,
+          );
+          return {
+            id: item.id.toString(),
+            leave_type: parsed.leaveType,
+            start_date: item.from_date,
+            end_date: item.to_date,
+            reason: parsed.reason,
+            proof_file_id: proofFileIds[0] || '',
+            proof_file_ids: proofFileIds,
+            status: item.status,
+            reject_reason: item.reject_reason || '',
+            created_at: item.created_at,
+          };
+        }),
+      },
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Post('leave_requests')
+  async createStudentLeaveRequest(@Body() dto: any, @Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const student = await this.prisma.student_profiles.findUnique({
+      where: { id: BigInt(studentId) },
+    });
+
+    if (!student) {
+      return {
+        code: 404,
+        message: '学生不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const leaveType = String(dto.leave_type || '').trim();
+    let approverUserIdRaw = String(dto.approver_user_id || '').trim();
+    const reason = String(dto.reason || '').trim();
+    const proofFileIds = this.mergeOptionalFileIds(
+      dto.proof_file_ids,
+      dto.proof_file_id,
+    );
+    if (!leaveType || !dto.start_date || !dto.end_date || !reason) {
+      return {
+        code: 400,
+        message: '请完整填写请假信息',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    let startDate: Date;
+    let endDate: Date;
+
+    try {
+      startDate = this.parseLeaveDateTime(dto.start_date, false);
+      endDate = this.parseLeaveDateTime(dto.end_date, true);
+    } catch {
+      return {
+        code: 400,
+        message: '请填写有效的请假时间',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (!approverUserIdRaw) {
+      const classInfo = student.class_id
+        ? await this.prisma.classes.findUnique({
+            where: { id: student.class_id },
+            select: { counselor_user_id: true },
+          })
+        : null;
+      approverUserIdRaw = classInfo?.counselor_user_id?.toString() || '';
+    }
+
+    if (!approverUserIdRaw) {
+      return {
+        code: 400,
+        message: '当前班级未绑定审批老师',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (startDate.getTime() > endDate.getTime()) {
+      return {
+        code: 400,
+        message: '结束时间不能早于开始时间',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (!/^\d+$/.test(approverUserIdRaw)) {
+      return {
+        code: 400,
+        message: '审批老师参数不合法',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const approver = await this.prisma.users.findFirst({
+      where: {
+        id: BigInt(approverUserIdRaw),
+        user_type: 'teacher',
+        status: 'active',
+      },
+      select: { id: true },
+    });
+
+    if (!approver) {
+      return {
+        code: 400,
+        message: '审批老师不存在或不可用',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const leaveRequest = await this.prisma.leave_requests.create({
+      data: {
+        student_id: student.id,
+        class_id: student.class_id,
+        from_date: startDate,
+        to_date: endDate,
+        reason: this.encodeLeaveReason(leaveType, reason),
+        proof_file_id: proofFileIds[0] || null,
+        proof_file_ids_json: proofFileIds.map((item) => item.toString()) as any,
+        approver_user_id: approver.id,
+        status: 'submitted',
+      },
+    });
+
+    return {
+      code: 0,
+      message: '请假申请提交成功',
+      data: { id: leaveRequest.id.toString() },
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Get('appeals')
+  async getStudentAppeals(@Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const appeals = await this.prisma.appeals.findMany({
+      where: { student_id: BigInt(studentId) },
+      orderBy: { created_at: 'desc' },
+    });
+
+    return {
+      code: 0,
+      message: 'ok',
+      data: {
+        list: appeals.map((item) => {
+          const evidenceFileIds = this.getStoredFileIds(
+            (item as any).evidence_file_ids_json,
+            item.evidence_file_id,
+          );
+          return {
+            id: item.id.toString(),
+            appeal_type: item.appeal_type,
+            warning_course: item.related_type || '',
+            appeal_reason: item.content,
+            content: item.content,
+            appeal_result: item.status,
+            status: item.status,
+            result_note: item.result_note || '',
+            evidence_file_id: evidenceFileIds[0] || '',
+            evidence_file_ids: evidenceFileIds,
+            created_at: item.created_at,
+          };
+        }),
+      },
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Post('appeals')
+  async createStudentAppeal(@Body() dto: any, @Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (!dto.appeal_type || !dto.content) {
+      return {
+        code: 400,
+        message: '请完整填写申诉内容',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const evidenceFileIds = this.mergeOptionalFileIds(
+      dto.evidence_file_ids,
+      dto.evidence_file_id,
+    );
+
+    const appeal = await this.prisma.appeals.create({
+      data: {
+        student_id: BigInt(studentId),
+        appeal_type: String(dto.appeal_type).trim(),
+        related_type: dto.related_type ? String(dto.related_type).trim() : null,
+        related_id: dto.warning_id ? BigInt(dto.warning_id) : null,
+        content: String(dto.content).trim(),
+        evidence_file_id: evidenceFileIds[0] || null,
+        evidence_file_ids_json: evidenceFileIds.map((item) => item.toString()) as any,
+        status: 'submitted',
+      },
+    });
+
+    return {
+      code: 0,
+      message: '申诉提交成功',
+      data: { id: appeal.id.toString() },
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Get('profile')
+  async getProfile(@Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const student = await this.prisma.student_profiles.findUnique({
+      where: { id: BigInt(studentId) },
+      include: {
+        users: true,
+        classes: {
+          include: {
+            orgs: true,
+          },
+        },
+      },
+    });
+
+    if (!student) {
+      return {
+        code: 404,
+        message: '学生不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const currentHeadTeacher = student.classes?.counselor_user_id
+      ? await this.prisma.users.findUnique({
+          where: { id: student.classes.counselor_user_id },
+          select: { id: true, name: true },
+        })
+      : null;
+    const resolvedOrgId = student.org_id || student.classes?.org_id || null;
+
+    if (!student.org_id && student.class_id && student.classes?.org_id) {
+      await this.prisma.student_profiles.update({
+        where: { id: student.id },
+        data: { org_id: student.classes.org_id },
+      });
+    }
+
+    return {
+      code: 0,
+      message: 'ok',
+      data: {
+        id: student.id.toString(),
+        account: this.resolveProfileAccount(student),
+        student_no: student.student_no,
+        name: student.users.name,
+        gender: student.gender,
+        mobile: this.resolveDisplayMobile(student.mobile, student.users?.mobile),
+        email: student.email,
+        class_id: student.class_id?.toString(),
+        class_name: student.classes?.class_name || '未绑定',
+        org_id: resolvedOrgId?.toString(),
+        org_name: student.classes?.orgs?.name || '未绑定',
+        major: student.classes?.major || student.major || '',
+        enroll_year: student.classes?.enroll_year || student.enroll_year || null,
+        emergency_contact_name: student.emergency_contact_name,
+        emergency_contact_mobile: student.emergency_contact_mobile,
+        student_position: student.student_position,
+        head_teacher_user_id: currentHeadTeacher?.id?.toString() || null,
+        head_teacher_name: currentHeadTeacher?.name || '',
+        is_bound: Boolean(student.class_id && resolvedOrgId),
+        wx_openid: student.wx_openid,
+      },
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Put('profile')
+  async updateProfile(@Body() dto: any, @Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const student = await this.prisma.student_profiles.findUnique({
+      where: { id: BigInt(studentId) },
+    });
+
+    if (!student) {
+      return {
+        code: 404,
+        message: '学生不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const normalizedMobile =
+      dto.mobile !== undefined ? normalizeMobile(dto.mobile) : undefined;
+    if (normalizedMobile && !isValidMainlandMobile(normalizedMobile)) {
+      return {
+        code: 400,
+        message: '请输入正确的手机号',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (
+      normalizedMobile &&
+      (await this.isMobileInUse(normalizedMobile, student.user_id, student.id))
+    ) {
+      return {
+        code: 400,
+        message: '该手机号已被其他账号使用',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const currentMobile = normalizeMobile(student.mobile) || '';
+    if (dto.mobile !== undefined && (normalizedMobile || '') !== currentMobile) {
+      return {
+        code: 400,
+        message: '请使用手机号修改流程更新手机号',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const currentEmail = this.normalizeEmailAddress(student.email || '');
+    const nextEmail =
+      dto.email === undefined ? currentEmail : this.normalizeEmailAddress(dto.email || '');
+    const isClearingEmail = dto.email !== undefined && !nextEmail;
+    if (dto.email !== undefined && nextEmail !== currentEmail && !isClearingEmail) {
+      return {
+        code: 400,
+        message: '请使用邮箱绑定流程修改邮箱',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const updateData: any = {};
+    if (dto.gender !== undefined) updateData.gender = dto.gender || null;
+    if (dto.mobile !== undefined) updateData.mobile = normalizedMobile;
+    if (dto.email !== undefined) updateData.email = nextEmail || null;
+    if (dto.emergency_contact_name !== undefined) {
+      updateData.emergency_contact_name = dto.emergency_contact_name || null;
+    }
+    if (dto.emergency_contact_mobile !== undefined) {
+      updateData.emergency_contact_mobile = dto.emergency_contact_mobile || null;
+    }
+    if (dto.student_position !== undefined) {
+      updateData.student_position = dto.student_position || null;
+    }
+
+    if (dto.mobile !== undefined) {
+      await this.prisma.$transaction([
+        this.prisma.student_profiles.update({
+          where: { id: student.id },
+          data: updateData,
+        }),
+        this.prisma.users.update({
+          where: { id: student.user_id },
+          data: { mobile: normalizedMobile },
+        }),
+      ]);
+    } else {
+      await this.prisma.student_profiles.update({
+        where: { id: student.id },
+        data: updateData,
+      });
+    }
+
+    return {
+      code: 0,
+      message: '更新成功',
+      data: null,
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Post('bind-phone')
+  async bindPhone(@Body() dto: BindPhoneDto, @Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const mobile = normalizeMobile(dto.mobile);
+    if (!mobile || !isValidMainlandMobile(mobile)) {
+      return {
+        code: 400,
+        message: '请输入正确的手机号',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const student = await this.prisma.student_profiles.findUnique({
+      where: { id: BigInt(studentId) },
+      include: {
+        users: true,
+      },
+    });
+
+    if (!student) {
+      return {
+        code: 404,
+        message: '学生不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (await this.isMobileInUse(mobile, student.user_id, student.id)) {
+      return {
+        code: 400,
+        message: '该手机号已被其他账号使用',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const currentMobile = normalizeMobile(student.mobile);
+    const needsVerification = Boolean(currentMobile && currentMobile !== mobile);
+    let challengeId: bigint | null = null;
+    if (needsVerification) {
+      const ticket = String(dto.ticket || '').trim();
+      if (!ticket) {
+        return {
+          code: 400,
+          message: '请先完成邮箱验证码校验',
+          data: null,
+          trace_id: req.trace_id,
+        };
+      }
+
+      try {
+        const challenge = await this.consumeStudentEmailTicket(
+          student,
+          ticket,
+          'student_change_mobile',
+        );
+        challengeId = challenge.id;
+      } catch (error: any) {
+        return {
+          code: 400,
+          message: error?.message || '验证码票据已失效，请重新验证',
+          data: null,
+          trace_id: req.trace_id,
+        };
+      }
+    }
+
+    const operations: any[] = [
+      this.prisma.student_profiles.update({
+        where: { id: student.id },
+        data: { mobile },
+      }),
+    ];
+    if (challengeId) {
+      operations.push(
+        this.prisma.auth_challenges.update({
+          where: { id: challengeId },
+          data: { status: 'used' },
+        }),
+      );
+    }
+    await this.prisma.$transaction(operations);
+
+    return {
+      code: 0,
+      message: '绑定成功',
+      data: null,
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Post('change-password')
+  async changePassword(@Body() dto: ChangePasswordDto, @Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const newPassword = String(dto.new_password || '').trim();
+    const ticket = String(dto.ticket || '').trim();
+    if (isWeakPassword(newPassword)) {
+      return {
+        code: 400,
+        message: '新密码过于简单，请使用至少8位且包含两类字符的密码',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+    if (!ticket) {
+      return {
+        code: 400,
+        message: '请先完成邮箱验证码校验',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const student = await this.prisma.student_profiles.findUnique({
+      where: { id: BigInt(studentId) },
+      include: {
+        users: true,
+      },
+    });
+
+    if (!student) {
+      return {
+        code: 404,
+        message: '学生不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const targetEmail = this.normalizeEmailAddress(student.email || student.users?.email || '');
+    if (!this.isValidEmail(targetEmail)) {
+      return {
+        code: 400,
+        message: '当前账号未绑定有效邮箱，无法修改密码',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const challengeId = this.parseChallengeTicket(ticket);
+    const challenge = await this.prisma.auth_challenges.findUnique({
+      where: { id: challengeId },
+    });
+
+    if (!challenge) {
+      return {
+        code: 400,
+        message: '验证码票据不存在或已失效',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (
+      challenge.status !== 'verified' ||
+      !challenge.verified_at ||
+      challenge.expire_at.getTime() < Date.now() ||
+      String(challenge.purpose || '').toLowerCase() !== 'student_change_password' ||
+      String(challenge.channel || '').toLowerCase() !== 'email' ||
+      this.normalizeEmailAddress(challenge.target || '') !== targetEmail
+    ) {
+      return {
+        code: 400,
+        message: '验证码票据已失效，请重新验证',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const newPasswordHash = await hashPassword(newPassword);
+    await this.prisma.$transaction([
+      this.prisma.users.update({
+        where: { id: student.user_id },
+        data: { password_hash: newPasswordHash },
+      }),
+      this.prisma.student_profiles.update({
+        where: { id: student.id },
+        data: { initial_password: null },
+      }),
+      this.prisma.auth_challenges.update({
+        where: { id: challenge.id },
+        data: { status: 'used' },
+      }),
+    ]);
+
+    return {
+      code: 0,
+      message: '密码修改成功',
+      data: null,
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Post('bind-class')
+  async bindClass(@Body() dto: any, @Req() req: any) {
+    const userId = this.getAuthenticatedUserId(req);
+    if (!userId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (!dto.class_id) {
+      return {
+        code: 400,
+        message: '请选择班级',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const classInfo = await this.prisma.classes.findUnique({
+      where: { id: BigInt(dto.class_id) },
+      include: {
+        orgs: true,
+      },
+    });
+
+    if (!classInfo) {
+      return {
+        code: 404,
+        message: '班级不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const userRecord = await this.prisma.users.findUnique({
+      where: { id: BigInt(userId) },
+      select: {
+        id: true,
+        mobile: true,
+        email: true,
+        wx_openid: true,
+      },
+    });
+
+    if (!userRecord) {
+      return {
+        code: 404,
+        message: '学生账户不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const existingProfile = await this.prisma.student_profiles.findUnique({
+      where: { user_id: BigInt(userId) },
+    });
+
+    let boundProfile:
+      | {
+          id: bigint;
+          user_id: bigint;
+          wx_openid: string | null;
+        }
+      | null = null;
+
+    if (existingProfile) {
+      boundProfile = await this.prisma.student_profiles.update({
+        where: { id: existingProfile.id },
+        data: {
+          class_id: classInfo.id,
+          org_id: classInfo.org_id,
+          major: classInfo.major || existingProfile.major,
+          enroll_year: classInfo.enroll_year || existingProfile.enroll_year,
+          major_id: classInfo.major_id || existingProfile.major_id,
+          mobile: existingProfile.mobile || userRecord.mobile,
+          email: existingProfile.email || userRecord.email,
+          wx_openid: existingProfile.wx_openid || userRecord.wx_openid || null,
+          status: 'active',
+        },
+        select: {
+          id: true,
+          user_id: true,
+          wx_openid: true,
+        },
+      });
+    } else {
+      boundProfile = await this.prisma.student_profiles.create({
+        data: {
+          user_id: BigInt(userId),
+          student_no:
+            /^\d+$/.test(String(userRecord.mobile || '').trim())
+              ? String(userRecord.mobile || '').trim()
+              : `student_${userId}`,
+          class_id: classInfo.id,
+          org_id: classInfo.org_id,
+          major: classInfo.major,
+          enroll_year: classInfo.enroll_year,
+          major_id: classInfo.major_id,
+          mobile: userRecord.mobile,
+          email: userRecord.email,
+          wx_openid: userRecord.wx_openid,
+          status: 'active',
+        },
+        select: {
+          id: true,
+          user_id: true,
+          wx_openid: true,
+        },
+      });
+    }
+
+    await this.prisma.user_roles.updateMany({
+      where: {
+        user_id: BigInt(userId),
+        role: 'class_monitor',
+      },
+      data: {
+        scope_id: classInfo.id,
+      },
+    });
+
+    if (!boundProfile) {
+      return {
+        code: 500,
+        message: '绑定失败',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const token = await this.createStudentToken(boundProfile);
+
+    return {
+      code: 0,
+      message: '绑定成功',
+      data: {
+        student_id: boundProfile.id.toString(),
+        token,
+        class_id: classInfo.id.toString(),
+        class_name: classInfo.class_name,
+        org_id: classInfo.org_id?.toString(),
+        org_name: classInfo.orgs?.name || '',
+      },
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Public()
+  @Get('available-classes')
+  async getAvailableClasses(@Req() req: any) {
+    const classes = await this.prisma.classes.findMany({
+      include: {
+        orgs: true,
+      },
+      where: {
+        status: 'active',
+      },
+      orderBy: [{ org_id: 'asc' }, { class_name: 'asc' }],
+    });
+
+    const classIds = classes.map((item) => item.id);
+    const counselorIds = classes
+      .map((item) => item.counselor_user_id)
+      .filter(Boolean) as bigint[];
+    const scopedHeadTeacherRoles = classIds.length
+      ? await this.prisma.user_roles.findMany({
+          where: {
+            role: 'head_teacher',
+            scope_id: { in: classIds },
+          },
+          orderBy: { id: 'asc' },
+        })
+      : [];
+    const fallbackHeadTeacherMap = new Map(
+      scopedHeadTeacherRoles
+        .filter((item: any) => item.scope_id && item.user_id)
+        .map((item: any) => [item.scope_id.toString(), item.user_id]),
+    );
+    const headTeacherUserIds = Array.from(
+      new Set([
+        ...counselorIds.map((item) => item.toString()),
+        ...scopedHeadTeacherRoles.map((item: any) => item.user_id.toString()),
+      ]),
+    ).map((item) => BigInt(item));
+    const headTeachers = headTeacherUserIds.length
+      ? await this.prisma.users.findMany({
+          where: { id: { in: headTeacherUserIds } },
+          select: { id: true, name: true },
+        })
+      : [];
+    const headTeacherMap = new Map(
+      headTeachers.map((item: any) => [item.id.toString(), item]),
+    );
+
+    return {
+      code: 0,
+      message: 'ok',
+      data: classes.map((item) => {
+        const headTeacherUserId =
+          item.counselor_user_id || fallbackHeadTeacherMap.get(item.id.toString()) || null;
+        const headTeacher = headTeacherUserId
+          ? headTeacherMap.get(headTeacherUserId.toString())
+          : null;
+
+        return {
+          id: item.id.toString(),
+          class_name: item.class_name,
+          org_id: item.org_id?.toString(),
+          org_name: item.orgs?.name || '',
+          head_teacher_user_id: headTeacherUserId?.toString() || null,
+          head_teacher_name: headTeacher?.name || '',
+        };
+      }),
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Get('class-change-requests')
+  async listClassChangeRequests(@Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const student = await this.prisma.student_profiles.findUnique({
+      where: { id: BigInt(studentId) },
+      select: {
+        id: true,
+        user_id: true,
+      },
+    });
+
+    if (!student) {
+      return {
+        code: 404,
+        message: '学生不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const requests = await this.prisma.change_requests.findMany({
+      where: {
+        requester_user_id: student.user_id,
+        target_type: 'student_profile_class_change',
+        target_id: student.id,
+      },
+      orderBy: { created_at: 'desc' },
+    });
+
+    return {
+      code: 0,
+      message: 'ok',
+      data: requests.map((item: any) => {
+        const change = (item.change_json as any) || {};
+        const evidenceFileIds = this.getStoredFileIds(
+          change.evidence_file_ids,
+          change.evidence_file_id,
+        );
+        return {
+          id: item.id.toString(),
+          status: normalizeChangeRequestStatus(item.status),
+          reason: item.reason || '',
+          current_class_name: change.current_class_name || '',
+          target_class_name: change.target_class_name || '',
+          target_org_name: change.target_org_name || '',
+          requested_head_teacher_name: change.requested_head_teacher_name || '',
+          evidence_file_id: evidenceFileIds[0] || '',
+          evidence_file_ids: evidenceFileIds,
+          reject_reason: item.reject_reason || '',
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+        };
+      }),
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Post('class-change-requests')
+  async createClassChangeRequest(@Body() dto: CreateClassChangeRequestDto, @Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const reason = String(dto.reason || '').trim();
+    const evidenceFileIds = this.mergeOptionalFileIds(
+      dto.evidence_file_ids,
+      dto.evidence_file_id,
+    );
+    if (!dto.target_class_id || !reason) {
+      return {
+        code: 400,
+        message: '请完整填写目标班级和申请原因',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const [student, targetClass] = await Promise.all([
+      this.prisma.student_profiles.findUnique({
+        where: { id: BigInt(studentId) },
+        include: {
+          users: true,
+          classes: {
+            include: {
+              orgs: true,
+            },
+          },
+        },
+      }),
+      this.prisma.classes.findUnique({
+        where: { id: BigInt(dto.target_class_id) },
+        include: {
+          orgs: true,
+        },
+      }),
+    ]);
+
+    if (!student) {
+      return {
+        code: 404,
+        message: '学生不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (!targetClass) {
+      return {
+        code: 404,
+        message: '目标班级不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (student.class_id?.toString() === targetClass.id.toString()) {
+      return {
+        code: 400,
+        message: '当前已在该班级，无需重复申请',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const pendingRequest = await this.prisma.change_requests.findFirst({
+      where: {
+        requester_user_id: student.user_id,
+        target_type: 'student_profile_class_change',
+        target_id: student.id,
+        status: { in: [...CHANGE_REQUEST_OPEN_PENDING_STATUSES] },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+
+    if (pendingRequest) {
+      return {
+        code: 409,
+        message: '您已有待处理的换班申请，请勿重复提交',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const currentHeadTeacher = student.classes?.counselor_user_id
+      ? await this.prisma.users.findUnique({
+          where: { id: student.classes.counselor_user_id },
+          select: { id: true, name: true },
+        })
+      : null;
+
+    if (!currentHeadTeacher?.id) {
+      return {
+        code: 400,
+        message: '当前班级暂未绑定班主任，无法提交换班申请',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const changeRequest = await this.prisma.change_requests.create({
+      data: {
+        requester_user_id: student.user_id,
+        target_type: 'student_profile_class_change',
+        target_id: student.id,
+        reason,
+        status: CHANGE_REQUEST_STATUS.PENDING_HEAD,
+        change_json: {
+          request_type: 'student_class_change',
+          workflow_stage: 'head_teacher_review',
+          student_name: student.users?.name || '',
+          student_no: student.student_no,
+          current_class_id: student.class_id?.toString() || null,
+          current_class_name: student.classes?.class_name || '',
+          current_org_id: student.org_id?.toString() || null,
+          current_org_name: student.classes?.orgs?.name || '',
+          current_head_teacher_user_id: currentHeadTeacher?.id?.toString() || null,
+          current_head_teacher_name: currentHeadTeacher?.name || '',
+          target_class_id: targetClass.id.toString(),
+          target_class_name: targetClass.class_name,
+          target_org_id: targetClass.org_id.toString(),
+          target_org_name: targetClass.orgs?.name || '',
+          target_major: targetClass.major || '',
+          target_enroll_year: targetClass.enroll_year,
+          target_major_id: targetClass.major_id?.toString() || null,
+          requested_head_teacher_user_id: currentHeadTeacher.id.toString(),
+          requested_head_teacher_name: currentHeadTeacher.name || '',
+          evidence_file_id: evidenceFileIds[0]?.toString() || null,
+          evidence_file_ids: evidenceFileIds.map((item) => item.toString()),
+        } as any,
+      },
+    });
+
+    return {
+      code: 0,
+      message: '换班申请已提交，等待当前班主任审核',
+      data: { id: changeRequest.id.toString() },
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Get('preferences')
+  async getPreferences(@Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const student = await this.prisma.student_profiles.findUnique({
+      where: { id: BigInt(studentId) },
+    });
+
+    if (!student) {
+      return {
+        code: 404,
+        message: '学生不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const notifyPrefs = (student.notify_prefs_json as Record<string, any>) || {};
+
+    return {
+      code: 0,
+      message: 'ok',
+      data: {
+        notification_channels:
+          notifyPrefs.notification_channels || ['sms', 'email'],
+        warning_reminder: notifyPrefs.warning_reminder !== false,
+      },
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Put('preferences')
+  async updatePreferences(@Body() dto: any, @Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const student = await this.prisma.student_profiles.findUnique({
+      where: { id: BigInt(studentId) },
+    });
+
+    if (!student) {
+      return {
+        code: 404,
+        message: '学生不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const currentPrefs = (student.notify_prefs_json as Record<string, any>) || {};
+    const newPrefs = {
+      ...currentPrefs,
+      notification_channels:
+        dto.notification_channels ||
+        currentPrefs.notification_channels ||
+        ['sms', 'email'],
+      warning_reminder:
+        dto.warning_reminder !== undefined
+          ? Boolean(dto.warning_reminder)
+          : currentPrefs.warning_reminder !== false,
+    };
+
+    await this.prisma.student_profiles.update({
+      where: { id: student.id },
+      data: {
+        notify_prefs_json: newPrefs,
+      },
+    });
+
+    return {
+      code: 0,
+      message: '保存成功',
+      data: null,
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Get('notifications')
+  async getClassNotifications(
+    @Query('page') page = '1',
+    @Query('pageSize') pageSize = '20',
+    @Req() req: any,
+  ) {
+    await this.prisma.ensureConnected();
+
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const student = await this.prisma.student_profiles.findUnique({
+      where: { id: BigInt(studentId) },
+    });
+
+    if (!student) {
+      return {
+        code: 404,
+        message: '学生不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (!student.class_id) {
+      return {
+        code: 400,
+        message: '未绑定班级',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const currentPage = Math.max(1, Number(page) || 1);
+    const currentPageSize = Math.max(1, Number(pageSize) || 20);
+    const skip = (currentPage - 1) * currentPageSize;
+
+    const [notifications, total] = await Promise.all([
+      this.prisma.class_notifications.findMany({
+        where: {
+          class_id: student.class_id,
+        },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: currentPageSize,
+      }),
+      this.prisma.class_notifications.count({
+        where: {
+          class_id: student.class_id,
+        },
+      }),
+    ]);
+
+    const notificationIds = notifications.map((item) => item.id);
+    const readRecords = notificationIds.length
+      ? await this.prisma.student_notification_reads.findMany({
+          where: {
+            student_id: BigInt(studentId),
+            notification_id: { in: notificationIds },
+          },
+        })
+      : [];
+
+    const readMap = new Map(
+      readRecords.map((item) => [
+        item.notification_id.toString(),
+        item.read_at !== null,
+      ]),
+    );
+
+    return {
+      code: 0,
+      message: 'ok',
+      data: {
+        list: notifications.map((item) => ({
+          id: item.id.toString(),
+          title: item.title,
+          content: item.content,
+          publisher_name: item.publisher_name,
+          created_at: item.created_at,
+          is_read: readMap.get(item.id.toString()) || false,
+        })),
+        total,
+      },
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Post('notifications/:id/read')
+  async markNotificationAsRead(@Param('id') id: string, @Req() req: any) {
+    await this.prisma.ensureConnected();
+
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const notificationId = BigInt(id);
+
+    await this.prisma.student_notification_reads.upsert({
+      where: {
+        student_id_notification_id: {
+          student_id: BigInt(studentId),
+          notification_id: notificationId,
+        },
+      },
+      create: {
+        student_id: BigInt(studentId),
+        notification_id: notificationId,
+        read_at: new Date(),
+      },
+      update: {
+        read_at: new Date(),
+      },
+    });
+
+    return {
+      code: 0,
+      message: '标记成功',
+      data: null,
+      trace_id: req.trace_id,
+    };
+  }
+}

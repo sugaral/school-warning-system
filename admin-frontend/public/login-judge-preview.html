@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WARNSYS 评委版登录预览</title>
+    <link rel="stylesheet" href="./login-judge-preview.css?v=20260402-8" />
+  </head>
+  <body>
+    <div class="judge-shell mode-verified" id="judgeShell">
+      <div class="aurora aurora--left" aria-hidden="true"></div>
+      <div class="aurora aurora--right" aria-hidden="true"></div>
+      <div class="aurora aurora--bottom" aria-hidden="true"></div>
+      <div class="beam beam--a" aria-hidden="true"></div>
+      <div class="beam beam--b" aria-hidden="true"></div>
+      <div class="grid-haze" aria-hidden="true"></div>
+
+      <main class="judge-stage">
+        <div class="stage-badge">WARNSYS / STARTUP CONSOLE</div>
+
+        <div class="preview-controls">
+          <button class="control-chip is-active" type="button" data-layout-mode="verified">验证码模式</button>
+          <button class="control-chip" type="button" data-layout-mode="basic">无验证码模式</button>
+          <button class="control-reset" id="resetPreview" type="button">重置预览</button>
+        </div>
+
+        <section class="feature-cloud" aria-label="系统特点展示">
+          <article class="feature-slot feature-slot--top-left" style="--delay: 0.10s; --scatter-x: -420px; --scatter-y: -260px; --scatter-rotate: -14deg;">
+            <section class="feature-card">
+              <span class="feature-card__index">01</span>
+              <span class="feature-card__eyebrow">Warning Hub</span>
+              <h3>预警中心</h3>
+              <p>课堂、成绩、行为信号统一汇聚，风险变化在一个入口里完成识别。</p>
+              <span class="feature-card__tag">Unified warning desk</span>
+            </section>
+          </article>
+
+          <article class="feature-slot feature-slot--top" style="--delay: 0.22s; --scatter-x: 0px; --scatter-y: -330px; --scatter-rotate: -5deg;">
+            <section class="feature-card">
+              <span class="feature-card__index">02</span>
+              <span class="feature-card__eyebrow">Approval Center</span>
+              <h3>审批中心</h3>
+              <p>审批流集中在一条主线，评委一眼就能理解系统闭环。</p>
+              <span class="feature-card__tag">Single approval queue</span>
+            </section>
+          </article>
+
+          <article class="feature-slot feature-slot--top-right" style="--delay: 0.34s; --scatter-x: 420px; --scatter-y: -260px; --scatter-rotate: 14deg;">
+            <section class="feature-card">
+              <span class="feature-card__index">03</span>
+              <span class="feature-card__eyebrow">Notify Ready</span>
+              <h3>通知能力</h3>
+              <p>邮件、短信、二次验证与提醒链路都预留了自然扩展位。</p>
+              <span class="feature-card__tag">Email + SMS ready</span>
+            </section>
+          </article>
+
+          <article class="feature-slot feature-slot--middle-left" style="--delay: 0.46s; --scatter-x: -500px; --scatter-y: -24px; --scatter-rotate: -16deg;">
+            <section class="feature-card feature-card--tall">
+              <span class="feature-card__index">04</span>
+              <span class="feature-card__eyebrow">Feedback Loop</span>
+              <h3>反馈闭环</h3>
+              <p>问题提交、认领、跟进与回执形成可追踪的后台链路。</p>
+              <span class="feature-card__tag">Claim and track</span>
+            </section>
+          </article>
+
+          <article class="feature-slot feature-slot--middle-right" style="--delay: 0.58s; --scatter-x: 500px; --scatter-y: -24px; --scatter-rotate: 16deg;">
+            <section class="feature-card feature-card--tall">
+              <span class="feature-card__index">05</span>
+              <span class="feature-card__eyebrow">Config Layer</span>
+              <h3>配置扩展</h3>
+              <p>通知、规则、模板、找回密码都能继续模块化接入。</p>
+              <span class="feature-card__tag">Configurable modules</span>
+            </section>
+          </article>
+
+          <article class="feature-slot feature-slot--bottom-left" style="--delay: 0.70s; --scatter-x: -420px; --scatter-y: 270px; --scatter-rotate: -14deg;">
+            <section class="feature-card">
+              <span class="feature-card__index">06</span>
+              <span class="feature-card__eyebrow">Role Matrix</span>
+              <h3>角色协同</h3>
+              <p>系统管理员、教师、学生、审批角色共享统一操作体验。</p>
+              <span class="feature-card__tag">Consistent access</span>
+            </section>
+          </article>
+
+          <article class="feature-slot feature-slot--bottom" style="--delay: 0.82s; --scatter-x: 0px; --scatter-y: 340px; --scatter-rotate: 5deg;">
+            <section class="feature-card">
+              <span class="feature-card__index">07</span>
+              <span class="feature-card__eyebrow">Audit Trail</span>
+              <h3>审计留痕</h3>
+              <p>关键动作可追踪、可回放，利于测试、演示与后续交接。</p>
+              <span class="feature-card__tag">Traceable operations</span>
+            </section>
+          </article>
+
+          <article class="feature-slot feature-slot--bottom-right" style="--delay: 0.94s; --scatter-x: 420px; --scatter-y: 270px; --scatter-rotate: 14deg;">
+            <section class="feature-card">
+              <span class="feature-card__index">08</span>
+              <span class="feature-card__eyebrow">Console Feel</span>
+              <h3>管理体验</h3>
+              <p>登录入口先建立控制台气质，让评委先记住系统的第一印象。</p>
+              <span class="feature-card__tag">Premium first touch</span>
+            </section>
+          </article>
+        </section>
+
+        <section class="center-stage">
+          <section class="login-card" id="loginCard">
+            <div class="seed-frame" aria-hidden="true"></div>
+            <div class="scan-beam" aria-hidden="true"></div>
+
+            <div class="preflight-panel">
+              <p class="preflight-panel__eyebrow">SYSTEM BOOT</p>
+              <h1>学业预警系统</h1>
+              <p class="preflight-panel__copy">
+                点击下方按钮，系统特点卡片将朝四周发散退场，中心控制台从按钮位置拉伸成方形，然后切换到登录状态。
+              </p>
+              <div class="preflight-status">
+                <span>风险信号聚合</span>
+                <span>审批链路就绪</span>
+                <span>通知模块在线</span>
+              </div>
+              <p class="mode-indicator">当前预览：<strong id="modeIndicator">验证码模式 / 大正方形</strong></p>
+              <button class="activate-button" id="activateButton" type="button">立即使用</button>
+            </div>
+
+            <div class="login-core">
+              <div class="login-header form-fragment frag-1">
+                <p class="eyebrow">WARNSYS ADMIN</p>
+                <h2>账号登录</h2>
+                <p class="login-desc">
+                  仅支持账号登录，不支持邮箱直接登录。学生请填写学号；如启用二次验证，还需完成图形验证码或邮箱验证码校验。
+                </p>
+              </div>
+
+              <div class="login-layout-grid">
+                <section class="login-main-panel form-fragment frag-2">
+                  <label class="form-item">
+                    <span>账号</span>
+                    <input id="accountInput" type="text" placeholder="请输入学号" />
+                  </label>
+
+                  <label class="form-item">
+                    <span>密码</span>
+                    <input type="password" placeholder="请输入密码" />
+                  </label>
+
+                  <div class="remember-row">
+                    <label class="remember-check">
+                      <input type="checkbox" checked />
+                      <span>记住密码</span>
+                    </label>
+                    <span class="remember-hint">使用浏览器密码管理器保存，不会写入系统本地存储。</span>
+                  </div>
+                </section>
+
+                <section class="verify-panel form-fragment frag-3">
+                  <div class="login-alert login-alert--danger">
+                    当前系统启用了短信类二次验证，但登录页暂不支持短信登录校验，请先在系统配置中改为邮箱验证或关闭二次验证。
+                  </div>
+
+                  <label class="form-item">
+                    <span>图形码</span>
+                    <div class="verify-row">
+                      <input type="text" placeholder="请输入图形验证码" />
+                      <button class="captcha-button" id="refreshCaptcha" type="button">
+                        <span id="captchaLabel">A7K9</span>
+                      </button>
+                    </div>
+                  </label>
+
+                  <label class="form-item">
+                    <span>邮箱验证码</span>
+                    <div class="verify-stack">
+                      <div class="verify-row">
+                        <input type="text" placeholder="请输入邮箱验证码" />
+                        <button class="secondary-button" id="sendCodeButton" type="button">发送验证码</button>
+                      </div>
+                      <div class="verify-hint">示例状态：验证码将发送至已绑定邮箱 `w***@school.edu.cn`。</div>
+                    </div>
+                  </label>
+                </section>
+              </div>
+
+              <div class="action-block form-fragment frag-4">
+                <div class="action-row">
+                  <button class="primary-button" type="button">登录</button>
+                  <button class="ghost-button" type="button">注册</button>
+                </div>
+                <button class="link-button" type="button">无法登录？点这里找回密码</button>
+              </div>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      (() => {
+        const shell = document.getElementById('judgeShell');
+        const loginCard = document.getElementById('loginCard');
+        const activateButton = document.getElementById('activateButton');
+        const sendCodeButton = document.getElementById('sendCodeButton');
+        const refreshCaptcha = document.getElementById('refreshCaptcha');
+        const captchaLabel = document.getElementById('captchaLabel');
+        const accountInput = document.getElementById('accountInput');
+        const modeButtons = Array.from(document.querySelectorAll('[data-layout-mode]'));
+        const resetButton = document.getElementById('resetPreview');
+        const modeIndicator = document.getElementById('modeIndicator');
+
+        const setMode = (mode) => {
+          shell.classList.toggle('mode-verified', mode === 'verified');
+          shell.classList.toggle('mode-basic', mode === 'basic');
+          modeButtons.forEach((button) => {
+            const active = button.dataset.layoutMode === mode;
+            button.classList.toggle('is-active', active);
+          });
+          if (modeIndicator) {
+            modeIndicator.textContent =
+              mode === 'verified' ? '验证码模式 / 大正方形' : '无验证码模式 / 居中长方形';
+          }
+        };
+
+        const bootCards = () => {
+          shell.classList.remove('is-booting');
+          shell.classList.remove('is-boot-complete');
+          requestAnimationFrame(() => {
+            shell.classList.add('is-booting');
+            window.setTimeout(() => {
+              shell.classList.add('is-boot-complete');
+            }, 1800);
+          });
+        };
+
+        const resetPreview = () => {
+          shell.classList.remove('is-seeding', 'is-activating', 'is-login-ready');
+          activateButton.disabled = false;
+          bootCards();
+        };
+
+        setMode('verified');
+        bootCards();
+
+        modeButtons.forEach((button) => {
+          button.addEventListener('click', () => {
+            const nextMode = button.dataset.layoutMode || 'verified';
+            setMode(nextMode);
+            resetPreview();
+          });
+        });
+
+        resetButton?.addEventListener('click', resetPreview);
+
+        activateButton?.addEventListener('click', () => {
+          if (!shell || shell.classList.contains('is-login-ready')) {
+            return;
+          }
+
+          activateButton.disabled = true;
+
+          if (loginCard && activateButton) {
+            const cardRect = loginCard.getBoundingClientRect();
+            const buttonRect = activateButton.getBoundingClientRect();
+            const seedLeft = buttonRect.left - cardRect.left;
+            const seedTop = buttonRect.top - cardRect.top;
+            const seedWidth = buttonRect.width;
+            const seedHeight = buttonRect.height;
+
+            loginCard.style.setProperty('--seed-left', `${seedLeft}px`);
+            loginCard.style.setProperty('--seed-top', `${seedTop}px`);
+            loginCard.style.setProperty('--seed-width', `${seedWidth}px`);
+            loginCard.style.setProperty('--seed-height', `${seedHeight}px`);
+          }
+
+          shell.classList.add('is-seeding');
+
+          requestAnimationFrame(() => {
+            shell.classList.remove('is-seeding');
+            shell.classList.add('is-activating');
+          });
+
+          window.setTimeout(() => {
+            shell.classList.add('is-login-ready');
+            accountInput?.focus();
+          }, 430);
+        });
+
+        sendCodeButton?.addEventListener('click', () => {
+          let seconds = 60;
+          sendCodeButton.disabled = true;
+          sendCodeButton.textContent = `${seconds}s`;
+          const timer = window.setInterval(() => {
+            seconds -= 1;
+            if (seconds <= 0) {
+              window.clearInterval(timer);
+              sendCodeButton.disabled = false;
+              sendCodeButton.textContent = '发送验证码';
+              return;
+            }
+            sendCodeButton.textContent = `${seconds}s`;
+          }, 1000);
+        });
+
+        refreshCaptcha?.addEventListener('click', () => {
+          const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+          let next = '';
+          for (let i = 0; i < 4; i += 1) {
+            next += chars[Math.floor(Math.random() * chars.length)];
+          }
+          if (captchaLabel) {
+            captchaLabel.textContent = next;
+          }
+        });
+
+      })();
+    </script>
+  </body>
+</html>
