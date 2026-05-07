@@ -213,62 +213,48 @@ export class HeadTeacherController {
       };
     }
 
-    const totalStudents = await this.prisma.student_profiles.count({
-      where: {
-        class_id: { in: classIds },
-        status: 'active',
-      },
-    });
+    // Batch: fetch student IDs once and reuse for all warning/leave queries
+    const studentIds = (
+      await this.prisma.student_profiles.findMany({
+        where: { class_id: { in: classIds }, status: 'active' },
+        select: { id: true },
+      })
+    ).map((s: any) => s.id);
 
-    const warningCount = await (this.prisma as any).warning_current_states.count({
-      where: {
-        student_id: {
-          in: (
-            await this.prisma.student_profiles.findMany({
-              where: { class_id: { in: classIds } },
-              select: { id: true },
-            })
-          ).map((s: any) => s.id),
-        },
-        status: { in: ['open', 'acknowledged'] },
-      },
-    });
-
-    const redWarning = await (this.prisma as any).warning_current_states.count({
-      where: {
-        student_id: {
-          in: (
-            await this.prisma.student_profiles.findMany({
-              where: { class_id: { in: classIds } },
-              select: { id: true },
-            })
-          ).map((s: any) => s.id),
-        },
-        level: 'red',
-        status: { in: ['open', 'acknowledged'] },
-      },
-    });
+    const totalStudents = studentIds.length;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const leaveCount = await this.prisma.leave_requests.count({
-      where: {
-        student_id: {
-          in: (
-            await this.prisma.student_profiles.findMany({
-              where: { class_id: { in: classIds } },
-              select: { id: true },
-            })
-          ).map((s: any) => s.id),
+    const warningStudentFilter = studentIds.length > 0
+      ? { student_id: { in: studentIds } }
+      : { student_id: { in: [BigInt(-1)] } };
+
+    const [warningCount, redWarning, leaveCount] = await Promise.all([
+      (this.prisma as any).warning_current_states.count({
+        where: {
+          ...warningStudentFilter,
+          status: { in: ['open', 'acknowledged'] },
         },
-        status: 'approved',
-        from_date: { lte: tomorrow },
-        to_date: { gte: today },
-      },
-    });
+      }),
+      (this.prisma as any).warning_current_states.count({
+        where: {
+          ...warningStudentFilter,
+          level: 'red',
+          status: { in: ['open', 'acknowledged'] },
+        },
+      }),
+      this.prisma.leave_requests.count({
+        where: {
+          ...warningStudentFilter,
+          status: 'approved',
+          from_date: { lte: tomorrow },
+          to_date: { gte: today },
+        },
+      }),
+    ]);
 
     return {
       code: 0,

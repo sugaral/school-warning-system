@@ -220,7 +220,7 @@ async function main() {
   await prisma.user_roles.create({
     data: {
       user_id: staff.id,
-      role: 'student_affairs_admin',
+      role: 'student_admin',
       scope_type: 'college',
       scope_id: college.id,
     },
@@ -230,7 +230,7 @@ async function main() {
   await prisma.user_roles.create({
     data: {
       user_id: students[0].id,
-      role: 'monitor',
+      role: 'class_monitor',
       scope_type: 'class',
       scope_id: class1.id,
     },

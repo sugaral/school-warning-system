@@ -18,6 +18,8 @@ import { promises as fs } from 'fs';
 import { extname, join } from 'path';
 import { PinoLogger } from 'nestjs-pino';
 import { AuthGuard } from './shared/auth.guard';
+import { PermissionGuard } from './rbac/permission.guard';
+import { Permissions } from './rbac/permission.decorator';
 import { serializeFileRecord } from './shared/file.util';
 import { MinioService } from './shared/minio.service';
 import { PrismaService } from './shared/prisma.service';
@@ -39,7 +41,7 @@ class UploadImageDto {
 }
 
 @Controller()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, PermissionGuard)
 export class FilesController {
   private readonly allowedMimeTypes = new Map<string, string>([
     ['image/jpeg', '.jpg'],
@@ -183,6 +185,7 @@ export class FilesController {
   }
 
   @Get(['files/:id/download', 'admin/files/:id/download'])
+  @Permissions('file:download')
   async downloadFile(@Param('id') id: string, @Req() req: any, @Res() res: any) {
     const fileId = this.parseFileId(id);
     const record = await this.getFileRecord(fileId);

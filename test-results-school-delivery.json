@@ -1,0 +1,477 @@
+{
+  "meta": {
+    "base": "http://localhost:3000",
+    "started_at": "2026-05-07T18:00:03.779793",
+    "account": "12345678911",
+    "finished_at": "2026-05-07T18:00:28.861686"
+  },
+  "precheck": {
+    "login_latency_ms": 236.44
+  },
+  "cleanup_before": {
+    "removed": 4,
+    "ids": [
+      1504,
+      1503,
+      1505,
+      1502
+    ],
+    "response": {
+      "ok": true,
+      "status": 201,
+      "latency_ms": 617.01,
+      "json": {
+        "code": 0,
+        "message": "批量删除处理完成",
+        "data": {
+          "requested_count": 4,
+          "deleted_count": 4,
+          "skipped_count": 0,
+          "failed_count": 0,
+          "session_ids": [
+            "1504",
+            "1503",
+            "1505",
+            "1502"
+          ]
+        },
+        "trace_id": "027cfb2b-a11d-4bbb-b120-8fc775118ed2"
+      },
+      "text": "{\"code\":0,\"message\":\"批量删除处理完成\",\"data\":{\"requested_count\":4,\"deleted_count\":4,\"skipped_count\":0,\"failed_count\":0,\"session_ids\":[\"1504\",\"1503\",\"1505\",\"1502\"]},\"trace_id\":\"027cfb2b-a11d-4bbb-b120-8fc775118ed2\"}"
+    }
+  },
+  "smoke_tests": [
+    {
+      "name": "health",
+      "method": "GET",
+      "path": "/health",
+      "ok": true,
+      "status": 200,
+      "latency_ms": 5.59
+    },
+    {
+      "name": "dashboard_summary",
+      "method": "GET",
+      "path": "/admin/stats/summary",
+      "ok": true,
+      "status": 200,
+      "latency_ms": 136.6
+    },
+    {
+      "name": "warnings_list",
+      "method": "GET",
+      "path": "/warnings?page=1&page_size=10",
+      "ok": true,
+      "status": 200,
+      "latency_ms": 116.93
+    },
+    {
+      "name": "warning_scan_status",
+      "method": "GET",
+      "path": "/jobs/scan-status",
+      "ok": true,
+      "status": 200,
+      "latency_ms": 18.66
+    },
+    {
+      "name": "reports_overview",
+      "method": "GET",
+      "path": "/admin/reports/overview",
+      "ok": true,
+      "status": 200,
+      "latency_ms": 500.05
+    },
+    {
+      "name": "attendance_list",
+      "method": "GET",
+      "path": "/attendance/sessions?status=all&pageSize=20",
+      "ok": true,
+      "status": 200,
+      "latency_ms": 9.48
+    },
+    {
+      "name": "attendance_options",
+      "method": "GET",
+      "path": "/attendance/session-options",
+      "ok": true,
+      "status": 200,
+      "latency_ms": 12.13
+    },
+    {
+      "name": "system_config",
+      "method": "GET",
+      "path": "/admin/config",
+      "ok": true,
+      "status": 200,
+      "latency_ms": 11.83
+    }
+  ],
+  "latency_benchmarks": {
+    "health": {
+      "summary": {
+        "count": 5,
+        "min_ms": 7.39,
+        "avg_ms": 7.78,
+        "p50_ms": 7.64,
+        "p90_ms": 8.23,
+        "p95_ms": 8.36,
+        "max_ms": 8.49
+      },
+      "failures": []
+    },
+    "login_admin": {
+      "summary": {
+        "count": 5,
+        "min_ms": 162.18,
+        "avg_ms": 215.23,
+        "p50_ms": 214.71,
+        "p90_ms": 247.29,
+        "p95_ms": 249.72,
+        "max_ms": 252.15
+      },
+      "failures": []
+    },
+    "dashboard_summary": {
+      "summary": {
+        "count": 5,
+        "min_ms": 7.95,
+        "avg_ms": 11.58,
+        "p50_ms": 11.63,
+        "p90_ms": 13.94,
+        "p95_ms": 14.33,
+        "max_ms": 14.72
+      },
+      "failures": []
+    },
+    "warnings_list": {
+      "summary": {
+        "count": 5,
+        "min_ms": 79.71,
+        "avg_ms": 91.49,
+        "p50_ms": 86.19,
+        "p90_ms": 108.2,
+        "p95_ms": 113.08,
+        "max_ms": 117.96
+      },
+      "failures": []
+    },
+    "attendance_list": {
+      "summary": {
+        "count": 5,
+        "min_ms": 6.71,
+        "avg_ms": 9.35,
+        "p50_ms": 6.96,
+        "p90_ms": 14.21,
+        "p95_ms": 16.53,
+        "max_ms": 18.85
+      },
+      "failures": []
+    },
+    "reports_overview": {
+      "summary": {
+        "count": 5,
+        "min_ms": 413.18,
+        "avg_ms": 505.15,
+        "p50_ms": 526.57,
+        "p90_ms": 569.58,
+        "p95_ms": 578.23,
+        "max_ms": 586.88
+      },
+      "failures": []
+    },
+    "scan_status": {
+      "summary": {
+        "count": 5,
+        "min_ms": 6.09,
+        "avg_ms": 10.85,
+        "p50_ms": 12.04,
+        "p90_ms": 13.95,
+        "p95_ms": 13.96,
+        "max_ms": 13.97
+      },
+      "failures": []
+    }
+  },
+  "workflow_tests": {
+    "single_attendance_cycle": {
+      "warnings_before": {
+        "total": 175,
+        "latency_ms": 79.53,
+        "ok": true
+      },
+      "create_session": {
+        "ok": true,
+        "status": 201,
+        "latency_ms": 37.31,
+        "session_id": "1506"
+      },
+      "get_session_attendance": {
+        "ok": true,
+        "status": 200,
+        "latency_ms": 30.57
+      },
+      "get_qr_state": {
+        "ok": true,
+        "status": 200,
+        "latency_ms": 21.16
+      },
+      "end_session": {
+        "ok": true,
+        "status": 201,
+        "latency_ms": 18.1
+      },
+      "warnings_after_end": {
+        "total": 175,
+        "latency_ms": 85.0,
+        "ok": true
+      },
+      "warning_delta_after_end": 0,
+      "delete_session": {
+        "ok": true,
+        "status": 200,
+        "latency_ms": 42.88,
+        "deleted_warnings_count": 0
+      },
+      "warnings_after_delete": {
+        "total": 175,
+        "latency_ms": 86.95,
+        "ok": true
+      },
+      "warning_delta_after_delete": 0
+    },
+    "batch_attendance_cycle": {
+      "create_batch": {
+        "ok": true,
+        "status": 201,
+        "latency_ms": 66.04,
+        "count": 10
+      },
+      "batch_end": {
+        "ok": true,
+        "status": 201,
+        "latency_ms": 10.26
+      },
+      "batch_delete": {
+        "ok": true,
+        "status": 201,
+        "latency_ms": 576.69
+      }
+    }
+  },
+  "pressure_tests": [
+    {
+      "name": "health_read_50x10",
+      "method": "GET",
+      "path": "/health",
+      "concurrency": 10,
+      "requests": 50,
+      "duration_s": 0.38,
+      "throughput_rps": 130.62,
+      "success": 50,
+      "failed": 0,
+      "status_counts": {
+        "200": 50
+      },
+      "latency_summary": {
+        "count": 50,
+        "min_ms": 11.34,
+        "avg_ms": 64.88,
+        "p50_ms": 70.43,
+        "p90_ms": 93.46,
+        "p95_ms": 94.73,
+        "max_ms": 100.86
+      },
+      "failure_samples": []
+    },
+    {
+      "name": "dashboard_summary_60x10",
+      "method": "GET",
+      "path": "/admin/stats/summary",
+      "concurrency": 10,
+      "requests": 60,
+      "duration_s": 1.13,
+      "throughput_rps": 53.3,
+      "success": 60,
+      "failed": 0,
+      "status_counts": {
+        "200": 60
+      },
+      "latency_summary": {
+        "count": 60,
+        "min_ms": 22.21,
+        "avg_ms": 172.55,
+        "p50_ms": 176.35,
+        "p90_ms": 214.76,
+        "p95_ms": 222.03,
+        "max_ms": 238.06
+      },
+      "failure_samples": []
+    },
+    {
+      "name": "warnings_list_60x10",
+      "method": "GET",
+      "path": "/warnings?page=1&page_size=20",
+      "concurrency": 10,
+      "requests": 60,
+      "duration_s": 3.57,
+      "throughput_rps": 16.81,
+      "success": 60,
+      "failed": 0,
+      "status_counts": {
+        "200": 60
+      },
+      "latency_summary": {
+        "count": 60,
+        "min_ms": 288.87,
+        "avg_ms": 553.24,
+        "p50_ms": 540.25,
+        "p90_ms": 699.57,
+        "p95_ms": 742.68,
+        "max_ms": 803.1
+      },
+      "failure_samples": []
+    },
+    {
+      "name": "attendance_list_40x8",
+      "method": "GET",
+      "path": "/attendance/sessions?status=all&pageSize=20",
+      "concurrency": 8,
+      "requests": 40,
+      "duration_s": 0.62,
+      "throughput_rps": 64.31,
+      "success": 40,
+      "failed": 0,
+      "status_counts": {
+        "200": 40
+      },
+      "latency_summary": {
+        "count": 40,
+        "min_ms": 27.38,
+        "avg_ms": 116.9,
+        "p50_ms": 124.0,
+        "p90_ms": 168.34,
+        "p95_ms": 168.7,
+        "max_ms": 195.02
+      },
+      "failure_samples": []
+    },
+    {
+      "name": "login_admin_30x6",
+      "method": "POST",
+      "path": "/auth/login_admin",
+      "concurrency": 6,
+      "requests": 30,
+      "duration_s": 6.19,
+      "throughput_rps": 4.85,
+      "success": 30,
+      "failed": 0,
+      "status_counts": {
+        "201": 30
+      },
+      "latency_summary": {
+        "count": 30,
+        "min_ms": 704.91,
+        "avg_ms": 1175.52,
+        "p50_ms": 1208.51,
+        "p90_ms": 1760.09,
+        "p95_ms": 1894.86,
+        "max_ms": 2006.55
+      },
+      "failure_samples": []
+    }
+  ],
+  "backend_log_excerpt": [
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] student_total +91ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] student_total +82ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warning_total +49ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +157ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +144ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] student_total +103ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +499ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +499ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] start +0ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +245ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +261ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +241ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +481ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +481ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +389ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +389ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] user_roles +20ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] scope_ready +20ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +261ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +224ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +322ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +323ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +574ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +575ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warning_total +37ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +282ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +282ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] start +0ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +350ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +328ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +332ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +295ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] student_total +97ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] start +0ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] user_roles +29ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] scope_ready +29ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] user_roles +18ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] scope_ready +19ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] start +0ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +206ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warning_total +117ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +466ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +466ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +448ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +448ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +457ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +457ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +425ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +425ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warning_total +114ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] user_roles +28ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] scope_ready +29ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] start +0ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] student_total +199ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] student_total +174ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warning_total +88ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] user_roles +46ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] scope_ready +47ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +295ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] student_total +98ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warning_total +61ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] student_total +73ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +287ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +207ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +417ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +418ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +338ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +184ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +370ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +284ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +398ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +243ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +418ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +419ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +339ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +339ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +504ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +504ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +355ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 6:00:21 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +355ms\u001b[39m"
+  ],
+  "evaluation": {
+    "suitable_for_formal_school_delivery": true,
+    "conclusions": [
+      "基础健康检查延迟优秀，可视为生产可用。",
+      "管理员登录延迟较低，满足高频登录或会话续期场景。",
+      "管理端仪表盘汇总接口延迟可接受，适合校级正式使用。",
+      "预警列表查询速度达到日常值班和辅导员使用要求。",
+      "单个签到结束已经达到“秒响应”标准。",
+      "批量结束签到在中小规模并发下表现良好。",
+      "本轮读压与登录压测未出现失败，请求稳定性较好。"
+    ]
+  }
+}

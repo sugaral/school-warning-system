@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../shared/prisma.service';
@@ -6,19 +5,19 @@ import { RedisService } from '../shared/redis.service';
 import { ConfigService as SystemConfigService } from '../config/config.service';
 import { isEmailConfigReady, normalizeEmailConfig, sendEmail } from '../shared/email.util';
 import { renderTemplate } from '../shared/template.util';
-
-const ACTIVE_WARNING_STATUSES = ['open', 'acknowledged'];
-
-type WarningEmailQuotaRow = {
-  sent_count: bigint | number | string | null;
-  oldest_sent_at: Date | string | null;
-};
+import {
+  clampNumber,
+  isWarningEmailJob,
+  isWarningJobStillActive,
+  getWarningEmailThrottleDecision,
+} from '../shared/notification-throttle.util';
 
 @Injectable()
 export class NotificationDispatchService {
   private readonly logger = new Logger(NotificationDispatchService.name);
   private readonly lockKey = 'lock:notification-dispatch';
   private readonly lockTtlMs = 20_000;
+  private processing = false;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -28,7 +27,12 @@ export class NotificationDispatchService {
 
   @Cron('*/5 * * * * *', { timeZone: 'Asia/Shanghai' })
   async processQueuedJobs() {
-    const lockResult = await this.redis.withLock(this.lockKey, this.lockTtlMs, async () => {
+    if (this.processing) {
+      return;
+    }
+
+    this.processing = true;
+    try {
       const batchSize = Math.min(
         20,
         Math.max(1, Number(process.env.NOTIFICATION_JOB_BATCH_SIZE || 8)),
@@ -45,113 +49,9 @@ export class NotificationDispatchService {
       for (const job of jobs) {
         await this.processSingleJob(job);
       }
-    });
-
-    if (!lockResult.locked) {
-      return;
+    } finally {
+      this.processing = false;
     }
-  }
-
-  private clampNumber(value: unknown, fallback: number, min: number, max: number) {
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed)) {
-      return fallback;
-    }
-
-    return Math.min(max, Math.max(min, Math.round(parsed)));
-  }
-
-  private isWarningEmailJob(job: any) {
-    return (
-      String(job?.channel || '').trim().toLowerCase() === 'email' &&
-      (job?.warning_id !== null && job?.warning_id !== undefined
-        || ['rule', 'config'].includes(String(job?.trigger_type || '').trim().toLowerCase()))
-    );
-  }
-
-  private getCourseKey(courseId?: bigint | number | string | null) {
-    return courseId ? String(courseId) : '__none__';
-  }
-
-  private async getWarningEmailThrottleDecision() {
-    const rawWarningConfig = await this.systemConfigService.getConfig('warning', {});
-    const maxPerHour = this.clampNumber(rawWarningConfig?.maxWarningEmailsPerHour, 60, 1, 5000);
-    const since = new Date(Date.now() - 60 * 60 * 1000);
-    const rows = await this.prisma.$queryRaw<WarningEmailQuotaRow[]>(Prisma.sql`
-      SELECT
-        COUNT(*) AS sent_count,
-        MIN(nl.sent_at) AS oldest_sent_at
-      FROM notification_logs nl
-      INNER JOIN notification_jobs nj ON nj.id = nl.job_id
-      WHERE nl.channel = 'email'
-        AND nl.send_status = 'success'
-        AND nl.sent_at >= ${since}
-        AND (nj.warning_id IS NOT NULL OR nj.trigger_type IN ('rule', 'config'))
-    `);
-
-    const row = rows[0] || { sent_count: 0, oldest_sent_at: null };
-    const sentCount = Number(row.sent_count || 0);
-    const oldestSentAt = row.oldest_sent_at ? new Date(row.oldest_sent_at) : null;
-
-    if (sentCount < maxPerHour) {
-      return {
-        limited: false,
-        maxPerHour,
-        sentCount,
-        nextScheduleAt: null as Date | null,
-      };
-    }
-
-    const nextScheduleAt = oldestSentAt && !Number.isNaN(oldestSentAt.getTime())
-      ? new Date(oldestSentAt.getTime() + 60 * 60 * 1000 + 5_000)
-      : new Date(Date.now() + 5 * 60 * 1000);
-
-    return {
-      limited: true,
-      maxPerHour,
-      sentCount,
-      nextScheduleAt,
-    };
-  }
-
-  private async isWarningJobStillActive(job: any) {
-    if (!job?.warning_id) {
-      return true;
-    }
-
-    const historyWarning = await this.prisma.warnings.findUnique({
-      where: { id: job.warning_id },
-      select: {
-        id: true,
-        student_id: true,
-        metric: true,
-        level: true,
-        window: true,
-        period_start: true,
-        period_end: true,
-        course_id: true,
-      },
-    });
-
-    if (!historyWarning) {
-      return false;
-    }
-
-    const currentState = await (this.prisma as any).warning_current_states.findFirst({
-      where: {
-        student_id: historyWarning.student_id,
-        metric: historyWarning.metric,
-        level: historyWarning.level,
-        window: historyWarning.window,
-        period_start: historyWarning.period_start,
-        period_end: historyWarning.period_end,
-        course_key: this.getCourseKey(historyWarning.course_id || null),
-        status: { in: ACTIVE_WARNING_STATUSES },
-      },
-      select: { id: true },
-    });
-
-    return Boolean(currentState);
   }
 
   private async processSingleJob(job: any) {
@@ -167,7 +67,7 @@ export class NotificationDispatchService {
         return;
       }
 
-      if (this.isWarningEmailJob(job) && !(await this.isWarningJobStillActive(job))) {
+      if (isWarningEmailJob(job) && !(await isWarningJobStillActive(this.prisma, job))) {
         await this.prisma.notification_jobs.update({
           where: { id: job.id },
           data: {
@@ -231,8 +131,10 @@ export class NotificationDispatchService {
       return;
     }
 
-    if (this.isWarningEmailJob(job)) {
-      const throttleDecision = await this.getWarningEmailThrottleDecision();
+    if (isWarningEmailJob(job)) {
+      const rawWarningConfig = await this.systemConfigService.getConfig('warning', {});
+      const maxPerHour = clampNumber(rawWarningConfig?.maxWarningEmailsPerHour, 60, 1, 5000);
+      const throttleDecision = await getWarningEmailThrottleDecision(this.prisma, maxPerHour);
       if (throttleDecision.limited) {
         await this.prisma.notification_jobs.update({
           where: { id: job.id },
@@ -270,20 +172,20 @@ export class NotificationDispatchService {
       html: content.replace(/\n/g, '<br />'),
     });
 
-    for (const email of emailTargets) {
-      await this.prisma.notification_logs.create({
-        data: {
-          job_id: job.id,
-          channel: 'email',
-          receiver: email,
-          content_snapshot: content,
-          send_status: 'success',
-          provider: emailConfig.provider || 'smtp',
-          provider_msg_id: result.messageId || null,
-          sent_at: new Date(),
-          acknowledged: false,
-        },
-      });
+    const sentAt = new Date();
+    const logEntries = emailTargets.map((email: string) => ({
+      job_id: job.id,
+      channel: 'email',
+      receiver: email,
+      content_snapshot: content,
+      send_status: 'success',
+      provider: emailConfig.provider || 'smtp',
+      provider_msg_id: result.messageId || null,
+      sent_at: sentAt,
+      acknowledged: false,
+    }));
+    if (logEntries.length > 0) {
+      await this.prisma.notification_logs.createMany({ data: logEntries });
     }
 
     await this.prisma.notification_jobs.update({

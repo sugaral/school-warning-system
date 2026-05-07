@@ -130,6 +130,7 @@ import { Plus, Refresh } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { FormInstance, FormRules } from 'element-plus';
 import { api, listOrgs } from '../../api';
+import { formatDateTime } from '../../lib/format';
 
 type CalendarExclusion = {
   id: string;
@@ -296,12 +297,7 @@ const formatDateOnly = (value: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-const formatDateTime = (value?: string) => {
-  if (!value) {
-    return '-';
-  }
-  return new Date(value).toLocaleString('zh-CN');
-};
+
 
 watch(
   () => calendarDate.value,

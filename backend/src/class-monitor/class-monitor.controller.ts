@@ -28,32 +28,8 @@ export class ClassMonitorController {
   @Get('stats')
   @Roles('class_monitor')
   async getStats(@Req() req: any) {
-    await this.prisma.ensureConnected();
-    
     const userId = BigInt(req.user.sub);
-    
-    let classId: bigint | null = null;
-    
-    const userRole = await this.prisma.user_roles.findFirst({
-      where: {
-        user_id: userId,
-        role: 'class_monitor',
-      },
-    });
-
-    if (userRole?.scope_id) {
-      classId = userRole.scope_id;
-    } else {
-      const studentProfile = await this.prisma.student_profiles.findFirst({
-        where: {
-          user_id: userId,
-        },
-      });
-      
-      if (studentProfile?.class_id) {
-        classId = studentProfile.class_id;
-      }
-    }
+    const classId = await this.getClassIdForMonitor(userId);
 
     if (!classId) {
       return {
@@ -86,32 +62,8 @@ export class ClassMonitorController {
     @Query('pageSize') pageSize = '20',
     @Req() req: any,
   ) {
-    await this.prisma.ensureConnected();
-    
     const userId = BigInt(req.user.sub);
-    
-    let classId: bigint | null = null;
-    
-    const userRole = await this.prisma.user_roles.findFirst({
-      where: {
-        user_id: userId,
-        role: 'class_monitor',
-      },
-    });
-
-    if (userRole?.scope_id) {
-      classId = userRole.scope_id;
-    } else {
-      const studentProfile = await this.prisma.student_profiles.findFirst({
-        where: {
-          user_id: userId,
-        },
-      });
-      
-      if (studentProfile?.class_id) {
-        classId = studentProfile.class_id;
-      }
-    }
+    const classId = await this.getClassIdForMonitor(userId);
 
     if (!classId) {
       return {
@@ -192,32 +144,8 @@ export class ClassMonitorController {
     @Query('pageSize') pageSize = '50',
     @Req() req: any,
   ) {
-    await this.prisma.ensureConnected();
-    
     const userId = BigInt(req.user.sub);
-    
-    let classId: bigint | null = null;
-    
-    const userRole = await this.prisma.user_roles.findFirst({
-      where: {
-        user_id: userId,
-        role: 'class_monitor',
-      },
-    });
-
-    if (userRole?.scope_id) {
-      classId = userRole.scope_id;
-    } else {
-      const studentProfile = await this.prisma.student_profiles.findFirst({
-        where: {
-          user_id: userId,
-        },
-      });
-      
-      if (studentProfile?.class_id) {
-        classId = studentProfile.class_id;
-      }
-    }
+    const classId = await this.getClassIdForMonitor(userId);
 
     if (!classId) {
       return {
@@ -271,32 +199,8 @@ export class ClassMonitorController {
   @Post('notifications')
   @Roles('class_monitor')
   async createNotification(@Body() dto: CreateNotificationDto, @Req() req: any) {
-    await this.prisma.ensureConnected();
-    
     const userId = BigInt(req.user.sub);
-    
-    let classId: bigint | null = null;
-    
-    const userRole = await this.prisma.user_roles.findFirst({
-      where: {
-        user_id: userId,
-        role: 'class_monitor',
-      },
-    });
-
-    if (userRole?.scope_id) {
-      classId = userRole.scope_id;
-    } else {
-      const studentProfile = await this.prisma.student_profiles.findFirst({
-        where: {
-          user_id: userId,
-        },
-      });
-      
-      if (studentProfile?.class_id) {
-        classId = studentProfile.class_id;
-      }
-    }
+    const classId = await this.getClassIdForMonitor(userId);
 
     if (!classId) {
       return {
@@ -343,32 +247,8 @@ export class ClassMonitorController {
     @Query('pageSize') pageSize = '20',
     @Req() req: any,
   ) {
-    await this.prisma.ensureConnected();
-    
     const userId = BigInt(req.user.sub);
-    
-    let classId: bigint | null = null;
-    
-    const userRole = await this.prisma.user_roles.findFirst({
-      where: {
-        user_id: userId,
-        role: 'class_monitor',
-      },
-    });
-
-    if (userRole?.scope_id) {
-      classId = userRole.scope_id;
-    } else {
-      const studentProfile = await this.prisma.student_profiles.findFirst({
-        where: {
-          user_id: userId,
-        },
-      });
-      
-      if (studentProfile?.class_id) {
-        classId = studentProfile.class_id;
-      }
-    }
+    const classId = await this.getClassIdForMonitor(userId);
 
     if (!classId) {
       return {
@@ -417,32 +297,8 @@ export class ClassMonitorController {
   @Get('activities')
   @Roles('class_monitor')
   async getActivities(@Req() req: any) {
-    await this.prisma.ensureConnected();
-    
     const userId = BigInt(req.user.sub);
-    
-    let classId: bigint | null = null;
-    
-    const userRole = await this.prisma.user_roles.findFirst({
-      where: {
-        user_id: userId,
-        role: 'class_monitor',
-      },
-    });
-
-    if (userRole?.scope_id) {
-      classId = userRole.scope_id;
-    } else {
-      const studentProfile = await this.prisma.student_profiles.findFirst({
-        where: {
-          user_id: userId,
-        },
-      });
-      
-      if (studentProfile?.class_id) {
-        classId = studentProfile.class_id;
-      }
-    }
+    const classId = await this.getClassIdForMonitor(userId);
 
     if (!classId) {
       return {
@@ -535,6 +391,18 @@ export class ClassMonitorController {
       data: activities.slice(0, 10),
       trace_id: req.trace_id,
     };
+  }
+
+  private async getClassIdForMonitor(userId: bigint): Promise<bigint | null> {
+    const userRole = await this.prisma.user_roles.findFirst({
+      where: { user_id: userId, role: 'class_monitor' },
+    });
+    if (userRole?.scope_id) return userRole.scope_id;
+
+    const studentProfile = await this.prisma.student_profiles.findFirst({
+      where: { user_id: userId },
+    });
+    return studentProfile?.class_id ?? null;
   }
 }
 

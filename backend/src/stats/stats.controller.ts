@@ -36,6 +36,7 @@ type WarningSummary = {
 @UseGuards(AuthGuard, PermissionGuard)
 export class StatsController {
   private readonly dashboardCacheTtlSeconds = 60;
+  private readonly payloadCache = new Map<string, { data: any; expiresAt: number }>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -44,9 +45,14 @@ export class StatsController {
   ) {}
 
   private async getCachedPayload<T>(cacheKey: string, loader: () => Promise<T>, ttlSeconds: number) {
-    void cacheKey;
-    void ttlSeconds;
-    return loader();
+    const now = Date.now();
+    const cached = this.payloadCache.get(cacheKey);
+    if (cached && cached.expiresAt > now) {
+      return cached.data as T;
+    }
+    const data = await loader();
+    this.payloadCache.set(cacheKey, { data, expiresAt: now + ttlSeconds * 1000 });
+    return data;
   }
 
   private async getSemesterStartDate(referenceDate?: Date) {

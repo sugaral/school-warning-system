@@ -107,7 +107,7 @@
           </el-table-column>
           <el-table-column prop="created_at" label="创建时间" width="180">
             <template #default="{ row }">
-              {{ formatDate(row.created_at) }}
+              {{ formatDateTime(row.created_at) }}
             </template>
           </el-table-column>
           <el-table-column label="操作" width="200" fixed="right">
@@ -210,6 +210,7 @@ import {
   listTeachers,
   updateTeacher,
 } from '../api';
+import { formatDateTime } from '../lib/format';
 
 const teachers = ref<any[]>([]);
 const loading = ref(false);
@@ -400,11 +401,6 @@ const resetFilters = async () => {
   selectedOrgId.value = '';
   page.value = 1;
   await loadTeachers();
-};
-
-const formatDate = (value?: string | Date | null) => {
-  if (!value) return '-';
-  return new Date(value).toLocaleString('zh-CN');
 };
 
 onMounted(async () => {

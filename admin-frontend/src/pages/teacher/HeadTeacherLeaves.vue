@@ -29,6 +29,18 @@
           </el-table-column>
         </el-table>
       </div>
+
+      <div class="pagination-wrap" style="margin-top: 16px; display: flex; justify-content: flex-end;">
+        <el-pagination
+          v-model:current-page="page"
+          v-model:page-size="pageSize"
+          :total="total"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next, jumper"
+          @current-change="handlePageChange"
+          @size-change="handleSizeChange"
+        />
+      </div>
     </el-card>
   </div>
 </template>
@@ -37,16 +49,23 @@
 import { onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getHeadTeacherLeaveRequests } from '../../api';
+import { formatDateTime } from '../../lib/format';
 
 const loading = ref(false);
 const leaveList = ref<any[]>([]);
+const page = ref(1);
+const pageSize = ref(20);
+const total = ref(0);
+const allLeaves = ref<any[]>([]);
 
 const loadLeaves = async () => {
   loading.value = true;
   try {
     const response = await getHeadTeacherLeaveRequests();
     if (response.code === 0) {
-      leaveList.value = response.data || [];
+      allLeaves.value = response.data || [];
+      total.value = allLeaves.value.length;
+      applyPage();
     } else {
       ElMessage.error(response.message || '获取请假名单失败');
     }
@@ -57,18 +76,23 @@ const loadLeaves = async () => {
   }
 };
 
-const formatDateTime = (value: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '-';
-  }
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day} ${hours}:${minutes}`;
+const applyPage = () => {
+  const start = (page.value - 1) * pageSize.value;
+  leaveList.value = allLeaves.value.slice(start, start + pageSize.value);
 };
+
+const handlePageChange = (p: number) => {
+  page.value = p;
+  applyPage();
+};
+
+const handleSizeChange = (s: number) => {
+  pageSize.value = s;
+  page.value = 1;
+  applyPage();
+};
+
+
 
 const getStatusType = (status: string) => {
   if (status === 'pending') return 'warning';

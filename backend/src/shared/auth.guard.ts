@@ -18,6 +18,8 @@ export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 export class AuthGuard implements CanActivate {
   private readonly authCacheTtlSeconds = 30;
   private readonly authL1Cache = new Map<string, { value: unknown; expiresAt: number }>();
+  private static readonly MAX_CACHE_SIZE = 5000;
+  private lastSweepAt = 0;
 
   constructor(
     private readonly jwtService: JwtService,
@@ -35,6 +37,15 @@ export class AuthGuard implements CanActivate {
     return `auth:student-session:${studentId}:${userId}:${wxOpenid || 'none'}`;
   }
 
+  private sweepExpired() {
+    const now = Date.now();
+    for (const [key, entry] of this.authL1Cache) {
+      if (entry.expiresAt <= now) {
+        this.authL1Cache.delete(key);
+      }
+    }
+  }
+
   private async getCachedValue<T>(key: string): Promise<T | null> {
     const cached = this.authL1Cache.get(key);
     if (!cached) {
@@ -50,6 +61,21 @@ export class AuthGuard implements CanActivate {
   }
 
   private primeCache(key: string, value: unknown) {
+    // Sweep expired entries periodically (every 60s)
+    if (Date.now() - this.lastSweepAt > 60_000) {
+      this.lastSweepAt = Date.now();
+      this.sweepExpired();
+      // If still over limit after sweep, evict oldest entries
+      if (this.authL1Cache.size >= AuthGuard.MAX_CACHE_SIZE) {
+        const entries = [...this.authL1Cache.entries()]
+          .sort((a, b) => a[1].expiresAt - b[1].expiresAt);
+        const toEvict = entries.slice(0, Math.floor(AuthGuard.MAX_CACHE_SIZE * 0.2));
+        for (const [key] of toEvict) {
+          this.authL1Cache.delete(key);
+        }
+      }
+    }
+
     this.authL1Cache.set(key, {
       value,
       expiresAt: Date.now() + this.authCacheTtlSeconds * 1000,

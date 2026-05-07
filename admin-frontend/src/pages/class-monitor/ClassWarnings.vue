@@ -22,6 +22,18 @@
       </el-table-column>
     </el-table>
     </div>
+
+    <div class="pagination-wrap" style="margin-top: 16px; display: flex; justify-content: flex-end;">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50]"
+        layout="total, sizes, prev, pager, next, jumper"
+        @current-change="handlePageChange"
+        @size-change="handleSizeChange"
+      />
+    </div>
   </div>
 </template>
 
@@ -32,6 +44,9 @@ import { getWarningLevelColor, getWarningLevelText } from '../../lib/warning-lev
 
 const loading = ref(false);
 const warnings = ref<any[]>([]);
+const page = ref(1);
+const pageSize = ref(20);
+const total = ref(0);
 
 const getLevelColor = getWarningLevelColor;
 
@@ -52,15 +67,29 @@ const getStatusText = (status: string) => {
 const loadWarnings = async () => {
   loading.value = true;
   try {
-    const response = await api.get('/class-monitor/warnings');
+    const response = await api.get('/class-monitor/warnings', {
+      params: { page: page.value, pageSize: pageSize.value },
+    });
     if (response.data.code === 0) {
       warnings.value = response.data.data.list || [];
+      total.value = response.data.data.pagination?.total ?? 0;
     }
   } catch (error) {
     console.error('获取预警列表失败:', error);
   } finally {
     loading.value = false;
   }
+};
+
+const handlePageChange = (p: number) => {
+  page.value = p;
+  loadWarnings();
+};
+
+const handleSizeChange = (s: number) => {
+  pageSize.value = s;
+  page.value = 1;
+  loadWarnings();
 };
 
 onMounted(() => {

@@ -1,0 +1,773 @@
+{
+  "generated_at": "2026-05-07 17:08:21",
+  "roles": {
+    "sys_admin": {
+      "account": "12345678911",
+      "login": {
+        "ok": true,
+        "status": 201,
+        "duration_ms": 269.32,
+        "body": {
+          "code": 0,
+          "message": "ok",
+          "data": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NDciLCJ1c2VyX3R5cGUiOiJhZG1pbiIsImlhdCI6MTc3ODE0NDkwMSwiZXhwIjoxNzc4NzQ5NzAxfQ.YTCFG4MS-tSAYTXN9sm6uQ_35PmaruXZPVTgSkgP6lA",
+            "user_type": "admin",
+            "student_id": null,
+            "roles": [
+              {
+                "role": "sys_admin",
+                "role_name": "系统管理员",
+                "scope_type": "system",
+                "scope_id": null
+              }
+            ],
+            "role_names": [
+              "系统管理员"
+            ],
+            "login_prompt": null,
+            "user": {
+              "id": "647",
+              "name": "系统管理员",
+              "email": null,
+              "mobile": "12345678911",
+              "user_type": "admin"
+            }
+          },
+          "trace_id": "b0249a83-7d93-4290-adb3-bc356441a8ab"
+        }
+      },
+      "checks": [
+        {
+          "method": "GET",
+          "path": "/admin/stats/summary",
+          "result": {
+            "ok": true,
+            "status": 200,
+            "duration_ms": 39.83,
+            "body": {
+              "code": 0,
+              "message": "ok",
+              "data": {
+                "pendingWarnings": 175,
+                "pendingLeaves": 1,
+                "totalStudents": 143,
+                "recentWarnings": [
+                  {
+                    "id": "34325",
+                    "student_no": "202600600730",
+                    "name": "学生30",
+                    "warning_level": "yellow",
+                    "warning_reason": "缺勤 1 次",
+                    "created_at": "2026-05-06T09:30:43.753Z"
+                  },
+                  {
+                    "id": "34324",
+                    "student_no": "202600600729",
+                    "name": "学生29",
+                    "warning_level": "yellow",
+                    "warning_reason": "缺勤 1 次",
+                    "created_at": "2026-05-06T09:30:43.753Z"
+                  },
+                  {
+                    "id": "34323",
+                    "student_no": "202600600728",
+                    "name": "学生28",
+                    "warning_level": "yellow",
+                    "warning_reason": "缺勤 1 次",
+                    "created_at": "2026-05-06T09:30:43.753Z"
+                  },
+                  {
+                    "id": "34322",
+                    "student_no": "202600600727",
+                    "name": "学生27",
+                    "warning_level": "yellow",
+                    "warning_reason": "缺勤 1 次",
+                    "created_at": "2026-05-06T09:30:43.753Z"
+                  },
+                  {
+                    "id": "34321",
+                    "student_no": "202600600726",
+                    "name": "学生26",
+                    "warning_level": "yellow",
+                    "warning_reason": "缺勤 1 次",
+                    "created_at": "2026-05-06T09:30:43.753Z"
+                  }
+                ],
+                "todoList": [
+                  {
+                    "content": "有 175 条预警待确认",
+                    "time": "今日",
+                    "type": "warning",
+                    "color": "#d4a017",
+                    "count": 175
+                  },
+                  {
+                    "content": "有 1 条请假待审批",
+                    "time": "今日",
+                    "type": "primary",
+                    "color": "#409eff",
+                    "count": 1
+                  }
+                ],
+                "activities": [
+                  {
+                    "title": "学生30 触发了 缺勤 1 次",
+                    "time": "近期"
+                  },
+                  {
+                    "title": "学生29 触发了 缺勤 1 次",
+                    "time": "近期"
+                  },
+                  {
+                    "title": "学生28 触发了 缺勤 1 次",
+                    "time": "近期"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/attendance/sessions?page=1&page_size=10",
+          "result": {
+            "ok": true,
+            "status": 200,
+            "duration_ms": 10.84,
+            "body": {
+              "code": 0,
+              "message": "ok",
+              "data": [],
+              "trace_id": "bd2e171f-8c0b-4920-b054-5a07e91a8c56"
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/warnings/class-view/students?page=1&page_size=10",
+          "result": {
+            "ok": true,
+            "status": 200,
+            "duration_ms": 14.72,
+            "body": {
+              "code": 0,
+              "message": "ok",
+              "data": {
+                "class_id": "3",
+                "class_name": "2025级软件工程一班",
+                "org_id": "3",
+                "org_name": "人工智能学院",
+                "week_label": "第9周",
+                "students": [
+                  {
+                    "id": "750",
+                    "student_no": "202524120155",
+                    "student_name": "zy",
+                    "gender": "male",
+                    "major": "软件工程NIIT",
+                    "warning_count": 1,
+                    "highest_level": "yellow",
+                    "last_warning_at": "2026-05-06T06:04:16.314Z",
+                    "processing_status": "",
+                    "processing_text": ""
+                  },
+                  {
+                    "id": "630",
+                    "student_no": "202600300301",
+                    "student_name": "学生1",
+                    "gender": "male",
+                    "major": "软件工程NIIT",
+                    "warning_count": 1,
+                    "highest_level": "yellow",
+                    "last_warning_at": "2026-05-06T06:04:16.314Z",
+                    "processing_status": "",
+                    "processing_text": ""
+                  },
+                  {
+                    "id": "631",
+                    "student_no": "202600300302",
+                    "student_name": "学生2",
+                    "gender": "male",
+                    "major": "软件工程NIIT",
+                    "warning_count": 1,
+                    "highest_level": "yellow",
+                    "last_warning_at": "2026-05-06T06:04:16.314Z",
+                    "processing_status": "",
+                    "processing_text": ""
+                  },
+                  {
+                    "id": "632",
+                    "student_no": "202600300303",
+                    "student_name": "学生3",
+                    "gender": "male",
+                    "major": "软件工程NIIT",
+                    "warning_count": 1,
+                    "highest_level": "yellow",
+                    "last_warning_at": "2026-05-06T06:04:16.314Z",
+                    "processing_status": "",
+                    "processing_text": ""
+                  },
+                  {
+                    "id": "633",
+                    "student_no": "202600300304",
+                    "student_name": "学生4",
+                    "gender": "male",
+                    "major": "软件工程NIIT",
+                    "warning_count": 1,
+                    "highest_level": "yellow",
+                    "last_warning_at": "2026-05-06T06:04:16.314Z",
+                    "processing_status": "",
+                    "processing_text": ""
+                  },
+                  {
+                    "id": "634",
+                    "student_no": "202600300305",
+                    "student_name": "学生5",
+                    "gender": "male",
+                    "major": "软件工程NIIT",
+                    "warning_count": 1,
+                    "highest_level": "yellow",
+                    "last_warning_at": "2026-05-06T06:04:16.314Z",
+                    "processing_status": "",
+                    "processing_text": ""
+                  },
+                  {
+                    "id": "635",
+                    "student_no": "202600300306",
+                    "student_name": "学生6",
+                    "gender": "male",
+                    "major": "软件工程NIIT",
+                    "warning_count": 1,
+                    "highest_level": "yellow",
+                    "last_warning_at": "2026-05-06T06:04:16.314Z",
+                    "processing_status": "",
+                    "processing_text": ""
+                  },
+                  {
+                    "id": "636",
+                    "student_no": "202600300307",
+                    "student_name": "学生7",
+                    "gender": "male",
+                    "major": "软件工程NIIT",
+                    "warning_count": 1,
+                    "highest_level": "yellow",
+                    "last_warning_at": "2026-05-06T06:04:16.314Z",
+                    "processing_status": "",
+                    "processing_text": ""
+                  },
+                  {
+                    "id": "637",
+                    "student_no": "202600300308",
+                    "student_name": "学生8",
+                    "gender": "male",
+                    "major": "软件工程NIIT",
+                    "warning_count": 1,
+                    "highest_level": "yellow",
+                    "last_warning_at": "2026-05-06T06:04:16.314Z",
+                    "processing_status": "",
+                    "processing_text": ""
+                  },
+                  {
+                    "id": "638",
+                    "student_no": "202600300309",
+                    "student_name": "学生9",
+                    "gender": "male",
+                    "major": "软件工程NIIT",
+                    "warning_count": 1,
+                    "highest_level": "yellow",
+                    "last_warning_at": "2026-05-06T06:04:16.314Z",
+                    "processing_status": "",
+                    "processing_text": ""
+                  }
+                ],
+                "total": 11,
+                "page": 1,
+                "page_size": 10,
+                "has_more": true
+              },
+              "trace_id": "9b890f01-7e55-4d7b-ba60-2be7ee01932d"
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/jobs/process_ended_sessions",
+          "result": {
+            "ok": true,
+            "status": 201,
+            "duration_ms": 12.83,
+            "body": {
+              "code": 0,
+              "message": "处理完成",
+              "data": {
+                "sessions_processed": 0,
+                "absent_records_generated": 0,
+                "warnings_mode": "async_queue"
+              },
+              "trace_id": "0d7a7eb7-08be-40bd-9036-1a25bc933647"
+            }
+          }
+        }
+      ]
+    },
+    "student": {
+      "account": "202600200201",
+      "login": {
+        "ok": true,
+        "status": 201,
+        "duration_ms": 200.54,
+        "body": {
+          "code": 0,
+          "message": "ok",
+          "data": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NDgiLCJ1c2VyX3R5cGUiOiJzdHVkZW50Iiwic3R1ZGVudF9pZCI6IjYwMCIsImlhdCI6MTc3ODE0NDkwMSwiZXhwIjoxNzc4NzQ5NzAxfQ.3wNVhzmIjCGT9OMMM8yr2plax8z4TTer2tFsCT9ozUc",
+            "user_type": "student",
+            "student_id": "600",
+            "roles": [
+              {
+                "role": "student",
+                "role_name": "学生",
+                "scope_type": "class",
+                "scope_id": "2"
+              }
+            ],
+            "role_names": [
+              "学生"
+            ],
+            "login_prompt": null,
+            "user": {
+              "id": "648",
+              "name": "学生1",
+              "email": null,
+              "mobile": null,
+              "user_type": "student"
+            }
+          },
+          "trace_id": "ebfd792d-1691-42cd-b101-e9f9f307243e"
+        }
+      },
+      "checks": [
+        {
+          "method": "GET",
+          "path": "/student/profile",
+          "result": {
+            "ok": true,
+            "status": 200,
+            "duration_ms": 22.77,
+            "body": {
+              "code": 0,
+              "message": "ok",
+              "data": {
+                "id": "600",
+                "account": "202600200201",
+                "student_no": "202600200201",
+                "name": "学生1",
+                "gender": "male",
+                "mobile": "",
+                "email": null,
+                "class_id": "2",
+                "class_name": "25汉语言1班",
+                "org_id": "2",
+                "org_name": "文学院",
+                "major": "汉语言",
+                "enroll_year": 2025,
+                "emergency_contact_name": null,
+                "emergency_contact_mobile": null,
+                "student_position": null,
+                "head_teacher_user_id": null,
+                "head_teacher_name": "",
+                "is_bound": true,
+                "wx_openid": null
+              },
+              "trace_id": "0d82a460-7f58-4cca-be84-eceb7c5f2d9c"
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/student/today",
+          "result": {
+            "ok": true,
+            "status": 200,
+            "duration_ms": 23.9,
+            "body": {
+              "code": 0,
+              "message": "ok",
+              "data": {
+                "attendance": "unknown"
+              },
+              "trace_id": "dca24718-db5e-45fc-a13f-dc2a29d6691f"
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/student/warnings",
+          "result": {
+            "ok": true,
+            "status": 200,
+            "duration_ms": 19.98,
+            "body": {
+              "code": 0,
+              "message": "ok",
+              "data": {
+                "items": [
+                  {
+                    "id": "34265",
+                    "level": "yellow",
+                    "level_text": "黄色预警",
+                    "warning_level": "yellow",
+                    "warning_level_text": "黄色预警",
+                    "window": "day",
+                    "window_text": "日",
+                    "trigger_summary": "缺勤 1 次",
+                    "warning_reason": "缺勤 1 次",
+                    "course_name": "",
+                    "violation_type": "",
+                    "violation_time": "2026年5月6日 08:00",
+                    "violation_count": 0,
+                    "status": "open",
+                    "status_text": "待确认",
+                    "legacy_status": "pending",
+                    "org_name": "文学院",
+                    "class_name": "25汉语言1班",
+                    "course_id": "18",
+                    "created_at": "2026年5月6日 14:21",
+                    "created_at_raw": "2026-05-06T06:21:16.634Z",
+                    "period_start": "2026年5月6日 08:00",
+                    "period_start_raw": "2026-05-06T00:00:00.000Z",
+                    "updated_at_raw": "2026-05-06T06:21:16.634Z",
+                    "acknowledged_at_raw": null,
+                    "displayText": "黄色预警 - 未命名课程 - 2026年5月6日 08:00"
+                  },
+                  {
+                    "id": "34182",
+                    "level": "yellow",
+                    "level_text": "黄色预警",
+                    "warning_level": "yellow",
+                    "warning_level_text": "黄色预警",
+                    "window": "day",
+                    "window_text": "日",
+                    "trigger_summary": "缺勤 1 次",
+                    "warning_reason": "缺勤 1 次",
+                    "course_name": "",
+                    "violation_type": "",
+                    "violation_time": "2026年5月6日 08:00",
+                    "violation_count": 0,
+                    "status": "open",
+                    "status_text": "待确认",
+                    "legacy_status": "pending",
+                    "org_name": "文学院",
+                    "class_name": "25汉语言1班",
+                    "course_id": "59",
+                    "created_at": "2026年5月6日 14:01",
+                    "created_at_raw": "2026-05-06T06:01:57.098Z",
+                    "period_start": "2026年5月6日 08:00",
+                    "period_start_raw": "2026-05-06T00:00:00.000Z",
+                    "updated_at_raw": "2026-05-06T06:01:57.098Z",
+                    "acknowledged_at_raw": null,
+                    "displayText": "黄色预警 - 未命名课程 - 2026年5月6日 08:00"
+                  },
+                  {
+                    "id": "34151",
+                    "level": "yellow",
+                    "level_text": "黄色预警",
+                    "warning_level": "yellow",
+                    "warning_level_text": "黄色预警",
+                    "window": "day",
+                    "window_text": "日",
+                    "trigger_summary": "缺勤 1 次",
+                    "warning_reason": "缺勤 1 次",
+                    "course_name": "",
+                    "violation_type": "",
+                    "violation_time": "2026年5月6日 08:00",
+                    "violation_count": 0,
+                    "status": "open",
+                    "status_text": "待确认",
+                    "legacy_status": "pending",
+                    "org_name": "文学院",
+                    "class_name": "25汉语言1班",
+                    "course_id": "57",
+                    "created_at": "2026年5月6日 13:56",
+                    "created_at_raw": "2026-05-06T05:56:03.338Z",
+                    "period_start": "2026年5月6日 08:00",
+                    "period_start_raw": "2026-05-06T00:00:00.000Z",
+                    "updated_at_raw": "2026-05-06T05:56:03.338Z",
+                    "acknowledged_at_raw": null,
+                    "displayText": "黄色预警 - 未命名课程 - 2026年5月6日 08:00"
+                  }
+                ],
+                "total_count": 3,
+                "open_count": 3,
+                "list": [
+                  {
+                    "id": "34265",
+                    "warning_level": "yellow",
+                    "course_name": "",
+                    "warning_reason": "缺勤 1 次",
+                    "status": "pending",
+                    "created_at": "2026年5月6日 14:21"
+                  },
+                  {
+                    "id": "34182",
+                    "warning_level": "yellow",
+                    "course_name": "",
+                    "warning_reason": "缺勤 1 次",
+                    "status": "pending",
+                    "created_at": "2026年5月6日 14:01"
+                  },
+                  {
+                    "id": "34151",
+                    "warning_level": "yellow",
+                    "course_name": "",
+                    "warning_reason": "缺勤 1 次",
+                    "status": "pending",
+                    "created_at": "2026年5月6日 13:56"
+                  }
+                ],
+                "stats": {
+                  "total": 3,
+                  "pending": 3,
+                  "processing": 0,
+                  "closed": 0
+                }
+              },
+              "trace_id": "75980aee-5d18-4947-a9df-59826f17bec7"
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/student/notifications",
+          "result": {
+            "ok": true,
+            "status": 200,
+            "duration_ms": 33.75,
+            "body": {
+              "code": 0,
+              "message": "ok",
+              "data": {
+                "list": [
+                  {
+                    "id": "110",
+                    "title": "大学语文1已开始",
+                    "content": "大学语文1已开始，请前往小程序进行签到。",
+                    "publisher_name": "系统管理员",
+                    "created_at": "2026-04-19T14:55:55.786Z",
+                    "is_read": false
+                  },
+                  {
+                    "id": "64",
+                    "title": "大学语文3已开始",
+                    "content": "大学语文3已开始，请前往小程序进行签到。",
+                    "publisher_name": "系统管理员",
+                    "created_at": "2026-04-17T12:43:22.371Z",
+                    "is_read": false
+                  },
+                  {
+                    "id": "60",
+                    "title": "大学语文4已开始",
+                    "content": "大学语文4已开始，请前往小程序进行签到。",
+                    "publisher_name": "系统管理员",
+                    "created_at": "2026-04-16T11:15:54.756Z",
+                    "is_read": false
+                  },
+                  {
+                    "id": "45",
+                    "title": "大学语文3已开始",
+                    "content": "大学语文3已开始，请前往小程序进行签到。",
+                    "publisher_name": "系统管理员",
+                    "created_at": "2026-04-08T14:13:06.521Z",
+                    "is_read": false
+                  },
+                  {
+                    "id": "21",
+                    "title": "1",
+                    "content": "1",
+                    "publisher_name": "学习委员",
+                    "created_at": "2026-04-06T10:55:31.881Z",
+                    "is_read": false
+                  },
+                  {
+                    "id": "20",
+                    "title": "1",
+                    "content": "1",
+                    "publisher_name": "学习委员",
+                    "created_at": "2026-04-06T10:26:29.280Z",
+                    "is_read": false
+                  },
+                  {
+                    "id": "19",
+                    "title": "qq",
+                    "content": "qq",
+                    "publisher_name": "学习委员",
+                    "created_at": "2026-04-06T10:25:55.480Z",
+                    "is_read": false
+                  },
+                  {
+                    "id": "15",
+                    "title": "q",
+                    "content": "a",
+                    "publisher_name": "学习委员",
+                    "created_at": "2026-04-05T15:10:02.557Z",
+                    "is_read": false
+                  },
+                  {
+                    "id": "13",
+                    "title": "q",
+                    "content": "w",
+                    "publisher_name": "学习委员",
+                    "created_at": "2026-04-05T14:34:28.638Z",
+                    "is_read": false
+                  },
+                  {
+                    "id": "4",
+                    "title": "测试",
+                    "content": "同学们，我又开始测试了",
+                    "publisher_name": "学习委员",
+                    "created_at": "2026-04-03T14:28:41.689Z",
+                    "is_read": false
+                  }
+                ],
+                "total": 10
+              },
+              "trace_id": "0408c335-a3bf-42c1-afda-9d2b8ba08234"
+            }
+          }
+        }
+      ]
+    },
+    "teacher": {
+      "success": true,
+      "selected": {
+        "account": "18181919245",
+        "login": {
+          "ok": true,
+          "status": 201,
+          "duration_ms": 237.0,
+          "body": {
+            "code": 4010,
+            "message": "账号或密码错误",
+            "data": null,
+            "trace_id": "6cb904c7-d43f-4833-9a1a-867995cf4d86"
+          }
+        },
+        "checks": []
+      },
+      "attempts": [
+        {
+          "account": "18181919245",
+          "login": {
+            "ok": true,
+            "status": 201,
+            "duration_ms": 237.0,
+            "body": {
+              "code": 4010,
+              "message": "账号或密码错误",
+              "data": null,
+              "trace_id": "6cb904c7-d43f-4833-9a1a-867995cf4d86"
+            }
+          },
+          "checks": []
+        }
+      ]
+    },
+    "head_teacher": {
+      "success": true,
+      "selected": {
+        "account": "123456123",
+        "login": {
+          "ok": true,
+          "status": 201,
+          "duration_ms": 167.49,
+          "body": {
+            "code": 4010,
+            "message": "账号或密码错误",
+            "data": null,
+            "trace_id": "d44dfacb-5da1-41de-9d21-1e2bef1ff970"
+          }
+        },
+        "checks": []
+      },
+      "attempts": [
+        {
+          "account": "123456123",
+          "login": {
+            "ok": true,
+            "status": 201,
+            "duration_ms": 167.49,
+            "body": {
+              "code": 4010,
+              "message": "账号或密码错误",
+              "data": null,
+              "trace_id": "d44dfacb-5da1-41de-9d21-1e2bef1ff970"
+            }
+          },
+          "checks": []
+        }
+      ]
+    },
+    "class_monitor": {
+      "success": true,
+      "selected": {
+        "account": "18055117374",
+        "login": {
+          "ok": true,
+          "status": 201,
+          "duration_ms": 194.55,
+          "body": {
+            "code": 4010,
+            "message": "账号或密码错误",
+            "data": null,
+            "trace_id": "76cafd8f-9649-4d19-a5c3-85611217c054"
+          }
+        },
+        "checks": []
+      },
+      "attempts": [
+        {
+          "account": "18055117374",
+          "login": {
+            "ok": true,
+            "status": 201,
+            "duration_ms": 194.55,
+            "body": {
+              "code": 4010,
+              "message": "账号或密码错误",
+              "data": null,
+              "trace_id": "76cafd8f-9649-4d19-a5c3-85611217c054"
+            }
+          },
+          "checks": []
+        }
+      ]
+    }
+  },
+  "write_pressure": {
+    "jobs_process_ended_sessions": {
+      "name": "jobs_process_ended_sessions",
+      "count": 12,
+      "ok_count": 12,
+      "fail_count": 0,
+      "avg_ms": 54.19,
+      "p95_ms": 87.46,
+      "p99_ms": 91.94,
+      "max_ms": 93.06,
+      "throughput_rps": 51.1,
+      "sample_failures": []
+    },
+    "jobs_process_and_generate_warnings": {
+      "name": "jobs_process_and_generate_warnings",
+      "count": 12,
+      "ok_count": 12,
+      "fail_count": 0,
+      "avg_ms": 57.42,
+      "p95_ms": 90.37,
+      "p99_ms": 94.17,
+      "max_ms": 95.12,
+      "throughput_rps": 45.13,
+      "sample_failures": []
+    }
+  }
+}

@@ -147,20 +147,18 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import type { FormInstance, FormRules } from 'element-plus';
 import MultiImageUploadField from '../../components/MultiImageUploadField.vue';
 import { api } from '../../api';
-import { loadUploadedFileObjectUrls, revokeObjectUrls } from '../../lib/uploaded-files';
+import { formatDateTime } from '../../lib/format';
+import { usePreview } from '../../composables/usePreview';
 
 const loading = ref(false);
 const submitLoading = ref(false);
 const showCreateDialog = ref(false);
-const previewVisible = ref(false);
-const previewLoading = ref(false);
-const previewTitle = ref('');
-const previewUrls = ref<string[]>([]);
+const { previewVisible, previewLoading, previewTitle, previewUrls, openPreview } = usePreview();
 const leaves = ref<any[]>([]);
 const teachers = ref<any[]>([]);
 const formRef = ref<FormInstance>();
@@ -216,15 +214,7 @@ const rules: FormRules = {
   ],
 };
 
-const formatDate = (value?: string | Date | null) => {
-  if (!value) return '-';
-  return new Date(value).toLocaleDateString('zh-CN');
-};
 
-const formatDateTime = (value?: string | Date | null) => {
-  if (!value) return '-';
-  return new Date(value).toLocaleString('zh-CN');
-};
 
 const getStatusType = (status: string) => {
   if (status === 'submitted') return 'warning';
@@ -309,30 +299,9 @@ const submitLeave = async () => {
   }
 };
 
-const openPreview = async (fileIds: string[] | string, title: string) => {
-  previewVisible.value = true;
-  previewLoading.value = true;
-  previewTitle.value = title;
-  revokeObjectUrls(previewUrls.value);
-  previewUrls.value = [];
-
-  try {
-    previewUrls.value = await loadUploadedFileObjectUrls(fileIds);
-  } catch (error: any) {
-    previewVisible.value = false;
-    ElMessage.error(error?.message || '加载图片失败');
-  } finally {
-    previewLoading.value = false;
-  }
-};
-
 onMounted(() => {
   loadLeaves();
   loadTeachers();
-});
-
-onBeforeUnmount(() => {
-  revokeObjectUrls(previewUrls.value);
 });
 </script>
 

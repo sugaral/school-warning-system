@@ -13,22 +13,14 @@ export class HealthController {
 
   @Get('/health')
   async getHealth() {
-    const dbHealthy = await this.prisma.checkHealth();
-    const redisHealthy = (await this.redis.ping().catch(() => '')) === 'PONG';
-    const minioHealth = await this.minioService.checkHealth();
-
-    if (!dbHealthy || !redisHealthy || !minioHealth.healthy) {
-      throw new ServiceUnavailableException('dependency unavailable');
-    }
-
     return {
       code: 0,
       message: 'ok',
       data: {
         status: 'ok',
-        database: 'ok',
-        redis: 'ok',
-        minio: minioHealth.enabled ? 'ok' : 'disabled',
+        database: this.prisma.isConnected ? 'connected' : 'unknown',
+        redis: this.redis.status || 'unknown',
+        minio: this.minioService.isConfigured() ? 'configured' : 'disabled',
       },
       trace_id: (global as any).currentTraceId ?? null,
     };

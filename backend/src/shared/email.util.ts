@@ -51,7 +51,7 @@ function toBoolean(value: unknown, defaultValue: boolean) {
 
 export function normalizeEmailConfig(raw: any = {}): EmailConfig {
   const provider = String(raw.smtpProvider || raw.provider || 'qq').toLowerCase();
-  const defaultHost = provider === 'qq' ? 'smtp.qq.com' : 'smtp.qq.com';
+  const defaultHost = 'smtp.qq.com';
   const defaultPort = Number(raw.smtpPort || 465);
   const secure =
     raw.smtpSecure !== undefined
@@ -89,6 +89,9 @@ export function isEmailConfigReady(config: EmailConfig) {
   );
 }
 
+let cachedTransporter: any = null;
+let cachedConfigKey = '';
+
 export async function sendEmail(
   config: EmailConfig,
   payload: {
@@ -102,17 +105,18 @@ export async function sendEmail(
     throw new Error('邮件服务尚未配置完整，请先在系统配置中填写 QQ 邮箱 SMTP 信息');
   }
 
-  const transporter = nodemailer.createTransport({
-    host: config.host,
-    port: config.port,
-    secure: config.secure,
-    auth: {
-      user: config.user,
-      pass: config.pass,
-    },
-  });
+  const configKey = `${config.host}:${config.port}:${config.user}:${config.pass}`;
+  if (!cachedTransporter || cachedConfigKey !== configKey) {
+    cachedTransporter = nodemailer.createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      auth: { user: config.user, pass: config.pass },
+    });
+    cachedConfigKey = configKey;
+  }
 
-  return transporter.sendMail({
+  return cachedTransporter.sendMail({
     from: config.fromName ? `"${config.fromName}" <${config.from}>` : config.from,
     to: Array.isArray(payload.to) ? payload.to.join(',') : payload.to,
     subject: normalizeEmailDisplayText(payload.subject, '系统通知'),

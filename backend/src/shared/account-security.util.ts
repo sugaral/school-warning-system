@@ -1,3 +1,5 @@
+import * as crypto from 'crypto';
+
 const COMMON_WEAK_PASSWORDS = new Set([
   '123456',
   '12345678',
@@ -47,6 +49,9 @@ function isSequentialDigits(password: string): boolean {
 
 export function isWeakPassword(password?: unknown): boolean {
   const value = String(password ?? '').trim();
+  if (!value) {
+    return true;
+  }
   if (value.length < 8) {
     return true;
   }
@@ -77,7 +82,7 @@ export function generateStrongPassword(length = 12): string {
   const symbols = '!@#$%*?';
   const all = upper + lower + digits + symbols;
 
-  const pick = (chars: string) => chars[Math.floor(Math.random() * chars.length)];
+  const pick = (chars: string) => chars[crypto.randomInt(chars.length)];
   const chars: string[] = [pick(upper), pick(lower), pick(digits), pick(symbols)];
 
   while (chars.length < safeLength) {
@@ -85,7 +90,7 @@ export function generateStrongPassword(length = 12): string {
   }
 
   for (let i = chars.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = crypto.randomInt(i + 1);
     [chars[i], chars[j]] = [chars[j], chars[i]];
   }
 

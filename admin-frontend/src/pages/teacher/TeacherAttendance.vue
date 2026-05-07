@@ -362,6 +362,7 @@ import {
   updateTeacherStudentStatus,
 } from '../../api';
 import { buildQrCodeDataUrl } from '../../lib/qrcode';
+import { formatDateTime } from '../../lib/format';
 
 const sessions = ref<any[]>([]);
 const myCourses = ref<any[]>([]);
@@ -447,19 +448,7 @@ const startQrCountdown = () => {
   }, 1000);
 };
 
-const formatDateTime = (value?: string) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '-';
-  }
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day} ${hours}:${minutes}`;
-};
+
 
 const getStatusType = (status: string) => {
   if (status === 'not_started') return 'info';
@@ -1032,16 +1021,7 @@ onBeforeUnmount(() => {
   line-height: 1.6;
 }
 
-.toolbar {
-  display: flex;
-  gap: 8px;
-}
-
-.action-row {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
+/* Note: hero/overview/table-card patterns available globally in page-layout.css */
 
 .session-stats {
   font-size: 12px;

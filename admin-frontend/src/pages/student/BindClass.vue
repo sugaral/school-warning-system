@@ -128,7 +128,12 @@ const handleBind = async () => {
       if (response.data.data?.student_id) {
         localStorage.setItem('student_id', response.data.data.student_id);
       }
-      updateStoredRoleScope('class_monitor', form.value.class_id || null);
+      {
+        const roles = JSON.parse(localStorage.getItem('admin_roles') || '[]');
+        if (Array.isArray(roles) && roles.includes('class_monitor')) {
+          updateStoredRoleScope('class_monitor', form.value.class_id || null);
+        }
+      }
       setStudentBoundState(true);
       const redirectPath = getPostBindRedirectPath();
       try {

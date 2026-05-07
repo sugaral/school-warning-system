@@ -105,7 +105,8 @@ onMounted(() => {
   position: fixed;
   right: 28px;
   bottom: 28px;
-  z-index: 3000;
+  z-index: 100;
+  pointer-events: none;
 }
 
 .table-spacing-control__trigger {
@@ -114,6 +115,7 @@ onMounted(() => {
   border-radius: 50%;
   box-shadow: 0 18px 32px rgba(15, 118, 110, 0.25);
   font-weight: 700;
+  pointer-events: auto;
 }
 
 .table-spacing-control__panel {

@@ -1,6 +1,7 @@
 import { createApp } from 'vue';
 import 'element-plus/dist/index.css';
 import './styles/theme.css';
+import './styles/page-layout.css';
 import App from './App.vue';
 import { preloadAppCaches } from './bootstrap-preload';
 import { isDynamicImportError, reloadForDynamicImportError } from './lib/dynamic-import-recovery';

@@ -35,8 +35,8 @@
       </el-table-column>
       <el-table-column label="操作" width="180" fixed="right">
         <template #default="{ row }">
-          <el-button type="success" size="small" @click="handleApprove(row)">批准</el-button>
-          <el-button type="danger" size="small" @click="handleReject(row)">驳回</el-button>
+          <el-button type="success" size="small" @click="handleApprove(row)" :loading="approvingId === row.id + '_approve'">批准</el-button>
+          <el-button type="danger" size="small" @click="handleReject(row)" :loading="approvingId === row.id + '_reject'">驳回</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -48,8 +48,10 @@
 import { onMounted, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { api } from '../../api';
+import { formatDateTime } from '../../lib/format';
 
 const loading = ref(false);
+const approvingId = ref<string | null>(null);
 const approvals = ref<any[]>([]);
 
 const getTypeText = (type: string) => {
@@ -62,10 +64,7 @@ const getTypeText = (type: string) => {
   return map[type] || type || '-';
 };
 
-const formatDateTime = (value: string) => {
-  if (!value) return '-';
-  return new Date(value).toLocaleString('zh-CN');
-};
+
 
 const formatHeadTeacherReview = (review: any) => {
   if (!review) {
@@ -95,6 +94,8 @@ const loadApprovals = async () => {
 
 const handleApprove = async (row: any) => {
   try {
+    if (approvingId.value) return;
+    approvingId.value = row.id + '_approve';
     await ElMessageBox.confirm('确认批准该申请吗？批准后将直接修改系统数据。', '确认审批', {
       type: 'warning',
     });
@@ -105,11 +106,15 @@ const handleApprove = async (row: any) => {
     if (error !== 'cancel') {
       ElMessage.error(error?.message || '操作失败');
     }
+  } finally {
+    approvingId.value = null;
   }
 };
 
 const handleReject = async (row: any) => {
   try {
+    if (approvingId.value) return;
+    approvingId.value = row.id + '_reject';
     const { value: reason } = await ElMessageBox.prompt('请输入驳回原因', '驳回申请', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
@@ -124,6 +129,8 @@ const handleReject = async (row: any) => {
     if (error !== 'cancel') {
       ElMessage.error(error?.message || '操作失败');
     }
+  } finally {
+    approvingId.value = null;
   }
 };
 

@@ -2,6 +2,8 @@ import {
   BadRequestException,
   Body,
   Controller,
+  HttpException,
+  HttpStatus,
   Post,
   Req,
   UnauthorizedException,
@@ -32,10 +34,30 @@ class OpenSmsSendDto {
 
 @Controller('admin/config/open')
 export class NotificationOpenController {
+  private readonly rateLimitMap = new Map<string, { count: number; windowStart: number }>();
+  private readonly rateLimitMax = 3;
+  private readonly rateLimitWindowMs = 60_000;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
   ) {}
+
+  private checkRateLimit(ip: string) {
+    const now = Date.now();
+    const entry = this.rateLimitMap.get(ip);
+    if (!entry || now - entry.windowStart > this.rateLimitWindowMs) {
+      this.rateLimitMap.set(ip, { count: 1, windowStart: now });
+      return;
+    }
+    entry.count += 1;
+    if (entry.count > this.rateLimitMax) {
+      throw new HttpException(
+        '请求过于频繁，请稍后再试',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
 
   private getRequestApiKey(req: any) {
     const headerApiKey = String(req.headers?.['x-api-key'] || '').trim();
@@ -188,6 +210,7 @@ export class NotificationOpenController {
 
   @Post('email/send')
   async sendOpenEmail(@Body() dto: OpenEmailSendDto, @Req() req: any) {
+    this.checkRateLimit(req.ip || req.socket?.remoteAddress || 'unknown');
     await this.prisma.ensureConnected();
 
     const rawConfig = await this.assertChannelAccess('email', req);
@@ -230,6 +253,7 @@ export class NotificationOpenController {
 
   @Post('sms/send')
   async sendOpenSms(@Body() dto: OpenSmsSendDto, @Req() req: any) {
+    this.checkRateLimit(req.ip || req.socket?.remoteAddress || 'unknown');
     await this.prisma.ensureConnected();
 
     const rawConfig = await this.assertChannelAccess('sms', req);

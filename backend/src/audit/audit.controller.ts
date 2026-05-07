@@ -225,7 +225,7 @@ export class AuditController {
     return this.formatIpDisplay(ip);
   }
 
-  // 鑾峰彇鎿嶄綔鏃ュ織
+  // 获取操作日志
   @Get('operations')
   @Permissions('audit:view')
   async getOperationLogs(
@@ -274,7 +274,7 @@ export class AuditController {
       this.prisma.audit_logs.count({ where }),
     ]);
 
-    // 鑾峰彇鐢ㄦ埛淇℃伅
+    // 获取用户信息
     const userIds = logs.map((log: { actor_user_id: bigint }) => log.actor_user_id);
     const users =
       userIds.length > 0

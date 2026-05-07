@@ -46,8 +46,7 @@ export class ResponseInterceptor implements NestInterceptor {
 
     const traceId =
       request.trace_id ||
-      request.headers['x-trace-id'] ||
-      (global as any).currentTraceId;
+      request.headers['x-trace-id'];
 
     return next.handle().pipe(
       map((data) => {

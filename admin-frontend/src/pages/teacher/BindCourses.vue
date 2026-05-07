@@ -248,6 +248,7 @@ import {
   teacherBindCourses,
 } from '../../api';
 import { setTeacherBindingState } from '../../lib/binding';
+import { formatDateTime } from '../../lib/format';
 
 const router = useRouter();
 
@@ -288,10 +289,7 @@ const totalSelectedClasses = computed(() =>
   selectedCourseIds.value.reduce((sum, courseId) => sum + (courseClassMap[courseId]?.length || 0), 0),
 );
 
-const formatDateTime = (value?: string) => {
-  if (!value) return '-';
-  return new Date(value).toLocaleString('zh-CN');
-};
+
 
 const formatCredit = (value: any) => {
   if (value === null || value === undefined || value === '') {

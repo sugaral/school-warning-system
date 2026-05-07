@@ -1,4 +1,4 @@
-﻿import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 function buildDatabaseUrlWithPoolDefaults() {
@@ -32,8 +32,8 @@ function buildDatabaseUrlWithPoolDefaults() {
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  private isConnected = false;
-  private readonly healthCheckTimeoutMs = 3000;
+  public isConnected = false;
+  private readonly healthCheckTimeoutMs = 800;
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
@@ -57,6 +57,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     } catch (error) {
       this.logger.error('连接数据库失败:', error);
       this.isConnected = false;
+      throw error;
     }
   }
 
@@ -94,6 +95,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async checkHealth() {
+    if (this.isConnected) {
+      return true;
+    }
     try {
       await this.checkHealthOrThrow();
       return this.isConnected;

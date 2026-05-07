@@ -1,0 +1,2874 @@
+{
+  "base_url": "http://127.0.0.1:3000",
+  "generated_at": "2026-05-07 17:46:33",
+  "environment": {
+    "health": {
+      "ok": true,
+      "status": 200,
+      "duration_ms": 8.15,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "status": "ok",
+          "database": "connected",
+          "redis": "ready",
+          "minio": "configured"
+        },
+        "trace_id": null
+      },
+      "path": "/health",
+      "method": "GET"
+    },
+    "docker_ps": {
+      "exit_code": 0,
+      "output": "NAMES              STATUS                    PORTS\nwarnsys-backend    Up 59 seconds (healthy)   0.0.0.0:3000->3000/tcp, :::3000->3000/tcp\nwarnsys-frontend   Up 2 days                 0.0.0.0:8080->80/tcp, :::8080->80/tcp\nwarnsys-adminer    Up 2 days                 0.0.0.0:8081->8080/tcp, :::8081->8080/tcp\nwarnsys-minio      Up 2 days (healthy)       0.0.0.0:9100->9000/tcp, :::9100->9000/tcp, 0.0.0.0:9101->9001/tcp, :::9101->9001/tcp\nwarnsys-redis      Up 2 days (healthy)       0.0.0.0:6380->6379/tcp, :::6380->6379/tcp\nwarnsys-mysql      Up 4 hours (healthy)      33060/tcp, 0.0.0.0:3307->3306/tcp, :::3307->3306/tcp\n"
+    },
+    "backend_container_name": "warnsys-backend",
+    "recent_backend_logs": {
+      "exit_code": 0,
+      "output": "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] scope_ready +12ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] start +0ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +262ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +151ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] student_total +95ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warning_total +55ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] user_roles +8ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] scope_ready +9ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] start +0ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +209ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] student_total +72ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warning_total +26ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +287ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +288ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] user_roles +12ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] scope_ready +13ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] start +0ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningProcessingService] \u001b[39m\u001b[33m[warning-processing] processing-map slow 121ms students=20\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +273ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +223ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +183ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] student_total +137ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warning_total +116ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +326ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +326ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] user_roles +15ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] scope_ready +15ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] student_total +141ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +283ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +243ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warning_total +72ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] student_total +83ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +218ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +371ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +371ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +324ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +324ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +286ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:25 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +286ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:26 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +225ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:26 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +121ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:26 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +295ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:26 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +276ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:26 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +171ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:26 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +328ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:26 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +329ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:26 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +208ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:26 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +209ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:26 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +318ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:26 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +318ms\u001b[39m\n[withLock] key=lock:session:end:1501 acquire=3681ms fn=143ms preReleaseGap=0ms release=5159ms outcome=ok\n[withLock] key=lock:session:end:1500 acquire=3681ms fn=143ms preReleaseGap=0ms release=5159ms outcome=ok\n[withLock] key=lock:session:end:1499 acquire=3681ms fn=143ms preReleaseGap=0ms release=5159ms outcome=ok\n[withLock] key=lock:session:end:1498 acquire=3681ms fn=143ms preReleaseGap=0ms release=5159ms outcome=ok\n[withLock] key=lock:session:end:1497 acquire=3680ms fn=143ms preReleaseGap=0ms release=5159ms outcome=ok\n[withLock] key=lock:session:end:1496 acquire=3680ms fn=143ms preReleaseGap=0ms release=5159ms outcome=ok\n[withLock] key=lock:session:end:1495 acquire=3680ms fn=143ms preReleaseGap=0ms release=5159ms outcome=ok\n[withLock] key=lock:session:end:1494 acquire=3680ms fn=144ms preReleaseGap=0ms release=5158ms outcome=ok\n[withLock] key=lock:session:end:1493 acquire=3680ms fn=143ms preReleaseGap=0ms release=5158ms outcome=ok\n[withLock] key=lock:session:end:1492 acquire=3680ms fn=143ms preReleaseGap=0ms release=5159ms outcome=ok\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:30 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[AttendanceController] \u001b[39m\u001b[32m[batchEnd][single] session=1501 locked=true ended=false cost=8985ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:30 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[AttendanceController] \u001b[39m\u001b[32m[batchEnd][single] session=1500 locked=true ended=false cost=8985ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:30 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[AttendanceController] \u001b[39m\u001b[32m[batchEnd][single] session=1499 locked=true ended=false cost=8985ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:30 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[AttendanceController] \u001b[39m\u001b[32m[batchEnd][single] session=1498 locked=true ended=false cost=8985ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:30 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[AttendanceController] \u001b[39m\u001b[32m[batchEnd][single] session=1497 locked=true ended=false cost=8985ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:30 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[AttendanceController] \u001b[39m\u001b[32m[batchEnd][single] session=1496 locked=true ended=false cost=8984ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:30 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[AttendanceController] \u001b[39m\u001b[32m[batchEnd][single] session=1495 locked=true ended=false cost=8984ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:30 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[AttendanceController] \u001b[39m\u001b[32m[batchEnd][single] session=1494 locked=true ended=false cost=8984ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:30 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[AttendanceController] \u001b[39m\u001b[32m[batchEnd][single] session=1493 locked=true ended=false cost=8984ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:30 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[AttendanceController] \u001b[39m\u001b[32m[batchEnd][single] session=1492 locked=true ended=false cost=8983ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:31 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[ConfigService] \u001b[39m\u001b[32m配置已从数据库重新加载\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:34 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=11ms\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:34 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[HttpExceptionFilter] \u001b[39m\u001b[33mGET /teacher/sessions?page=1&page_size=20 - status=403 trace_id=26301058-dfc5-4d97-b8be-bc93386fc4c9 详情={\"message\":\"权限不足\",\"error\":\"Forbidden\",\"statusCode\":403}\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:34 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[HttpExceptionFilter] \u001b[39m\u001b[33mGET /teacher/profile - status=403 trace_id=85caf2cd-acfb-44f0-8f74-28bd38a2486b 详情={\"message\":\"权限不足\",\"error\":\"Forbidden\",\"statusCode\":403}\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:34 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[HttpExceptionFilter] \u001b[39m\u001b[33mGET /head-teacher/stats - status=403 trace_id=64beabe4-88e5-4d8d-9e8c-76977a3de57c 详情={\"message\":\"权限不足\",\"error\":\"Forbidden\",\"statusCode\":403}\u001b[39m\n\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 5:46:34 PM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[HttpExceptionFilter] \u001b[39m\u001b[33mGET /class-monitor/stats - status=403 trace_id=98b9f06f-f209-400c-a30e-5b839dc68001 详情={\"message\":\"权限不足\",\"error\":\"Forbidden\",\"statusCode\":403}\u001b[39m\n\u001b[95m[Nest] 1  - \u001b[39m05/07/2026, 5:46:40 PM \u001b[95m  DEBUG\u001b[39m \u001b[38;5;3m[PermissionService] \u001b[39m\u001b[95m已解析用户 ***647 的权限：角色 1 个，权限 58 个\u001b[39m\n\u001b[95m[Nest] 1  - \u001b[39m05/07/2026, 5:46:40 PM \u001b[95m  DEBUG\u001b[39m \u001b[38;5;3m[PermissionService] \u001b[39m\u001b[95m已解析用户 ***647 的权限：角色 1 个，权限 58 个\u001b[39m\n\u001b[95m[Nest] 1  - \u001b[39m05/07/2026, 5:46:40 PM \u001b[95m  DEBUG\u001b[39m \u001b[38;5;3m[PermissionService] \u001b[39m\u001b[95m已解析用户 ***647 的权限：角色 1 个，权限 58 个\u001b[39m\n\u001b[95m[Nest] 1  - \u001b[39m05/07/2026, 5:46:40 PM \u001b[95m  DEBUG\u001b[39m \u001b[38;5;3m[PermissionService] \u001b[39m\u001b[95m已解析用户 ***647 的权限：角色 1 个，权限 58 个\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=120ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=123ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=124ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=121ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=156ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=140ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=178ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=166ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=127ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=128ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=116ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=197ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=176ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=132ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=155ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=124ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=107ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=93ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=94ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=87ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=92ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=85ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:46 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=92ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=87ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=45ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=79ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=89ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=97ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=59ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=81ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=84ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=90ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=56ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=98ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=87ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=164ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=156ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=132ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=114ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=97ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=93ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=110ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM \u001b[32m    LOG\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[32m[预警接口] class-view/students class=3 students=20 hasMore=true page=1 cost=141ms\u001b[39m\n\u001b[32m[Nest] 1  - \u001b[39m05/07/2026, 5:46:47 PM"
+    }
+  },
+  "smoke": {
+    "login_admin": {
+      "ok": true,
+      "status": 201,
+      "duration_ms": 164.78,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NDciLCJ1c2VyX3R5cGUiOiJhZG1pbiIsImlhdCI6MTc3ODE0NzE5NCwiZXhwIjoxNzc4NzUxOTk0fQ.qIyvy3i7YrGRMl6zV2wf3M3hRlkRWixiEwlA2lOhQ_g",
+          "user_type": "admin",
+          "student_id": null,
+          "roles": [
+            {
+              "role": "sys_admin",
+              "role_name": "系统管理员",
+              "scope_type": "system",
+              "scope_id": null
+            }
+          ],
+          "role_names": [
+            "系统管理员"
+          ],
+          "login_prompt": null,
+          "user": {
+            "id": "647",
+            "name": "系统管理员",
+            "email": null,
+            "mobile": "12345678911",
+            "user_type": "admin"
+          }
+        },
+        "trace_id": "8a44d187-9dec-47e7-b519-19e44b44f168"
+      },
+      "path": "/auth/login_admin",
+      "method": "POST"
+    },
+    "scan_status": {
+      "ok": true,
+      "status": 200,
+      "duration_ms": 8.08,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "interval_minutes": 5,
+          "next_scan_at": "2026-05-07T09:50:54.928Z",
+          "warning_queue": {
+            "enabled": true,
+            "stream": "stream:warning:recalc",
+            "group": "warning-recalc-group",
+            "consumer": "47a23685bf1b-1",
+            "snapshot_bucket": "warnsys-warning-queue",
+            "dlq_bucket": "warnsys-warning-dlq"
+          }
+        },
+        "trace_id": "c484183c-bb89-4dd2-bbca-f1e77e324a45"
+      },
+      "path": "/jobs/scan-status",
+      "method": "GET"
+    },
+    "stats_summary": {
+      "ok": true,
+      "status": 200,
+      "duration_ms": 7.75,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "pendingWarnings": 175,
+          "pendingLeaves": 1,
+          "totalStudents": 143,
+          "recentWarnings": [
+            {
+              "id": "34325",
+              "student_no": "202600600730",
+              "name": "学生30",
+              "warning_level": "yellow",
+              "warning_reason": "缺勤 1 次",
+              "created_at": "2026-05-06T09:30:43.753Z"
+            },
+            {
+              "id": "34324",
+              "student_no": "202600600729",
+              "name": "学生29",
+              "warning_level": "yellow",
+              "warning_reason": "缺勤 1 次",
+              "created_at": "2026-05-06T09:30:43.753Z"
+            },
+            {
+              "id": "34323",
+              "student_no": "202600600728",
+              "name": "学生28",
+              "warning_level": "yellow",
+              "warning_reason": "缺勤 1 次",
+              "created_at": "2026-05-06T09:30:43.753Z"
+            },
+            {
+              "id": "34322",
+              "student_no": "202600600727",
+              "name": "学生27",
+              "warning_level": "yellow",
+              "warning_reason": "缺勤 1 次",
+              "created_at": "2026-05-06T09:30:43.753Z"
+            },
+            {
+              "id": "34321",
+              "student_no": "202600600726",
+              "name": "学生26",
+              "warning_level": "yellow",
+              "warning_reason": "缺勤 1 次",
+              "created_at": "2026-05-06T09:30:43.753Z"
+            }
+          ],
+          "todoList": [
+            {
+              "content": "有 175 条预警待确认",
+              "time": "今日",
+              "type": "warning",
+              "color": "#d4a017",
+              "count": 175
+            },
+            {
+              "content": "有 1 条请假待审批",
+              "time": "今日",
+              "type": "primary",
+              "color": "#409eff",
+              "count": 1
+            }
+          ],
+          "activities": [
+            {
+              "title": "学生30 触发了 缺勤 1 次",
+              "time": "近期"
+            },
+            {
+              "title": "学生29 触发了 缺勤 1 次",
+              "time": "近期"
+            },
+            {
+              "title": "学生28 触发了 缺勤 1 次",
+              "time": "近期"
+            }
+          ]
+        }
+      },
+      "path": "/admin/stats/summary",
+      "method": "GET"
+    },
+    "stats_system": {
+      "ok": true,
+      "status": 200,
+      "duration_ms": 46.01,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "warningStats": {
+            "yellow": 175,
+            "orange": 0,
+            "red": 0,
+            "severe": 0
+          },
+          "totalWarnings": 175,
+          "slaComplianceRate": 0,
+          "slaStats": {
+            "twentyFour": 0,
+            "twentyFourCount": 0,
+            "three": 0,
+            "threeCount": 0,
+            "seven": 0,
+            "sevenCount": 0,
+            "over": 0,
+            "overCount": 0
+          },
+          "orgPerformance": [
+            {
+              "department": "文学院",
+              "studentCount": 31,
+              "warningCount": 93,
+              "redCount": 0,
+              "yellowCount": 93,
+              "resolveRate": 0,
+              "avgResponse": 0,
+              "trendPoints": "5,35 18,35 31,35 44,35 57,35 70,5 83,35",
+              "status": "待改善"
+            },
+            {
+              "department": "人工智能学院",
+              "studentCount": 31,
+              "warningCount": 31,
+              "redCount": 0,
+              "yellowCount": 31,
+              "resolveRate": 0,
+              "avgResponse": 0,
+              "trendPoints": "5,35 18,35 31,35 44,35 57,35 70,5 83,35",
+              "status": "待改善"
+            },
+            {
+              "department": "经济与管理学院",
+              "studentCount": 30,
+              "warningCount": 30,
+              "redCount": 0,
+              "yellowCount": 30,
+              "resolveRate": 0,
+              "avgResponse": 0,
+              "trendPoints": "5,35 18,35 31,35 44,35 57,35 70,5 83,35",
+              "status": "待改善"
+            },
+            {
+              "department": "化学与化工学院",
+              "studentCount": 21,
+              "warningCount": 21,
+              "redCount": 0,
+              "yellowCount": 21,
+              "resolveRate": 0,
+              "avgResponse": 0,
+              "trendPoints": "5,35 18,35 31,35 44,35 57,35 70,5 83,35",
+              "status": "待改善"
+            },
+            {
+              "department": "未知学院",
+              "studentCount": 30,
+              "warningCount": 0,
+              "redCount": 0,
+              "yellowCount": 0,
+              "resolveRate": 0,
+              "avgResponse": 0,
+              "trendPoints": "5,35 18,35 31,35 44,35 57,35 70,35 83,35",
+              "status": "待改善"
+            }
+          ],
+          "weeklyTrend": {
+            "labels": [
+              "第1周",
+              "第2周",
+              "第3周",
+              "第4周",
+              "第5周",
+              "第6周",
+              "第7周",
+              "第8周",
+              "第9周"
+            ],
+            "totals": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              175
+            ],
+            "serious": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "resolved": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "path": "/admin/stats/system",
+      "method": "GET"
+    },
+    "stats_warning_trend": {
+      "ok": true,
+      "status": 200,
+      "duration_ms": 32.44,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "labels": [
+            "2026/05/01",
+            "2026/05/02",
+            "2026/05/03",
+            "2026/05/04",
+            "2026/05/05",
+            "2026/05/06",
+            "2026/05/07"
+          ],
+          "totals": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            175,
+            0
+          ],
+          "reds": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "yellows": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            175,
+            0
+          ],
+          "resolveds": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "path": "/admin/stats/warning-trend",
+      "method": "GET"
+    },
+    "attendance_sessions": {
+      "ok": true,
+      "status": 200,
+      "duration_ms": 9.93,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": [],
+        "trace_id": "d5452b51-ba76-44c4-bd47-26e65098eb51"
+      },
+      "path": "/attendance/sessions?page=1&page_size=20",
+      "method": "GET"
+    },
+    "attendance_session_options": {
+      "ok": true,
+      "status": 200,
+      "duration_ms": 16.03,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "orgs": [
+            {
+              "id": "3",
+              "org_name": "人工智能学院"
+            },
+            {
+              "id": "9",
+              "org_name": "化学与化工学院"
+            },
+            {
+              "id": "2",
+              "org_name": "文学院"
+            },
+            {
+              "id": "7",
+              "org_name": "物理与电子学院"
+            },
+            {
+              "id": "6",
+              "org_name": "经济与管理学院"
+            }
+          ],
+          "classes": [
+            {
+              "id": "3",
+              "class_name": "2025级软件工程一班",
+              "org_id": "3",
+              "major": "软件工程NIIT",
+              "enroll_year": 2025
+            },
+            {
+              "id": "2",
+              "class_name": "25汉语言1班",
+              "org_id": "2",
+              "major": "汉语言",
+              "enroll_year": 2025
+            },
+            {
+              "id": "6",
+              "class_name": "25物电1班",
+              "org_id": "7",
+              "major": "物理",
+              "enroll_year": 2024
+            },
+            {
+              "id": "7",
+              "class_name": "25经管1班",
+              "org_id": "6",
+              "major": "经管",
+              "enroll_year": 2025
+            },
+            {
+              "id": "11",
+              "class_name": "化学一班",
+              "org_id": "9",
+              "major": "化学",
+              "enroll_year": 2026
+            }
+          ]
+        },
+        "trace_id": "034182a4-476e-4fad-8af3-c6d4b23479c0"
+      },
+      "path": "/attendance/session-options",
+      "method": "GET"
+    },
+    "warnings_courses": {
+      "ok": true,
+      "status": 200,
+      "duration_ms": 24.55,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": [
+          {
+            "id": "59",
+            "course_name": "大学物理"
+          },
+          {
+            "id": "18",
+            "course_name": "大学语文1"
+          },
+          {
+            "id": "66",
+            "course_name": "离散数学"
+          },
+          {
+            "id": "57",
+            "course_name": "线性代数"
+          },
+          {
+            "id": "5",
+            "course_name": "经济学"
+          },
+          {
+            "id": "9",
+            "course_name": "计算机组成原理"
+          }
+        ],
+        "trace_id": "87b666c2-9bc5-4467-b286-633caae4e636"
+      },
+      "path": "/warnings/courses",
+      "method": "GET"
+    },
+    "warnings_class_students": {
+      "ok": true,
+      "status": 200,
+      "duration_ms": 17.94,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "class_id": "3",
+          "class_name": "2025级软件工程一班",
+          "org_id": "3",
+          "org_name": "人工智能学院",
+          "week_label": "第9周",
+          "students": [
+            {
+              "id": "750",
+              "student_no": "202524120155",
+              "student_name": "zy",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "630",
+              "student_no": "202600300301",
+              "student_name": "学生1",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "631",
+              "student_no": "202600300302",
+              "student_name": "学生2",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "632",
+              "student_no": "202600300303",
+              "student_name": "学生3",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "633",
+              "student_no": "202600300304",
+              "student_name": "学生4",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "634",
+              "student_no": "202600300305",
+              "student_name": "学生5",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "635",
+              "student_no": "202600300306",
+              "student_name": "学生6",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "636",
+              "student_no": "202600300307",
+              "student_name": "学生7",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "637",
+              "student_no": "202600300308",
+              "student_name": "学生8",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "638",
+              "student_no": "202600300309",
+              "student_name": "学生9",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "639",
+              "student_no": "202600300310",
+              "student_name": "学生10",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "640",
+              "student_no": "202600300311",
+              "student_name": "学生11",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "641",
+              "student_no": "202600300312",
+              "student_name": "学生12",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "642",
+              "student_no": "202600300313",
+              "student_name": "学生13",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "643",
+              "student_no": "202600300314",
+              "student_name": "学生14",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "644",
+              "student_no": "202600300315",
+              "student_name": "学生15",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "645",
+              "student_no": "202600300316",
+              "student_name": "学生16",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "646",
+              "student_no": "202600300317",
+              "student_name": "学生17",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "647",
+              "student_no": "202600300318",
+              "student_name": "学生18",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            },
+            {
+              "id": "648",
+              "student_no": "202600300319",
+              "student_name": "学生19",
+              "gender": "male",
+              "major": "软件工程NIIT",
+              "warning_count": 1,
+              "highest_level": "yellow",
+              "last_warning_at": "2026-05-06T06:04:16.314Z",
+              "processing_status": "",
+              "processing_text": ""
+            }
+          ],
+          "total": 21,
+          "page": 1,
+          "page_size": 20,
+          "has_more": true
+        },
+        "trace_id": "f336dfa4-6da5-4486-a1bd-43d59040ca55"
+      },
+      "path": "/warnings/class-view/students?page=1&page_size=20",
+      "method": "GET"
+    },
+    "students_export_accounts": {
+      "ok": true,
+      "status": 200,
+      "duration_ms": 48.54,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": [
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202524120111",
+            "name": "刘",
+            "account": "202524120111",
+            "initial_password": "",
+            "password_status": "密码已修改或已清空，请重置后发放"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200201",
+            "name": "学生1",
+            "account": "202600200201",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200202",
+            "name": "学生2",
+            "account": "202600200202",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200203",
+            "name": "学生3",
+            "account": "202600200203",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200204",
+            "name": "学生4",
+            "account": "202600200204",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200205",
+            "name": "学生5",
+            "account": "202600200205",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200206",
+            "name": "学生6",
+            "account": "202600200206",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200207",
+            "name": "学生7",
+            "account": "202600200207",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200208",
+            "name": "学生8",
+            "account": "202600200208",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200209",
+            "name": "学生9",
+            "account": "202600200209",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200210",
+            "name": "学生10",
+            "account": "202600200210",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200211",
+            "name": "学生11",
+            "account": "202600200211",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200212",
+            "name": "学生12",
+            "account": "202600200212",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200213",
+            "name": "学生13",
+            "account": "202600200213",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200214",
+            "name": "学生14",
+            "account": "202600200214",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200215",
+            "name": "学生15",
+            "account": "202600200215",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200216",
+            "name": "学生16",
+            "account": "202600200216",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200217",
+            "name": "学生17",
+            "account": "202600200217",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200218",
+            "name": "学生18",
+            "account": "202600200218",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200219",
+            "name": "学生19",
+            "account": "202600200219",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200220",
+            "name": "学生20",
+            "account": "202600200220",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200221",
+            "name": "学生21",
+            "account": "202600200221",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200222",
+            "name": "学生22",
+            "account": "202600200222",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200223",
+            "name": "学生23",
+            "account": "202600200223",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200224",
+            "name": "学生24",
+            "account": "202600200224",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200225",
+            "name": "学生25",
+            "account": "202600200225",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200226",
+            "name": "学生26",
+            "account": "202600200226",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200227",
+            "name": "学生27",
+            "account": "202600200227",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200228",
+            "name": "学生28",
+            "account": "202600200228",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200229",
+            "name": "学生29",
+            "account": "202600200229",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "文学院",
+            "class_name": "25汉语言1班",
+            "student_no": "202600200230",
+            "name": "学生30",
+            "account": "202600200230",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202524120155",
+            "name": "zy",
+            "account": "202524120155",
+            "initial_password": "",
+            "password_status": "密码已修改或已清空，请重置后发放"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300301",
+            "name": "学生1",
+            "account": "202600300301",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300302",
+            "name": "学生2",
+            "account": "202600300302",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300303",
+            "name": "学生3",
+            "account": "202600300303",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300304",
+            "name": "学生4",
+            "account": "202600300304",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300305",
+            "name": "学生5",
+            "account": "202600300305",
+            "initial_password": "",
+            "password_status": "密码已修改或已清空，请重置后发放"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300306",
+            "name": "学生6",
+            "account": "202600300306",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300307",
+            "name": "学生7",
+            "account": "202600300307",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300308",
+            "name": "学生8",
+            "account": "202600300308",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300309",
+            "name": "学生9",
+            "account": "202600300309",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300310",
+            "name": "学生10",
+            "account": "202600300310",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300311",
+            "name": "学生11",
+            "account": "202600300311",
+            "initial_password": "",
+            "password_status": "密码已修改或已清空，请重置后发放"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300312",
+            "name": "学生12",
+            "account": "202600300312",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300313",
+            "name": "学生13",
+            "account": "202600300313",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300314",
+            "name": "学生14",
+            "account": "202600300314",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300315",
+            "name": "学生15",
+            "account": "202600300315",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300316",
+            "name": "学生16",
+            "account": "202600300316",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300317",
+            "name": "学生17",
+            "account": "202600300317",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300318",
+            "name": "学生18",
+            "account": "202600300318",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300319",
+            "name": "学生19",
+            "account": "202600300319",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300320",
+            "name": "学生20",
+            "account": "202600300320",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300321",
+            "name": "学生21",
+            "account": "202600300321",
+            "initial_password": "",
+            "password_status": "密码已修改或已清空，请重置后发放"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300322",
+            "name": "学生22",
+            "account": "202600300322",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300323",
+            "name": "学生23",
+            "account": "202600300323",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300324",
+            "name": "学生24",
+            "account": "202600300324",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300325",
+            "name": "学生25",
+            "account": "202600300325",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300326",
+            "name": "学生26",
+            "account": "202600300326",
+            "initial_password": "",
+            "password_status": "密码已修改或已清空，请重置后发放"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300327",
+            "name": "学生27",
+            "account": "202600300327",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300328",
+            "name": "学生28",
+            "account": "202600300328",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300329",
+            "name": "学生29",
+            "account": "202600300329",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "人工智能学院",
+            "class_name": "2025级软件工程一班",
+            "student_no": "202600300330",
+            "name": "学生30",
+            "account": "202600300330",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600701",
+            "name": "学生1",
+            "account": "202600600701",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600702",
+            "name": "学生2",
+            "account": "202600600702",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600703",
+            "name": "学生3",
+            "account": "202600600703",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600704",
+            "name": "学生4",
+            "account": "202600600704",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600705",
+            "name": "学生5",
+            "account": "202600600705",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600706",
+            "name": "学生6",
+            "account": "202600600706",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600707",
+            "name": "学生7",
+            "account": "202600600707",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600708",
+            "name": "学生8",
+            "account": "202600600708",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600709",
+            "name": "学生9",
+            "account": "202600600709",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600710",
+            "name": "学生10",
+            "account": "202600600710",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600711",
+            "name": "学生11",
+            "account": "202600600711",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600712",
+            "name": "学生12",
+            "account": "202600600712",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600713",
+            "name": "学生13",
+            "account": "202600600713",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600714",
+            "name": "学生14",
+            "account": "202600600714",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600715",
+            "name": "学生15",
+            "account": "202600600715",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600716",
+            "name": "学生16",
+            "account": "202600600716",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600717",
+            "name": "学生17",
+            "account": "202600600717",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600718",
+            "name": "学生18",
+            "account": "202600600718",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600719",
+            "name": "学生19",
+            "account": "202600600719",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600720",
+            "name": "学生20",
+            "account": "202600600720",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600721",
+            "name": "学生21",
+            "account": "202600600721",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600722",
+            "name": "学生22",
+            "account": "202600600722",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600723",
+            "name": "学生23",
+            "account": "202600600723",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600724",
+            "name": "学生24",
+            "account": "202600600724",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600725",
+            "name": "学生25",
+            "account": "202600600725",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600726",
+            "name": "学生26",
+            "account": "202600600726",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600727",
+            "name": "学生27",
+            "account": "202600600727",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600728",
+            "name": "学生28",
+            "account": "202600600728",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600729",
+            "name": "学生29",
+            "account": "202600600729",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "经济与管理学院",
+            "class_name": "25经管1班",
+            "student_no": "202600600730",
+            "name": "学生30",
+            "account": "202600600730",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700601",
+            "name": "学生1",
+            "account": "202600700601",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700602",
+            "name": "学生2",
+            "account": "202600700602",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700603",
+            "name": "学生3",
+            "account": "202600700603",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700604",
+            "name": "学生4",
+            "account": "202600700604",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700605",
+            "name": "学生5",
+            "account": "202600700605",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700606",
+            "name": "学生6",
+            "account": "202600700606",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700607",
+            "name": "学生7",
+            "account": "202600700607",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700608",
+            "name": "学生8",
+            "account": "202600700608",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700609",
+            "name": "学生9",
+            "account": "202600700609",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700610",
+            "name": "学生10",
+            "account": "202600700610",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700611",
+            "name": "学生11",
+            "account": "202600700611",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700612",
+            "name": "学生12",
+            "account": "202600700612",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700613",
+            "name": "学生13",
+            "account": "202600700613",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700614",
+            "name": "学生14",
+            "account": "202600700614",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700615",
+            "name": "学生15",
+            "account": "202600700615",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700616",
+            "name": "学生16",
+            "account": "202600700616",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700617",
+            "name": "学生17",
+            "account": "202600700617",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700618",
+            "name": "学生18",
+            "account": "202600700618",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700619",
+            "name": "学生19",
+            "account": "202600700619",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700620",
+            "name": "学生20",
+            "account": "202600700620",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700621",
+            "name": "学生21",
+            "account": "202600700621",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700622",
+            "name": "学生22",
+            "account": "202600700622",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700623",
+            "name": "学生23",
+            "account": "202600700623",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700624",
+            "name": "学生24",
+            "account": "202600700624",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700625",
+            "name": "学生25",
+            "account": "202600700625",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700626",
+            "name": "学生26",
+            "account": "202600700626",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700627",
+            "name": "学生27",
+            "account": "202600700627",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700628",
+            "name": "学生28",
+            "account": "202600700628",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700629",
+            "name": "学生29",
+            "account": "202600700629",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "物理与电子学院",
+            "class_name": "25物电1班",
+            "student_no": "202600700630",
+            "name": "学生30",
+            "account": "202600700630",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901101",
+            "name": "学生1",
+            "account": "202600901101",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901102",
+            "name": "学生2",
+            "account": "202600901102",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901103",
+            "name": "学生3",
+            "account": "202600901103",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901104",
+            "name": "学生4",
+            "account": "202600901104",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901105",
+            "name": "学生5",
+            "account": "202600901105",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901106",
+            "name": "学生6",
+            "account": "202600901106",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901107",
+            "name": "学生7",
+            "account": "202600901107",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901108",
+            "name": "学生8",
+            "account": "202600901108",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901109",
+            "name": "学生9",
+            "account": "202600901109",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901110",
+            "name": "学生10",
+            "account": "202600901110",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901111",
+            "name": "学生11",
+            "account": "202600901111",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901112",
+            "name": "学生12",
+            "account": "202600901112",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901113",
+            "name": "学生13",
+            "account": "202600901113",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901114",
+            "name": "学生14",
+            "account": "202600901114",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901115",
+            "name": "学生15",
+            "account": "202600901115",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901116",
+            "name": "学生16",
+            "account": "202600901116",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901117",
+            "name": "学生17",
+            "account": "202600901117",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901118",
+            "name": "学生18",
+            "account": "202600901118",
+            "initial_password": "",
+            "password_status": "密码已修改或已清空，请重置后发放"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901119",
+            "name": "学生19",
+            "account": "202600901119",
+            "initial_password": "",
+            "password_status": "密码已修改或已清空，请重置后发放"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901120",
+            "name": "学生20",
+            "account": "202600901120",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901121",
+            "name": "学生21",
+            "account": "202600901121",
+            "initial_password": "",
+            "password_status": "密码已修改或已清空，请重置后发放"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901122",
+            "name": "学生22",
+            "account": "202600901122",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901123",
+            "name": "学生23",
+            "account": "202600901123",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901124",
+            "name": "学生24",
+            "account": "202600901124",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901125",
+            "name": "学生25",
+            "account": "202600901125",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901126",
+            "name": "学生26",
+            "account": "202600901126",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901127",
+            "name": "学生27",
+            "account": "202600901127",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901128",
+            "name": "学生28",
+            "account": "202600901128",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901129",
+            "name": "学生29",
+            "account": "202600901129",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          },
+          {
+            "org_name": "化学与化工学院",
+            "class_name": "化学一班",
+            "student_no": "202600901130",
+            "name": "学生30",
+            "account": "202600901130",
+            "initial_password": "123456789",
+            "password_status": "可直接发放初始密码"
+          }
+        ],
+        "trace_id": "8fa3e48a-4290-4258-a923-85a1c3c94a85"
+      },
+      "path": "/admin/students/export-accounts",
+      "method": "GET"
+    },
+    "student_admin_dashboard": {
+      "ok": true,
+      "status": 200,
+      "duration_ms": 17.66,
+      "body": {
+        "code": 400,
+        "message": "请先绑定学院",
+        "data": null,
+        "trace_id": "b0cc22ad-e3da-4b82-ad45-3ca2bf889605"
+      },
+      "path": "/student-admin/dashboard",
+      "method": "GET"
+    },
+    "teacher_sessions": {
+      "ok": false,
+      "status": 403,
+      "duration_ms": 12.89,
+      "body": {
+        "code": 403,
+        "message": "权限不足",
+        "data": {
+          "message": "权限不足",
+          "error": "Forbidden",
+          "statusCode": 403
+        },
+        "trace_id": "26301058-dfc5-4d97-b8be-bc93386fc4c9"
+      },
+      "path": "/teacher/sessions?page=1&page_size=20",
+      "method": "GET"
+    },
+    "teacher_profile": {
+      "ok": false,
+      "status": 403,
+      "duration_ms": 5.44,
+      "body": {
+        "code": 403,
+        "message": "权限不足",
+        "data": {
+          "message": "权限不足",
+          "error": "Forbidden",
+          "statusCode": 403
+        },
+        "trace_id": "85caf2cd-acfb-44f0-8f74-28bd38a2486b"
+      },
+      "path": "/teacher/profile",
+      "method": "GET"
+    },
+    "head_teacher_stats": {
+      "ok": false,
+      "status": 403,
+      "duration_ms": 6.48,
+      "body": {
+        "code": 403,
+        "message": "权限不足",
+        "data": {
+          "message": "权限不足",
+          "error": "Forbidden",
+          "statusCode": 403
+        },
+        "trace_id": "64beabe4-88e5-4d8d-9e8c-76977a3de57c"
+      },
+      "path": "/head-teacher/stats",
+      "method": "GET"
+    },
+    "class_monitor_stats": {
+      "ok": false,
+      "status": 403,
+      "duration_ms": 5.22,
+      "body": {
+        "code": 403,
+        "message": "权限不足",
+        "data": {
+          "message": "权限不足",
+          "error": "Forbidden",
+          "statusCode": 403
+        },
+        "trace_id": "98b9f06f-f209-400c-a30e-5b839dc68001"
+      },
+      "path": "/class-monitor/stats",
+      "method": "GET"
+    },
+    "warning_cases_summary": {
+      "ok": true,
+      "status": 200,
+      "duration_ms": 9.08,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "total": 0,
+          "pendingAssignment": 0,
+          "pendingIntervention": 0,
+          "inProgress": 0,
+          "completed": 0,
+          "resolved": 0,
+          "avgRiskScore": 0,
+          "topRiskScore": 0
+        },
+        "trace_id": "94da829d-097a-4591-aa52-3c0318792a29"
+      },
+      "path": "/warning-cases/summary",
+      "method": "GET"
+    },
+    "reports_history": {
+      "ok": true,
+      "status": 200,
+      "duration_ms": 9.5,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "list": [
+            {
+              "id": "115",
+              "reportType": "日报表",
+              "date": "4/20/2026, 1:01:37 PM",
+              "status": "completed",
+              "fileName": "日报表-4-20-2026, 1-01-37 PM.csv"
+            },
+            {
+              "id": "114",
+              "reportType": "学期报表",
+              "date": "4/17/2026, 11:10:54 PM",
+              "status": "completed",
+              "fileName": "学期报表-4-17-2026, 11-10-54 PM.csv"
+            },
+            {
+              "id": "113",
+              "reportType": "月报表",
+              "date": "4/17/2026, 11:10:51 PM",
+              "status": "completed",
+              "fileName": "月报表-4-17-2026, 11-10-51 PM.csv"
+            },
+            {
+              "id": "112",
+              "reportType": "周报表",
+              "date": "4/17/2026, 11:10:50 PM",
+              "status": "completed",
+              "fileName": "周报表-4-17-2026, 11-10-50 PM.csv"
+            },
+            {
+              "id": "111",
+              "reportType": "日报表",
+              "date": "4/17/2026, 11:10:26 PM",
+              "status": "completed",
+              "fileName": "日报表-4-17-2026, 11-10-26 PM.csv"
+            }
+          ],
+          "total": 5
+        }
+      },
+      "path": "/admin/reports/history?page=1&page_size=20",
+      "method": "GET"
+    },
+    "audit_operations": {
+      "ok": true,
+      "status": 200,
+      "duration_ms": 33.45,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "list": [
+            {
+              "id": "44655",
+              "operator": "系统管理员",
+              "action": "reports.view",
+              "actionDesc": "查看报表",
+              "resource": "reports",
+              "resourceDesc": "报表",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:34.350Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44654",
+              "operator": "系统管理员",
+              "action": "warning-cases.view",
+              "actionDesc": "查看高风险干预",
+              "resource": "warning-cases",
+              "resourceDesc": "高风险干预",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:34.340Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44653",
+              "operator": "系统管理员",
+              "action": "dashboard.view",
+              "actionDesc": "查看dashboard",
+              "resource": "dashboard",
+              "resourceDesc": "dashboard",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:34.300Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44652",
+              "operator": "系统管理员",
+              "action": "students.export",
+              "actionDesc": "导出学生",
+              "resource": "students",
+              "resourceDesc": "学生",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:34.282Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44651",
+              "operator": "系统管理员",
+              "action": "warnings.view",
+              "actionDesc": "查看预警",
+              "resource": "warnings",
+              "resourceDesc": "预警",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:34.233Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44650",
+              "operator": "系统管理员",
+              "action": "warnings.view",
+              "actionDesc": "查看预警",
+              "resource": "warnings",
+              "resourceDesc": "预警",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:34.215Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44649",
+              "operator": "系统管理员",
+              "action": "attendance.view",
+              "actionDesc": "查看签到",
+              "resource": "attendance",
+              "resourceDesc": "签到",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:34.190Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44648",
+              "operator": "系统管理员",
+              "action": "attendance.view",
+              "actionDesc": "查看签到",
+              "resource": "attendance",
+              "resourceDesc": "签到",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:34.174Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44647",
+              "operator": "系统管理员",
+              "action": "stats.view",
+              "actionDesc": "查看stats",
+              "resource": "stats",
+              "resourceDesc": "stats",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:34.163Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44646",
+              "operator": "系统管理员",
+              "action": "stats.view",
+              "actionDesc": "查看stats",
+              "resource": "stats",
+              "resourceDesc": "stats",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:34.131Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44645",
+              "operator": "系统管理员",
+              "action": "stats.view",
+              "actionDesc": "查看stats",
+              "resource": "stats",
+              "resourceDesc": "stats",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:34.084Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44644",
+              "operator": "系统管理员",
+              "action": "jobs.view",
+              "actionDesc": "查看任务",
+              "resource": "jobs",
+              "resourceDesc": "任务",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:34.077Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44643",
+              "operator": "系统管理员",
+              "action": "attendance.view",
+              "actionDesc": "查看签到",
+              "resource": "attendance",
+              "resourceDesc": "签到",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:26.611Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44642",
+              "operator": "系统管理员",
+              "action": "attendance.view",
+              "actionDesc": "查看签到",
+              "resource": "attendance",
+              "resourceDesc": "签到",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:26.609Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44641",
+              "operator": "系统管理员",
+              "action": "attendance.view",
+              "actionDesc": "查看签到",
+              "resource": "attendance",
+              "resourceDesc": "签到",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:26.595Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44640",
+              "operator": "系统管理员",
+              "action": "attendance.view",
+              "actionDesc": "查看签到",
+              "resource": "attendance",
+              "resourceDesc": "签到",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:26.590Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44639",
+              "operator": "系统管理员",
+              "action": "attendance.view",
+              "actionDesc": "查看签到",
+              "resource": "attendance",
+              "resourceDesc": "签到",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:26.576Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44638",
+              "operator": "系统管理员",
+              "action": "attendance.view",
+              "actionDesc": "查看签到",
+              "resource": "attendance",
+              "resourceDesc": "签到",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:26.573Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44637",
+              "operator": "系统管理员",
+              "action": "attendance.view",
+              "actionDesc": "查看签到",
+              "resource": "attendance",
+              "resourceDesc": "签到",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:26.555Z",
+              "before": null,
+              "after": null
+            },
+            {
+              "id": "44636",
+              "operator": "系统管理员",
+              "action": "attendance.view",
+              "actionDesc": "查看签到",
+              "resource": "attendance",
+              "resourceDesc": "签到",
+              "entityId": "0",
+              "ip": "172.19.0.1",
+              "timestamp": "2026-05-07T09:46:26.523Z",
+              "before": null,
+              "after": null
+            }
+          ],
+          "pagination": {
+            "page": 1,
+            "pageSize": 20,
+            "total": 44655,
+            "totalPages": 2233
+          }
+        }
+      },
+      "path": "/admin/audit/operations?page=1&page_size=20",
+      "method": "GET"
+    },
+    "config_email": {
+      "ok": true,
+      "status": 200,
+      "duration_ms": 9.61,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "enabled": true,
+          "defaultChannels": [
+            "email"
+          ],
+          "smsProvider": "aliyun",
+          "smtpProvider": "qq",
+          "smtpHost": "smtp.qq.com",
+          "smtpPort": 465,
+          "smtpSecure": true,
+          "smtpUser": "3382683787@qq.com",
+          "smtpPass": "hlcaafdblaumcibh",
+          "smtpFrom": "3382683787@qq.com",
+          "smtpFromName": "学业预警系统",
+          "retryCount": 1,
+          "retryIntervalMinutes": 1
+        },
+        "trace_id": "c7369585-c139-4ed6-90e6-497881f479ca"
+      },
+      "path": "/admin/config/email",
+      "method": "GET"
+    },
+    "roles_my": {
+      "ok": true,
+      "status": 200,
+      "duration_ms": 14.96,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": [
+          {
+            "id": "669",
+            "role": "sys_admin",
+            "scope_type": "system"
+          }
+        ]
+      },
+      "path": "/admin/roles/my",
+      "method": "GET"
+    },
+    "permissions_my": {
+      "ok": true,
+      "status": 200,
+      "duration_ms": 6.87,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": [
+          "appeal:handle",
+          "appeal:read",
+          "attendance:checkin",
+          "attendance:manage",
+          "attendance:read",
+          "audit:export",
+          "audit:view",
+          "class:create",
+          "class:delete",
+          "class:manage_students",
+          "class:read",
+          "class:update",
+          "config:update",
+          "config:view",
+          "course:create",
+          "course:delete",
+          "course:read",
+          "course:update",
+          "grade:import",
+          "grade:read",
+          "grade:update",
+          "leave:approve",
+          "leave:read",
+          "notification:config",
+          "notification:read",
+          "notification:send",
+          "permission:manage",
+          "report:export",
+          "report:read",
+          "role:manage",
+          "role:manage_monitor_titles",
+          "rule:create",
+          "rule:delete",
+          "rule:read",
+          "rule:update",
+          "schedule:create",
+          "schedule:delete",
+          "schedule:import",
+          "schedule:read",
+          "schedule:update",
+          "stats:view",
+          "student:create",
+          "student:delete",
+          "student:export",
+          "student:import",
+          "student:preference",
+          "student:read",
+          "student:update",
+          "system:config",
+          "teacher:create",
+          "teacher:delete",
+          "teacher:read",
+          "teacher:update",
+          "user:manage",
+          "warning:acknowledge",
+          "warning:close",
+          "warning:manage",
+          "warning:read"
+        ]
+      },
+      "path": "/admin/permissions/my",
+      "method": "GET"
+    }
+  },
+  "pressure": {
+    "login_admin": {
+      "name": "login_admin",
+      "count": 30,
+      "ok_count": 30,
+      "fail_count": 0,
+      "min_ms": 771.25,
+      "avg_ms": 1197.91,
+      "p50_ms": 1183.53,
+      "p95_ms": 1426.3,
+      "p99_ms": 1571.6,
+      "max_ms": 1603.13,
+      "sample_failures": [],
+      "throughput_rps": 4.95,
+      "concurrency": 6
+    },
+    "stats_summary": {
+      "name": "stats_summary",
+      "count": 60,
+      "ok_count": 60,
+      "fail_count": 0,
+      "min_ms": 27.23,
+      "avg_ms": 106.59,
+      "p50_ms": 109.0,
+      "p95_ms": 146.52,
+      "p99_ms": 153.38,
+      "max_ms": 156.34,
+      "sample_failures": [],
+      "throughput_rps": 98.54,
+      "concurrency": 12
+    },
+    "stats_system": {
+      "name": "stats_system",
+      "count": 60,
+      "ok_count": 60,
+      "fail_count": 0,
+      "min_ms": 346.56,
+      "avg_ms": 878.75,
+      "p50_ms": 905.91,
+      "p95_ms": 1139.31,
+      "p99_ms": 1237.01,
+      "max_ms": 1306.37,
+      "sample_failures": [],
+      "throughput_rps": 13.25,
+      "concurrency": 12
+    },
+    "attendance_sessions": {
+      "name": "attendance_sessions",
+      "count": 60,
+      "ok_count": 60,
+      "fail_count": 0,
+      "min_ms": 18.27,
+      "avg_ms": 105.93,
+      "p50_ms": 111.56,
+      "p95_ms": 142.26,
+      "p99_ms": 151.8,
+      "max_ms": 154.6,
+      "sample_failures": [],
+      "throughput_rps": 98.79,
+      "concurrency": 12
+    },
+    "warnings_class_students": {
+      "name": "warnings_class_students",
+      "count": 60,
+      "ok_count": 60,
+      "fail_count": 0,
+      "min_ms": 183.72,
+      "avg_ms": 320.8,
+      "p50_ms": 320.95,
+      "p95_ms": 378.44,
+      "p99_ms": 402.6,
+      "max_ms": 418.64,
+      "sample_failures": [],
+      "throughput_rps": 33.66,
+      "concurrency": 12
+    },
+    "scan_status": {
+      "name": "scan_status",
+      "count": 60,
+      "ok_count": 60,
+      "fail_count": 0,
+      "min_ms": 9.48,
+      "avg_ms": 143.84,
+      "p50_ms": 151.99,
+      "p95_ms": 215.6,
+      "p99_ms": 228.36,
+      "max_ms": 244.36,
+      "sample_failures": [],
+      "throughput_rps": 77.44,
+      "concurrency": 12
+    },
+    "teacher_sessions": {
+      "name": "teacher_sessions",
+      "count": 60,
+      "ok_count": 0,
+      "fail_count": 60,
+      "min_ms": 8.66,
+      "avg_ms": 96.89,
+      "p50_ms": 107.42,
+      "p95_ms": 153.53,
+      "p99_ms": 158.03,
+      "max_ms": 158.27,
+      "sample_failures": [
+        {
+          "ok": false,
+          "status": 403,
+          "duration_ms": 8.66,
+          "body": {
+            "code": 403,
+            "message": "权限不足",
+            "data": {
+              "message": "权限不足",
+              "error": "Forbidden",
+              "statusCode": 403
+            },
+            "trace_id": "a993c75b-4520-4234-b3e6-e3272291f287"
+          },
+          "path": "/teacher/sessions?page=1&page_size=20",
+          "method": "GET"
+        },
+        {
+          "ok": false,
+          "status": 403,
+          "duration_ms": 14.3,
+          "body": {
+            "code": 403,
+            "message": "权限不足",
+            "data": {
+              "message": "权限不足",
+              "error": "Forbidden",
+              "statusCode": 403
+            },
+            "trace_id": "bb1a4063-413a-4832-aece-77c20bca6078"
+          },
+          "path": "/teacher/sessions?page=1&page_size=20",
+          "method": "GET"
+        },
+        {
+          "ok": false,
+          "status": 403,
+          "duration_ms": 17.68,
+          "body": {
+            "code": 403,
+            "message": "权限不足",
+            "data": {
+              "message": "权限不足",
+              "error": "Forbidden",
+              "statusCode": 403
+            },
+            "trace_id": "410df932-ad74-44ad-b10a-f572720730cf"
+          },
+          "path": "/teacher/sessions?page=1&page_size=20",
+          "method": "GET"
+        }
+      ],
+      "throughput_rps": 113.62,
+      "concurrency": 12
+    },
+    "audit_operations": {
+      "name": "audit_operations",
+      "count": 60,
+      "ok_count": 60,
+      "fail_count": 0,
+      "min_ms": 102.28,
+      "avg_ms": 360.31,
+      "p50_ms": 362.86,
+      "p95_ms": 526.95,
+      "p99_ms": 654.97,
+      "max_ms": 685.1,
+      "sample_failures": [],
+      "throughput_rps": 31.86,
+      "concurrency": 12
+    }
+  },
+  "notes": []
+}

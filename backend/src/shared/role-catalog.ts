@@ -30,7 +30,7 @@ type RegisterableRole = {
   scopeType: string;
 };
 
-const ROLE_ALIAS_MAP: Record<string, string> = {
+export const ROLE_ALIAS_MAP: Record<string, string> = {
   monitor: 'class_monitor',
   dean: 'teaching_admin',
   admin: 'sys_admin',

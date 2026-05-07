@@ -42,6 +42,7 @@ export class AttendanceSchedulerService implements OnModuleInit, OnModuleDestroy
   private currentIntervalMinutes = this.defaultIntervalMinutes;
   private nextScanAt: Date | null = null;
   private readonly sessionSettledTtlSeconds = 24 * 60 * 60;
+  private processing = false;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -64,7 +65,6 @@ export class AttendanceSchedulerService implements OnModuleInit, OnModuleDestroy
   private async startScheduler() {
     this.logger.log('开始启动签到结束自动扫描调度器');
     await this.runScheduledScan();
-    await this.scheduleNextRun();
   }
 
   private stopScheduler() {
@@ -75,21 +75,17 @@ export class AttendanceSchedulerService implements OnModuleInit, OnModuleDestroy
     this.nextScanAt = null;
   }
 
-  private async scheduleNextRun() {
+  private async scheduleNextRun(intervalMinutes?: number) {
     try {
-      const intervalMinutes = await this.configService.getNumberConfig(
-        'warning.scanIntervalMinutes',
-        this.defaultIntervalMinutes,
-      );
-      const intervalMs = intervalMinutes * 60 * 1000;
-      this.currentIntervalMinutes = intervalMinutes;
+      const resolvedIntervalMinutes = intervalMinutes || this.defaultIntervalMinutes;
+      const intervalMs = resolvedIntervalMinutes * 60 * 1000;
+      this.currentIntervalMinutes = resolvedIntervalMinutes;
       this.nextScanAt = new Date(Date.now() + intervalMs);
 
-      this.logger.log(`下次签到扫描将在 ${intervalMinutes} 分钟后执行`);
+      this.logger.log(`下次签到扫描将在 ${resolvedIntervalMinutes} 分钟后执行`);
 
       this.timer = setTimeout(async () => {
         await this.runScheduledScan();
-        await this.scheduleNextRun();
       }, intervalMs);
     } catch (error: any) {
       this.logger.error(
@@ -101,19 +97,27 @@ export class AttendanceSchedulerService implements OnModuleInit, OnModuleDestroy
 
       this.timer = setTimeout(async () => {
         await this.runScheduledScan();
-        await this.scheduleNextRun();
       }, this.defaultIntervalMinutes * 60 * 1000);
     }
   }
 
   private async runScheduledScan() {
-    const dbHealthy = await this.prisma.checkHealth();
-    if (!dbHealthy) {
-      this.logger.warn('数据库不可用，跳过本轮签到扫描');
-      return;
-    }
+    try {
+      const dbHealthy = await this.prisma.checkHealth();
+      if (!dbHealthy) {
+        this.logger.warn('数据库不可用，跳过本轮签到扫描');
+        return;
+      }
 
-    await this.handleEndedSessions();
+      await this.handleEndedSessions();
+    } finally {
+      this.scheduleNextRun(this.currentIntervalMinutes).catch((error: any) => {
+        this.logger.error(
+          '调度下一次签到扫描失败',
+          error?.stack || error?.message || String(error),
+        );
+      });
+    }
   }
 
   @Cron('0 30 3 * * *', { timeZone: 'Asia/Shanghai' })
@@ -254,17 +258,40 @@ export class AttendanceSchedulerService implements OnModuleInit, OnModuleDestroy
   }
 
   async processEndedSessionsNow() {
-    const lockResult = await this.redis.withLock(
-      SCHEDULER_LOCK_KEY,
-      SCHEDULER_LOCK_TTL_MS,
-      () => this.processEndedSessionsInternal(),
-    );
-
-    if (!lockResult.locked) {
+    if (this.processing) {
       return null;
     }
 
-    return lockResult.result || null;
+    this.processing = true;
+    try {
+      const result = await this.processEndedSessionsInternal();
+      if (
+        result &&
+        Array.isArray((result as any).pending_warning_targets) &&
+        (result as any).pending_warning_targets.length > 0
+      ) {
+        const queueStartedAt = Date.now();
+        const queueResult = await this.warningQueueService.scheduleAffectedRecords(
+          (result as any).pending_warning_targets,
+          'scheduler.process_ended_sessions_async',
+        );
+        this.logger.log(
+          `[scheduler][async-warning] ended-sessions queued mode=${queueResult?.mode || 'unknown'} enqueued=${Number(queueResult?.warnings_enqueued || 0)} deduped=${Number(queueResult?.warnings_deduped || 0)} cost=${Date.now() - queueStartedAt}ms`,
+        );
+        delete (result as any).pending_warning_targets;
+        return {
+          ...result,
+          warnings_generated: Number(queueResult?.warnings_generated || 0),
+          warnings_enqueued: Number(queueResult?.warnings_enqueued || 0),
+          warnings_deduped: Number(queueResult?.warnings_deduped || 0),
+          warning_queue_mode: String(queueResult?.mode || 'queued'),
+        };
+      }
+
+      return result;
+    } finally {
+      this.processing = false;
+    }
   }
 
   getScanStatus() {
@@ -827,30 +854,9 @@ export class AttendanceSchedulerService implements OnModuleInit, OnModuleDestroy
     }
 
     if (affectedRecords.size > 0) {
-      try {
-        const targetGroups = this.groupTargetsBySession(Array.from(affectedRecords.values()));
-        for (const [sessionIdText, targets] of targetGroups.entries()) {
-          const result = await this.processSessionWarningTargets(
-            BigInt(sessionIdText),
-            targets,
-            'scheduler.process_ended_sessions',
-          );
-          this.logger.log(
-            `调度器课次 ${sessionIdText} 预警编排完成: 模式=${result.warning_queue_mode} 新建=${result.warnings_generated} 入队=${result.warnings_enqueued} 去重=${result.warnings_deduped} 锁定=${result.targets_locked} 可结算=${result.can_settle}`,
-          );
-          if (result.can_settle) {
-            sessionsToSettle.add(sessionIdText);
-          }
-        }
-        this.logger.log(
-          `预警重算已派发: 目标=${affectedRecords.size} 课次=${targetGroups.size} 可结算=${sessionsToSettle.size}`,
-        );
-      } catch (error: any) {
-        this.logger.error(
-          `预警重算派发失败，将在下次调度中重试: ${error?.message || error}`,
-          error?.stack,
-        );
-      }
+      this.logger.log(
+        `预警重算改为异步入队: 目标=${affectedRecords.size} 课次=${this.groupTargetsBySession(Array.from(affectedRecords.values())).size}`,
+      );
     }
 
     if (sessionsToRefresh.size > 0) {
@@ -868,6 +874,7 @@ export class AttendanceSchedulerService implements OnModuleInit, OnModuleDestroy
     const result = {
       sessions_processed: processedCount,
       absent_records_generated: absentCount,
+      pending_warning_targets: Array.from(affectedRecords.values()),
     };
 
     const elapsedMs = Date.now() - startTime;

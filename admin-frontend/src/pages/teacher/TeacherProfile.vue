@@ -202,6 +202,7 @@ import {
   updateTeacherProfile,
 } from '../../api';
 import { loadUploadedFileObjectUrls, revokeObjectUrls } from '../../lib/uploaded-files';
+import { formatDateTime } from '../../lib/format';
 
 const router = useRouter();
 const saving = ref(false);
@@ -247,12 +248,7 @@ const availableOrgs = computed(() =>
   orgOptions.value.filter((item) => String(item.id) !== String(profile.value.org_id || '')),
 );
 
-const formatDateTime = (value?: string | Date | null) => {
-  if (!value) {
-    return '-';
-  }
-  return new Date(value).toLocaleString('zh-CN');
-};
+
 
 const getRequestStatusText = (status: string) => {
   const map: Record<string, string> = {

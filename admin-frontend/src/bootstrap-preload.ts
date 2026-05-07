@@ -6,7 +6,7 @@ import {
 } from './api';
 import { setPreloadedValue } from './preload-cache';
 
-const PRELOAD_TIMEOUT_MS = 8000;
+const PRELOAD_TIMEOUT_MS = 3000;
 
 const withTimeout = async <T>(promise: Promise<T>, timeoutMs = PRELOAD_TIMEOUT_MS) =>
   await Promise.race([

@@ -257,12 +257,12 @@ export class FeedbackController {
     const source = this.normalizeText(dto.source || 'admin-frontend', 48) || 'admin-frontend';
     const pagePath = this.normalizeText(dto.page_path, 255);
     const pageTitle = this.normalizeText(dto.page_title, 128);
-    const userId = this.parseBigInt(req.user.sub, '用户 ID');
+    const userId = this.parseBigInt(req.user.userId, '用户 ID');
     const imageFileIds = Array.from(
       new Map(
         [
-          ...parseOptionalFileIds(dto.image_file_ids, '鍥剧墖鏂囦欢'),
-          ...parseOptionalFileIds(dto.image_file_id, '鍥剧墖鏂囦欢'),
+          ...parseOptionalFileIds(dto.image_file_ids, '图片文件'),
+          ...parseOptionalFileIds(dto.image_file_id, '图片文件'),
         ].map((item) => [item.toString(), item]),
       ).values(),
     );
@@ -507,7 +507,7 @@ export class FeedbackController {
     const feedbackId = this.parseBigInt(id, '反馈 ID');
     const status = this.normalizeStatus(dto.status, false) as FeedbackStatus;
     const handleNote = this.normalizeText(dto.handle_note, 2000);
-    const operatorId = this.parseBigInt(req.user.sub, '用户 ID');
+    const operatorId = this.parseBigInt(req.user.userId, '用户 ID');
 
     const [event, operator] = await Promise.all([
       this.prisma.security_events.findUnique({

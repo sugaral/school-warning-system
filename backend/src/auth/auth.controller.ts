@@ -114,6 +114,17 @@ class ResetPasswordDto {
 @Controller('auth')
 @UseGuards(ThrottlerGuard)
 export class AuthController {
+  private loginSecurityCache:
+    | { value: ReturnType<AuthController['normalizeLoginSecurityConfig']>; expiresAt: number }
+    | null = null;
+  private loginPromptCache:
+    | { value: { enabled: boolean; title: string; content: string }; expiresAt: number }
+    | null = null;
+  private roleNameMapCache:
+    | { value: Record<string, string>; expiresAt: number }
+    | null = null;
+  private readonly localCacheTtlMs = 30_000;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -207,6 +218,23 @@ export class AuthController {
       return fallback;
     }
     return Math.min(max, Math.max(min, Math.round(parsed)));
+  }
+
+  private getCacheEntry<T>(entry: { value: T; expiresAt: number } | null): T | null {
+    if (!entry) {
+      return null;
+    }
+    if (entry.expiresAt <= Date.now()) {
+      return null;
+    }
+    return entry.value;
+  }
+
+  private setCacheEntry<T>(value: T) {
+    return {
+      value,
+      expiresAt: Date.now() + this.localCacheTtlMs,
+    };
   }
 
   private async loadWeChatMiniappConfig() {
@@ -516,8 +544,15 @@ export class AuthController {
   }
 
   private async getRoleNameMap() {
+    const cached = this.getCacheEntry(this.roleNameMapCache);
+    if (cached) {
+      return cached;
+    }
+
     const roleCatalog = await loadRoleCatalog(this.prisma);
-    return toRoleNameMap(roleCatalog);
+    const roleNameMap = toRoleNameMap(roleCatalog);
+    this.roleNameMapCache = this.setCacheEntry(roleNameMap);
+    return roleNameMap;
   }
 
   private normalizeLoginSecurityConfig(
@@ -556,19 +591,31 @@ export class AuthController {
   }
 
   private async getLoginSecurityConfig() {
+    const cached = this.getCacheEntry(this.loginSecurityCache);
+    if (cached) {
+      return cached;
+    }
+
     const rawSecurity = await this.configService.getConfig('security', {});
     const rawNotification = await this.configService.getSectionConfig('email', {}, ['notification']);
     const rawSms = await this.configService.getSectionConfig('sms', {});
     const emailConfig = normalizeEmailConfig(rawNotification);
     const smsConfig = normalizeSmsConfig(rawSms);
-    return this.normalizeLoginSecurityConfig(
+    const config = this.normalizeLoginSecurityConfig(
       rawSecurity,
       isEmailConfigReady(emailConfig),
       isSmsConfigReady(smsConfig),
     );
+    this.loginSecurityCache = this.setCacheEntry(config);
+    return config;
   }
 
   private async getLoginPromptConfig() {
+    const cached = this.getCacheEntry(this.loginPromptCache);
+    if (cached) {
+      return cached;
+    }
+
     const rawPrompt = await this.configService.getSectionConfig(
       'loginPrompt',
       {},
@@ -580,11 +627,13 @@ export class AuthController {
     const title = String(rawPrompt?.title || '').trim() || '系统提示';
     const content = String(rawPrompt?.content || '').trim();
 
-    return {
+    const config = {
       enabled,
       title,
       content,
     };
+    this.loginPromptCache = this.setCacheEntry(config);
+    return config;
   }
 
   private parseChallengeId(rawValue: unknown, fieldName: string) {
@@ -700,11 +749,13 @@ export class AuthController {
       return null;
     }
 
+    const normalizedEmail = this.normalizeEmail(normalizedAccount);
+
     let user = await this.prisma.users.findFirst({
       where: {
         OR: [
           { mobile: normalizedAccount },
-          { email: this.normalizeEmail(normalizedAccount) },
+          { email: normalizedEmail },
         ],
       },
       include: {
@@ -717,7 +768,7 @@ export class AuthController {
         where: {
           OR: [
             { student_no: normalizedAccount },
-            { email: this.normalizeEmail(normalizedAccount) },
+            { email: normalizedEmail },
             { mobile: normalizedAccount },
           ],
         },
@@ -753,7 +804,7 @@ export class AuthController {
 
   private async verifyAccountPassword(account: string, password: string) {
     const user = await this.getUserByAccount(account);
-    if (!user?.password_hash) {
+    if (!user?.password_hash || !isBcryptHash(user.password_hash)) {
       return null;
     }
 
@@ -762,7 +813,6 @@ export class AuthController {
       return null;
     }
 
-    await this.ensurePasswordUpgraded(user.id, password, user.password_hash);
     return user;
   }
 
@@ -1942,7 +1992,7 @@ export class AuthController {
 
   @Public()
   @Post('login_admin')
-  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @Throttle({ default: { limit: 120, ttl: 60_000 } })
   async loginAdmin(@Body() dto: LoginAdminDto, @Req() req: any) {
     let account = '';
     try {
@@ -1969,13 +2019,15 @@ export class AuthController {
     }
     const user = await this.verifyAccountPassword(account, password);
     if (!user) {
-      await this.prisma.security_events.create({
+      void this.prisma.security_events.create({
         data: {
           event_type: 'login_failed',
           detail_json: { reason: 'account_or_password_invalid', account } as any,
           ip: req.ip,
           user_id: null,
         },
+      }).catch((error) => {
+        this.logger.warn(`[login_admin] write login_failed event failed: ${String(error)}`);
       });
       return {
         code: 4010,
@@ -2028,7 +2080,7 @@ export class AuthController {
         await this.verifyCaptcha(dto.captcha_id, dto.captcha_code || '');
       }
     } catch (error: any) {
-      await this.prisma.security_events.create({
+      void this.prisma.security_events.create({
         data: {
           event_type: 'mfa_failed',
           detail_json: {
@@ -2038,6 +2090,8 @@ export class AuthController {
           ip: req.ip,
           user_id: user.id,
         },
+      }).catch((writeError) => {
+        this.logger.warn(`[login_admin] write mfa_failed event failed: ${String(writeError)}`);
       });
       return {
         code: 4011,
@@ -2072,7 +2126,7 @@ export class AuthController {
     }
     if (user.user_type === 'student') {
       const studentWxOpenid = String(
-        user?.student_profile?.wx_openid || user?.wx_openid || '',
+        (user as any)?.student_profile?.wx_openid || user?.wx_openid || '',
       ).trim();
       if (studentWxOpenid) {
         payload.wx_openid = studentWxOpenid;
@@ -2093,7 +2147,7 @@ export class AuthController {
       role: normalizeRoleCode(item.role),
     }));
 
-    await this.prisma.security_events.create({
+    void this.prisma.security_events.create({
       data: {
         event_type: 'login_success',
         detail_json: {
@@ -2105,6 +2159,8 @@ export class AuthController {
         ip: req.ip,
         user_id: user.id,
       },
+    }).catch((error) => {
+      this.logger.warn(`[login_admin] write login_success event failed: ${String(error)}`);
     });
 
     return {

@@ -239,7 +239,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import MultiImageUploadField from '../../components/MultiImageUploadField.vue';
@@ -250,18 +250,16 @@ import {
   listStudentClassChangeRequests,
 } from '../../api';
 import { setStudentBoundState } from '../../lib/binding';
-import { loadUploadedFileObjectUrls, revokeObjectUrls } from '../../lib/uploaded-files';
+import { formatDateTime } from '../../lib/format';
+import { usePreview } from '../../composables/usePreview';
 
 const router = useRouter();
+const { previewVisible, previewLoading, previewTitle, previewUrls, openPreview } = usePreview();
 const saving = ref(false);
 const editing = ref(false);
 const profileLoaded = ref(false);
 const classChangeDialogVisible = ref(false);
 const submittingClassChange = ref(false);
-const previewVisible = ref(false);
-const previewLoading = ref(false);
-const previewTitle = ref('');
-const previewUrls = ref<string[]>([]);
 const availableClasses = ref<any[]>([]);
 const classChangeRequests = ref<any[]>([]);
 
@@ -318,10 +316,7 @@ const goToBind = () => {
   router.push('/bind-class');
 };
 
-const formatDateTime = (value?: string | Date | null) => {
-  if (!value) return '-';
-  return new Date(value).toLocaleString('zh-CN');
-};
+
 
 const getRequestStatusText = (status: string) => {
   const map: Record<string, string> = {
@@ -502,29 +497,8 @@ const submitClassChangeRequest = async () => {
   }
 };
 
-const openPreview = async (fileIds: string[] | string, title: string) => {
-  previewVisible.value = true;
-  previewLoading.value = true;
-  previewTitle.value = title;
-  revokeObjectUrls(previewUrls.value);
-  previewUrls.value = [];
-
-  try {
-    previewUrls.value = await loadUploadedFileObjectUrls(fileIds);
-  } catch (error: any) {
-    previewVisible.value = false;
-    ElMessage.error(error?.message || '加载图片失败');
-  } finally {
-    previewLoading.value = false;
-  }
-};
-
 onMounted(async () => {
   await Promise.all([loadProfile(), loadAvailableClasses(), loadClassChangeRequests()]);
-});
-
-onBeforeUnmount(() => {
-  revokeObjectUrls(previewUrls.value);
 });
 </script>
 

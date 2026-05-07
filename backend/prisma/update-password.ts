@@ -34,7 +34,7 @@ async function main() {
   console.log(`用户: ${user.name}`);
   console.log(`手机号: ${user.mobile}`);
   console.log(`邮箱: ${user.email}`);
-  console.log(`新密码: ${newPassword}`);
+  console.log(`新密码: ******${newPassword.slice(-4)}`);
 }
 
 main()

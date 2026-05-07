@@ -1,4 +1,4 @@
-﻿import {
+import {
   Body,
   Controller,
   Get,
@@ -32,6 +32,30 @@ type WarningScopeContext = {
   scopedOrgIds: bigint[];
   scopedClassIds: bigint[];
   studentId?: bigint;
+};
+
+type WarningListRow = {
+  id: bigint;
+  student_id: bigint;
+  class_id: bigint;
+  org_id: bigint;
+  level: string;
+  metric: string;
+  window: string;
+  period_start: Date;
+  period_end: Date;
+  rule_id: bigint;
+  rule_snapshot_json: any;
+  trigger_summary: string;
+  trigger_detail_json: any;
+  status: string;
+  created_at: Date;
+  updated_at: Date;
+  acknowledged_at: Date | null;
+  acknowledged_by: bigint | null;
+  closed_at: Date | null;
+  closed_by: bigint | null;
+  close_note: string | null;
 };
 
 const DEFAULT_TZ = 'Asia/Shanghai';
@@ -531,12 +555,18 @@ export class WarningsController {
     @Query('page_size') pageSize = '20',
     @Req() req: any,
   ) {
+    const reqStartedAt = Date.now();
+    const step = (label: string) => {
+      this.logger.warn(`[warnings.list] ${label} +${Date.now() - reqStartedAt}ms`);
+    };
+    step('start');
     const pageNumber = parseInt(page, 10) || 1;
     const size = parseInt(pageSize, 10) || 20;
     const userId = this.getRequestUserId(req);
     const userRoles = await this.prisma.user_roles.findMany({
       where: { user_id: userId },
     });
+    step('user_roles');
     const roles = userRoles.map((item: any) => item.role);
 
     const where: any = {};
@@ -651,70 +681,267 @@ export class WarningsController {
     if (courseId && courseId !== 'all') {
       where.course_id = BigInt(courseId);
     }
+    step('scope_ready');
 
-    const warningRefs = normalizedScope === 'active'
-      ? await (this.prisma as any).warning_current_states.findMany({
-          where,
-          select: {
-            id: true,
-            student_id: true,
-            metric: true,
-            created_at: true,
-            trigger_detail_json: true,
-          },
-          orderBy: [{ updated_at: 'desc' }, { id: 'desc' }],
-        })
-      : await this.prisma.warnings.findMany({
-          where,
-          select: {
-            id: true,
-            student_id: true,
-            metric: true,
-            created_at: true,
-            trigger_detail_json: true,
-          },
-          orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
-        });
+    const orderingField = normalizedScope === 'active' ? 'updated_at' : 'created_at';
+    const paginationSource = normalizedScope === 'active' ? 'warning_current_states' : 'warnings';
+    const whereSql = this.buildWarningPaginationWhereSql(where);
+    const whereParams = this.buildWarningPaginationParams(where);
 
-    if (warningRefs.length === 0) {
+    const warningTotalsRows = await this.prisma.$queryRawUnsafe<Array<{ warning_total: number | bigint | string | null }>>(
+      `SELECT COUNT(*) AS warning_total FROM ${paginationSource} ${whereSql}`,
+      ...whereParams,
+    );
+    step('warning_total');
+    const warningTotal = Number(warningTotalsRows?.[0]?.warning_total || 0);
+    if (warningTotal === 0) {
       return this.emptyWarningList(pageNumber, size, req.trace_id);
     }
 
-    const orderedStudentIds: bigint[] = [];
-    const seenStudentIds = new Set<string>();
-    for (const item of warningRefs) {
-      const studentKey = item.student_id.toString();
-      if (seenStudentIds.has(studentKey)) {
-        continue;
+    const studentTotalRows = await this.prisma.$queryRawUnsafe<Array<{ total: number | bigint | string | null }>>(
+      `SELECT COUNT(DISTINCT student_id) AS total FROM ${paginationSource} ${whereSql}`,
+      ...whereParams,
+    );
+    step('student_total');
+    const total = Number(studentTotalRows?.[0]?.total || 0);
+
+    const skip = (pageNumber - 1) * size;
+    if (normalizedScope === 'active') {
+      if (skip >= warningTotal) {
+        return this.emptyWarningList(pageNumber, size, req.trace_id);
       }
-      seenStudentIds.add(studentKey);
-      orderedStudentIds.push(item.student_id);
+
+      const warnings = await (this.prisma as any).warning_current_states.findMany({
+        where,
+        select: {
+          id: true,
+          student_id: true,
+          class_id: true,
+          org_id: true,
+          level: true,
+          metric: true,
+          window: true,
+          period_start: true,
+          period_end: true,
+          rule_id: true,
+          rule_snapshot_json: true,
+          trigger_summary: true,
+          trigger_detail_json: true,
+          status: true,
+          created_at: true,
+          updated_at: true,
+          acknowledged_at: true,
+          acknowledged_by: true,
+          course_id: true,
+          course_key: true,
+          current_count: true,
+        },
+        orderBy: [{ updated_at: 'desc' }, { id: 'desc' }],
+        skip,
+        take: size,
+      });
+      step('warnings_findMany');
+
+      const violationTotal = pageNumber === 1 && size <= 50
+        ? this.computeDedupedViolationTotal(warnings as any)
+        : null;
+
+      const studentIds = this.uniqueBigInts(warnings.map((item: any) => item.student_id));
+      const classIds = this.uniqueBigInts(warnings.map((item: any) => item.class_id));
+      const processingMap = await this.warningProcessingService.getStudentProcessingMap(studentIds);
+      step('processing_map');
+
+      const classes = classIds.length > 0
+        ? await this.prisma.classes.findMany({
+            where: { id: { in: classIds } },
+            select: {
+              id: true,
+              class_name: true,
+              org_id: true,
+              counselor_user_id: true,
+            },
+          })
+        : [];
+      const teacherIds = this.uniqueBigInts(
+        classes.map((item: any) => item.counselor_user_id).filter((item: any): item is bigint => Boolean(item)),
+      );
+      const orgIds = this.uniqueBigInts([
+        ...warnings.map((item: any) => item.org_id),
+        ...classes.map((item: any) => item.org_id),
+      ]);
+
+      const [students, teachers, orgs] = await Promise.all([
+        studentIds.length > 0
+          ? this.prisma.student_profiles.findMany({
+              where: { id: { in: studentIds } },
+              select: {
+                id: true,
+                users: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            })
+          : Promise.resolve([]),
+        teacherIds.length > 0
+          ? this.prisma.users.findMany({
+              where: { id: { in: teacherIds } },
+              select: { id: true, name: true },
+            })
+          : Promise.resolve([]),
+        orgIds.length > 0
+          ? this.prisma.orgs.findMany({
+              where: { id: { in: orgIds } },
+              select: { id: true, name: true },
+            })
+          : Promise.resolve([]),
+      ]);
+      step('students_classes');
+      step('teachers_orgs');
+
+      const studentMap = new Map<string, any>(students.map((item: any) => [item.id.toString(), item]));
+      const classMap = new Map<string, any>(classes.map((item: any) => [item.id.toString(), item]));
+      const teacherMap = new Map<string, any>(teachers.map((item: any) => [item.id.toString(), item]));
+      const orgMap = new Map<string, any>(orgs.map((item: any) => [item.id.toString(), item]));
+
+      const items = warnings.map((warning: any) => {
+        const student = studentMap.get(warning.student_id.toString());
+        const classInfo = classMap.get(warning.class_id.toString());
+        const teacher = classInfo?.counselor_user_id
+          ? teacherMap.get(classInfo.counselor_user_id.toString())
+          : null;
+        const detail = (warning.trigger_detail_json as any) || {};
+        const org = orgMap.get((classInfo?.org_id || warning.org_id).toString());
+        const displayStatus = this.getDisplayStatus(warning);
+
+        return {
+          id: warning.id.toString(),
+          student_id: warning.student_id.toString(),
+          class_id: warning.class_id.toString(),
+          org_id: warning.org_id.toString(),
+          level: warning.level,
+          metric: warning.metric,
+          window: warning.window,
+          period_start: warning.period_start,
+          period_end: warning.period_end,
+          rule_id: warning.rule_id.toString(),
+          rule_snapshot_json: warning.rule_snapshot_json,
+          trigger_summary: warning.trigger_summary,
+          trigger_detail_json: warning.trigger_detail_json,
+          course_id: detail.course_id || (warning.course_id ? warning.course_id.toString() : ''),
+          course_name: detail.course_name || '',
+          violation_count: Number(detail.violation_count || warning.current_count || 0),
+          status: warning.status,
+          display_status: displayStatus.display_status,
+          display_status_text: displayStatus.display_status_text,
+          created_at: warning.created_at,
+          updated_at: warning.updated_at,
+          acknowledged_at: warning.acknowledged_at,
+          acknowledged_by: warning.acknowledged_by?.toString(),
+          closed_at: null,
+          closed_by: '',
+          close_note: '',
+          student_name: student?.users?.name || '未知学生',
+          class_name: classInfo?.class_name || '未知班级',
+          teacher_name: teacher?.name || '未知班主任',
+          org_name: org?.name || '未知学院',
+          processing_status: processingMap.get(warning.student_id.toString())?.status || '',
+          processing_text: processingMap.get(warning.student_id.toString())?.text || '',
+        };
+      });
+
+      return {
+        code: 0,
+        message: 'ok',
+        data: {
+          total: warningTotal,
+          student_total: total,
+          warning_total: warningTotal,
+          violation_total: violationTotal,
+          page: pageNumber,
+          page_size: size,
+          items,
+        },
+        trace_id: req.trace_id,
+      };
     }
 
-    const total = orderedStudentIds.length;
-    const warningTotal = warningRefs.length;
-    const violationTotal = this.computeDedupedViolationTotal(warningRefs);
-    const skip = (pageNumber - 1) * size;
-    const pageStudentIds = orderedStudentIds.slice(skip, skip + size);
+    if (skip >= total) {
+      return this.emptyWarningList(pageNumber, size, req.trace_id);
+    }
+
+    const pageStudentRows = await this.prisma.$queryRawUnsafe<Array<{ student_id: bigint }>>(
+      `SELECT student_id
+       FROM (
+         SELECT student_id, MAX(${orderingField}) AS latest_order
+         FROM ${paginationSource}
+         ${whereSql}
+         GROUP BY student_id
+         ORDER BY latest_order DESC, student_id DESC
+         LIMIT ? OFFSET ?
+       ) page_students`,
+      ...whereParams,
+      size,
+      skip,
+    );
+    step('page_students');
+    const pageStudentIds = pageStudentRows.map((item) => BigInt(item.student_id as any));
     if (pageStudentIds.length === 0) {
       return this.emptyWarningList(pageNumber, size, req.trace_id);
     }
 
+    const pageWhere: any = {
+      ...where,
+      student_id: { in: pageStudentIds },
+    };
+    const includeViolationTotal = pageNumber === 1 && size <= 50;
+    const warningListBaseSelect = {
+      id: true,
+      student_id: true,
+      class_id: true,
+      org_id: true,
+      level: true,
+      metric: true,
+      window: true,
+      period_start: true,
+      period_end: true,
+      rule_id: true,
+      rule_snapshot_json: true,
+      trigger_summary: true,
+      trigger_detail_json: true,
+      status: true,
+      created_at: true,
+      updated_at: true,
+      acknowledged_at: true,
+      acknowledged_by: true,
+    };
+    const activeWarningSelect = {
+      ...warningListBaseSelect,
+      course_id: true,
+      course_key: true,
+      current_count: true,
+    };
+    const historyWarningSelect = {
+      ...warningListBaseSelect,
+      closed_at: true,
+      closed_by: true,
+      close_note: true,
+    };
     const warnings = normalizedScope === 'active'
       ? await (this.prisma as any).warning_current_states.findMany({
-          where: {
-            ...where,
-            student_id: { in: pageStudentIds },
-          },
+          where: pageWhere,
+          select: activeWarningSelect,
           orderBy: [{ updated_at: 'desc' }, { id: 'desc' }],
         })
       : await this.prisma.warnings.findMany({
-          where: {
-            ...where,
-            student_id: { in: pageStudentIds },
-          },
+          where: pageWhere,
+          select: historyWarningSelect,
           orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
         });
+    step('warnings_findMany');
+
+    const violationTotal = includeViolationTotal ? this.computeDedupedViolationTotal(warnings as any) : null;
 
     const studentIds = this.uniqueBigInts(warnings.map((item: any) => item.student_id));
     const classIds = this.uniqueBigInts(warnings.map((item: any) => item.class_id));
@@ -722,6 +949,7 @@ export class WarningsController {
       normalizedScope === 'active'
         ? await this.warningProcessingService.getStudentProcessingMap(studentIds)
         : new Map<string, { status: string; text: string }>();
+    step('processing_map');
 
     const [students, classes] = await Promise.all([
       this.prisma.student_profiles.findMany({
@@ -745,6 +973,7 @@ export class WarningsController {
         },
       }),
     ]);
+    step('students_classes');
 
     const teacherIds = this.uniqueBigInts(
       classes.map((item: any) => item.counselor_user_id).filter((item: any): item is bigint => Boolean(item)),
@@ -768,6 +997,7 @@ export class WarningsController {
           })
         : Promise.resolve([]),
     ]);
+    step('teachers_orgs');
 
     const studentMap = new Map<string, any>(students.map((item: any) => [item.id.toString(), item]));
     const classMap = new Map<string, any>(classes.map((item: any) => [item.id.toString(), item]));
@@ -798,9 +1028,9 @@ export class WarningsController {
         rule_snapshot_json: warning.rule_snapshot_json,
         trigger_summary: warning.trigger_summary,
         trigger_detail_json: warning.trigger_detail_json,
-        course_id: detail.course_id || '',
+        course_id: detail.course_id || (warning.course_id ? warning.course_id.toString() : ''),
         course_name: detail.course_name || '',
-        violation_count: Number(detail.violation_count || 0),
+        violation_count: Number(detail.violation_count || warning.current_count || 0),
         status: warning.status,
         display_status: displayStatus.display_status,
         display_status_text: displayStatus.display_status_text,
@@ -808,9 +1038,9 @@ export class WarningsController {
         updated_at: warning.updated_at,
         acknowledged_at: warning.acknowledged_at,
         acknowledged_by: warning.acknowledged_by?.toString(),
-        closed_at: warning.closed_at,
-        closed_by: warning.closed_by?.toString(),
-        close_note: warning.close_note,
+        closed_at: normalizedScope === 'active' ? null : warning.closed_at,
+        closed_by: normalizedScope === 'active' ? '' : warning.closed_by?.toString(),
+        close_note: normalizedScope === 'active' ? '' : warning.close_note,
         student_name: student?.users?.name || '未知学生',
         class_name: classInfo?.class_name || '未知班级',
         teacher_name: teacher?.name || '未知班主任',
@@ -824,7 +1054,7 @@ export class WarningsController {
       code: 0,
       message: 'ok',
       data: {
-        total,
+        total: normalizedScope === 'active' ? warningTotal : total,
         student_total: total,
         warning_total: warningTotal,
         violation_total: violationTotal,
@@ -1202,6 +1432,74 @@ export class WarningsController {
     }
 
     return Array.from(counter.values()).reduce((sum, value) => sum + value, 0);
+  }
+
+  private buildWarningPaginationWhereSql(where: Record<string, any>) {
+    const clauses: string[] = [];
+
+    if (where.metric?.not) {
+      clauses.push('metric <> ?');
+    }
+    if (typeof where.status === 'string') {
+      clauses.push('status = ?');
+    } else if (Array.isArray(where.status?.in) && where.status.in.length > 0) {
+      clauses.push(`status IN (${where.status.in.map(() => '?').join(', ')})`);
+    }
+    if (typeof where.level === 'string' && where.level) {
+      clauses.push('level = ?');
+    }
+    if (typeof where.student_id === 'bigint') {
+      clauses.push('student_id = ?');
+    }
+    if (typeof where.class_id === 'bigint') {
+      clauses.push('class_id = ?');
+    } else if (Array.isArray(where.class_id?.in) && where.class_id.in.length > 0) {
+      clauses.push(`class_id IN (${where.class_id.in.map(() => '?').join(', ')})`);
+    }
+    if (typeof where.org_id === 'bigint') {
+      clauses.push('org_id = ?');
+    } else if (Array.isArray(where.org_id?.in) && where.org_id.in.length > 0) {
+      clauses.push(`org_id IN (${where.org_id.in.map(() => '?').join(', ')})`);
+    }
+    if (typeof where.course_id === 'bigint') {
+      clauses.push('course_id = ?');
+    }
+
+    return clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
+  }
+
+  private buildWarningPaginationParams(where: Record<string, any>) {
+    const params: Array<string | bigint> = [];
+
+    if (where.metric?.not) {
+      params.push(where.metric.not);
+    }
+    if (typeof where.status === 'string') {
+      params.push(where.status);
+    } else if (Array.isArray(where.status?.in) && where.status.in.length > 0) {
+      params.push(...where.status.in);
+    }
+    if (typeof where.level === 'string' && where.level) {
+      params.push(where.level);
+    }
+    if (typeof where.student_id === 'bigint') {
+      params.push(where.student_id);
+    }
+    if (typeof where.class_id === 'bigint') {
+      params.push(where.class_id);
+    } else if (Array.isArray(where.class_id?.in) && where.class_id.in.length > 0) {
+      params.push(...where.class_id.in);
+    }
+    if (typeof where.org_id === 'bigint') {
+      params.push(where.org_id);
+    } else if (Array.isArray(where.org_id?.in) && where.org_id.in.length > 0) {
+      params.push(...where.org_id.in);
+    }
+    if (typeof where.course_id === 'bigint') {
+      params.push(where.course_id);
+    }
+
+    return params;
   }
 
   private async resolveWarningScopeContext(userId: bigint): Promise<WarningScopeContext> {

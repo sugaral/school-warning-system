@@ -32,7 +32,7 @@ export class AuditManageController {
   }
 
   @Delete('operations/:id')
-  @Permissions('audit:view')
+  @Permissions('audit:delete')
   async deleteOperationLog(@Param('id') id: string) {
     const targetId = BigInt(id);
     const existing = await this.prisma.audit_logs.findUnique({
@@ -52,7 +52,7 @@ export class AuditManageController {
   }
 
   @Post('operations/batch-delete')
-  @Permissions('audit:view')
+  @Permissions('audit:delete')
   async batchDeleteOperationLogs(@Body() body: { ids?: string[] }) {
     const ids = this.normalizeIds(body?.ids);
     if (ids.length === 0) {
@@ -71,7 +71,7 @@ export class AuditManageController {
   }
 
   @Delete('notifications/:id')
-  @Permissions('audit:view')
+  @Permissions('audit:delete')
   async deleteNotificationLog(@Param('id') id: string) {
     const targetId = BigInt(id);
     const existing = await this.prisma.notification_logs.findUnique({
@@ -91,7 +91,7 @@ export class AuditManageController {
   }
 
   @Post('notifications/batch-delete')
-  @Permissions('audit:view')
+  @Permissions('audit:delete')
   async batchDeleteNotificationLogs(@Body() body: { ids?: string[] }) {
     const ids = this.normalizeIds(body?.ids);
     if (ids.length === 0) {
@@ -110,7 +110,7 @@ export class AuditManageController {
   }
 
   @Delete('security-events/:id')
-  @Permissions('audit:view')
+  @Permissions('audit:delete')
   async deleteSecurityEvent(@Param('id') id: string) {
     const targetId = BigInt(id);
     const existing = await this.prisma.security_events.findUnique({
@@ -130,7 +130,7 @@ export class AuditManageController {
   }
 
   @Post('security-events/batch-delete')
-  @Permissions('audit:view')
+  @Permissions('audit:delete')
   async batchDeleteSecurityEvents(@Body() body: { ids?: string[] }) {
     const ids = this.normalizeIds(body?.ids);
     if (ids.length === 0) {

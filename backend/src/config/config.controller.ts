@@ -330,6 +330,27 @@ export class ConfigController {
       ...(config.warning || {}),
     };
 
+    // Filter sensitive fields for non-admin users
+    const userRoles: string[] = req.user?.roles || req.user?.role_codes || [];
+    const isAdmin = userRoles.some((r: string) =>
+      ['super_admin', 'admin', 'system_admin'].includes(r),
+    );
+
+    if (!isAdmin) {
+      const sensitivePattern = /password|secret|[_]?key$|token$/i;
+      for (const key of Object.keys(config)) {
+        if (sensitivePattern.test(key)) {
+          delete config[key];
+        } else if (typeof config[key] === 'object' && config[key] !== null) {
+          for (const subKey of Object.keys(config[key])) {
+            if (sensitivePattern.test(subKey)) {
+              delete config[key][subKey];
+            }
+          }
+        }
+      }
+    }
+
     return {
       code: 0,
       message: 'ok',

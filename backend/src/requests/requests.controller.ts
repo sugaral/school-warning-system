@@ -893,10 +893,10 @@ export class RequestsController {
           updateData.applied_daily_record_id = updatedRecord.id;
         }
       }
-      } else {
-        updateData.rejected_at = new Date();
-        updateData.reject_reason = rejectReason;
-      }
+    } else {
+      updateData.rejected_at = new Date();
+      updateData.reject_reason = rejectReason;
+    }
 
     const makeupRequest = await this.prisma.makeup_requests.update({
       where: { id: BigInt(id) },

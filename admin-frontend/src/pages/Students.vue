@@ -310,6 +310,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { api, buildApiUrl } from '../api';
 import { parseSpreadsheetFile } from '../lib/spreadsheet';
+import { escapeHtml } from '../lib/format';
 import {
   batchDeleteStudents as batchDeleteStudentProfiles,
   createStudent,
@@ -445,7 +446,7 @@ const loadStudents = async () => {
 };
 
 const loadClasses = async () => {
-  const resp = await listClassesAdmin({ page: 1, pageSize: 1000 });
+  const resp = await listClassesAdmin({ page: 1, pageSize: 200 });
   if (resp.code === 0) {
     allClasses.value = resp.data.list || [];
   }
@@ -475,14 +476,6 @@ const loadAccountConfig = async () => {
     batchForm.password_length = resp.data.data.account.defaultPasswordLength || 8;
   }
 };
-
-const escapeHtml = (value: unknown) =>
-  String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 
 const downloadStudentAccountCsv = (rows: Array<{ student_no: string; name: string; password: string }>, filenamePrefix = '学生账号') => {
   if (!rows.length) return;

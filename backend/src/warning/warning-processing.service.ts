@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { RedisService } from '../shared/redis.service';
 
 type WarningProcessingState = {
@@ -10,6 +10,7 @@ type WarningProcessingState = {
 @Injectable()
 export class WarningProcessingService {
   private readonly ttlSeconds = 300;
+  private readonly logger = new Logger(WarningProcessingService.name);
 
   constructor(private readonly redis: RedisService) {}
 
@@ -49,27 +50,46 @@ export class WarningProcessingService {
       return new Map<string, WarningProcessingState>();
     }
 
-    const keys = studentIds.map((studentId) => this.buildStudentKey(studentId));
-    const valuesRaw = await this.redis.mget(...keys);
     const map = new Map<string, WarningProcessingState>();
+    const startedAt = Date.now();
 
-    valuesRaw.forEach((raw, index) => {
-      if (!raw) {
-        return;
-      }
-
-      try {
-        const parsed = JSON.parse(raw) as WarningProcessingState;
-        if (!parsed?.status || !parsed?.text) {
-          return;
+    try {
+      const keys = studentIds.map((studentId) => this.buildStudentKey(studentId));
+      const rawValues = await this.mgetWithTimeout(keys, 50);
+      for (let i = 0; i < studentIds.length; i++) {
+        const raw = rawValues[i];
+        if (!raw) {
+          continue;
         }
-        map.set(studentIds[index], parsed);
-      } catch {
-        // ignore invalid cache payload
+        try {
+          const parsed = JSON.parse(raw) as WarningProcessingState;
+          if (!parsed?.status || !parsed?.text) {
+            continue;
+          }
+          map.set(studentIds[i], parsed);
+        } catch {
+          // ignore invalid cache payload
+        }
       }
-    });
+    } catch (error: any) {
+      this.logger.warn(`getStudentProcessingMap degraded: ${error?.message || error}`);
+    }
+
+    const durationMs = Date.now() - startedAt;
+    if (durationMs > 100) {
+      this.logger.warn(
+        `[warning-processing] processing-map slow ${durationMs}ms students=${studentIds.length}`,
+      );
+    }
 
     return map;
+  }
+
+  private async mgetWithTimeout(keys: string[], timeoutMs: number) {
+    return await Promise.race<Array<string | null>>([
+      this.redis.mget(...keys),
+      new Promise<Array<string | null>>((resolve) => setTimeout(() => resolve(keys.map(() => null)), timeoutMs)),
+    ]);
   }
 
   private buildStudentKey(studentId: bigint | string | number) {

@@ -43,7 +43,7 @@
 
       <el-main class="main dashboard-main-shell">
         <router-view v-slot="{ Component, route: currentRoute }">
-          <keep-alive :max="12">
+          <keep-alive :max="6">
             <component
               :is="Component"
               v-if="currentRoute.meta?.keepAlive"
@@ -103,6 +103,7 @@ import {
   getStudentBoundState,
   getTeacherBindingState,
 } from '../lib/binding';
+import { escapeHtml } from '../lib/format';
 
 const router = useRouter();
 const route = useRoute();
@@ -214,14 +215,6 @@ const logout = () => {
   clearBindingStateCache();
   router.push('/login');
 };
-
-const escapeHtml = (value: unknown) =>
-  String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 
 const showPendingLoginPrompt = async () => {
   const rawPrompt = sessionStorage.getItem(LOGIN_PROMPT_SESSION_KEY);

@@ -112,20 +112,18 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { onMounted, reactive, ref, watch } from 'vue';
 import type { FormInstance, FormRules } from 'element-plus';
 import { ElMessage } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
 import MultiImageUploadField from '../../components/MultiImageUploadField.vue';
 import { api } from '../../api';
-import { loadUploadedFileObjectUrls, revokeObjectUrls } from '../../lib/uploaded-files';
+import { formatDateTime } from '../../lib/format';
+import { usePreview } from '../../composables/usePreview';
 
 const loading = ref(false);
 const submitting = ref(false);
-const previewVisible = ref(false);
-const previewLoading = ref(false);
-const previewTitle = ref('');
-const previewUrls = ref<string[]>([]);
+const { previewVisible, previewLoading, previewTitle, previewUrls, openPreview } = usePreview();
 const appeals = ref<any[]>([]);
 const createDialogVisible = ref(false);
 const formRef = ref<FormInstance>();
@@ -173,10 +171,7 @@ const getResultText = (result: string) => {
   return result || '-';
 };
 
-const formatDateTime = (value?: string | Date | null) => {
-  if (!value) return '-';
-  return new Date(value).toLocaleString('zh-CN');
-};
+
 
 const resetForm = () => {
   Object.assign(form, createInitialForm());
@@ -187,6 +182,8 @@ const openCreateDialog = () => {
   resetForm();
   createDialogVisible.value = true;
 };
+
+const isReplacingRoute = ref(false);
 
 const applyRoutePrefill = async () => {
   if (route.query.action !== 'create') {
@@ -202,10 +199,12 @@ const applyRoutePrefill = async () => {
   }
   createDialogVisible.value = true;
 
+  isReplacingRoute.value = true;
   await router.replace({
     path: route.path,
     query: {},
   });
+  isReplacingRoute.value = false;
 };
 
 const loadAppeals = async () => {
@@ -255,26 +254,10 @@ const submitAppeal = async () => {
   }
 };
 
-const openPreview = async (fileIds: string[] | string, title: string) => {
-  previewVisible.value = true;
-  previewLoading.value = true;
-  previewTitle.value = title;
-  revokeObjectUrls(previewUrls.value);
-  previewUrls.value = [];
-
-  try {
-    previewUrls.value = await loadUploadedFileObjectUrls(fileIds);
-  } catch (error: any) {
-    previewVisible.value = false;
-    ElMessage.error(error?.message || '加载图片失败');
-  } finally {
-    previewLoading.value = false;
-  }
-};
-
 watch(
   () => route.fullPath,
   () => {
+    if (isReplacingRoute.value) return;
     void applyRoutePrefill();
   },
 );
@@ -282,10 +265,6 @@ watch(
 onMounted(async () => {
   await loadAppeals();
   await applyRoutePrefill();
-});
-
-onBeforeUnmount(() => {
-  revokeObjectUrls(previewUrls.value);
 });
 </script>
 

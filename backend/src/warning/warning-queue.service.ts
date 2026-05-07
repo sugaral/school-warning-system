@@ -406,6 +406,22 @@ export class WarningQueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async readNewEntries() {
+    if (this.getReadBlockMs() <= 0) {
+      const raw = await this.redis.call(
+        'XREADGROUP',
+        'GROUP',
+        this.getConsumerGroup(),
+        this.consumerName,
+        'COUNT',
+        String(this.getReadCount()),
+        'STREAMS',
+        this.getStreamKey(),
+        '>',
+      );
+
+      return this.parseReadEntries(raw);
+    }
+
     const raw = await this.redis.call(
       'XREADGROUP',
       'GROUP',
@@ -627,7 +643,16 @@ export class WarningQueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   private getReadBlockMs() {
-    return this.getClampedNumber('WARNING_QUEUE_READ_BLOCK_MS', 5000, 100, 60000);
+    const raw = Number(this.config.get<string>('WARNING_QUEUE_READ_BLOCK_MS') || 5000);
+    if (!Number.isFinite(raw)) {
+      return 5000;
+    }
+
+    if (raw <= 0) {
+      return 0;
+    }
+
+    return Math.min(60000, Math.max(100, Math.round(raw)));
   }
 
   private getVisibilityTimeoutMs() {

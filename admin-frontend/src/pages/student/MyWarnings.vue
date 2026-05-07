@@ -30,7 +30,7 @@
     </el-row>
 
     <div class="table-shell">
-    <el-table :data="warnings" v-loading="loading" border>
+    <el-table v-if="warnings.length" :data="warnings" v-loading="loading" border>
       <el-table-column prop="warning_level" label="预警级别" width="110">
         <template #default="{ row }">
           <el-tag :color="getLevelColor(row.warning_level)" effect="dark" style="border: none;">
@@ -71,6 +71,7 @@
         </template>
       </el-table-column>
     </el-table>
+    <el-empty v-if="!warnings.length && !loading" description="暂无预警记录" />
     </div>
   </div>
 </template>

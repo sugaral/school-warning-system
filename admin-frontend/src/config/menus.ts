@@ -46,7 +46,7 @@ export const roleMenuConfig: RoleMenuConfig[] = [
       { path: '/my-appeals', name: '申诉记录' },
       { path: '/my-profile', name: '个人信息' },
       {
-        path: 'class-monitor',
+        path: '/class-monitor',
         name: '班级事务',
         children: [
           { path: '/class-overview', name: '班级概览' },

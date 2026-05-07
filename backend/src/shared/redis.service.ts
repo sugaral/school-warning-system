@@ -86,6 +86,7 @@ export class RedisService extends Redis implements OnModuleDestroy {
   private readonly cachePassthroughPrefixes = [
     'attendance:batch-job:',
     'warnings:class-view:',
+    'warning:processing:student:',
   ];
 
   constructor(private configService: ConfigService) {
@@ -202,15 +203,21 @@ export class RedisService extends Redis implements OnModuleDestroy {
    * 释放分布式锁（仅当值匹配时释放，防止误删他人锁）
    */
   async releaseLock(key: string, value: string): Promise<boolean> {
-    const lua = `
-      if redis.call("GET", KEYS[1]) == ARGV[1] then
-        return redis.call("DEL", KEYS[1])
+    const script = `
+      if redis.call('get', KEYS[1]) == ARGV[1] then
+        return redis.call('del', KEYS[1])
       else
         return 0
       end
     `;
-    const result = await this.eval(lua, 1, key, value);
-    return result === 1;
+
+    try {
+      const result = await this.eval(script, 1, key, value);
+      return Number(result) === 1;
+    } catch (error: any) {
+      this.logger.warn(`释放锁失败 key=${key}: ${error?.message || error}`);
+      return false;
+    }
   }
 
   /**
@@ -226,15 +233,36 @@ export class RedisService extends Redis implements OnModuleDestroy {
     fn: () => Promise<T>,
   ): Promise<{ locked: boolean; result?: T }> {
     const lockValue = `${process.pid}:${Date.now()}`;
+    const acquireStart = Date.now();
     const locked = await this.acquireLock(key, ttlMs, lockValue);
+    const acquireMs = Date.now() - acquireStart;
     if (!locked) {
       return { locked: false };
     }
+    let fnError: unknown;
+    let fnDurationMs = 0;
+    let fnFinishedAt = 0;
     try {
+      const fnStart = Date.now();
       const result = await fn();
+      fnFinishedAt = Date.now();
+      fnDurationMs = fnFinishedAt - fnStart;
       return { locked: true, result };
+    } catch (error) {
+      fnFinishedAt = Date.now();
+      fnDurationMs = fnFinishedAt - acquireStart;
+      fnError = error;
+      throw error;
     } finally {
+      const beforeReleaseAt = Date.now();
+      const releaseStartedAfterFnMs = fnFinishedAt > 0 ? beforeReleaseAt - fnFinishedAt : beforeReleaseAt - acquireStart;
+      const releaseStart = Date.now();
       await this.releaseLock(key, lockValue);
+      const releaseMs = Date.now() - releaseStart;
+      if (acquireMs > 100 || releaseMs > 100 || releaseStartedAfterFnMs > 100) {
+        const outcome = fnError ? 'error' : 'ok';
+        console.log(`[withLock] key=${key} acquire=${acquireMs}ms fn=${fnDurationMs}ms preReleaseGap=${releaseStartedAfterFnMs}ms release=${releaseMs}ms outcome=${outcome}`);
+      }
     }
   }
 }

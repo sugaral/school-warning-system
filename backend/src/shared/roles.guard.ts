@@ -7,19 +7,10 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PermissionService } from '../rbac/permission.service';
+import { normalizeRoleCode } from './role-catalog';
 
 export const ROLES_KEY = 'roles';
 export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
-
-const ROLE_ALIAS_MAP: Record<string, string> = {
-  monitor: 'class_monitor',
-  dean: 'teaching_admin',
-  admin: 'sys_admin',
-};
-
-function normalizeRoleCode(role: string): string {
-  return ROLE_ALIAS_MAP[role] || role;
-}
 
 @Injectable()
 export class RolesGuard implements CanActivate {

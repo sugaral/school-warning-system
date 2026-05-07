@@ -1,0 +1,5 @@
+{
+  "exit_code": 0,
+  "stdout": "teacher_binding\t800\t18181919245\t?? ??\t3\tNULL\nteacher_binding\t804\t123456123\t25?1???\t3\tNULL\nteacher_binding\t811\t123456126\t?????\t3\tNULL\nteacher_binding\t812\t1002661661w\t?????\t7\tNULL\nhead_teacher_role\t804\t123456123\t25?1???\t3\tNULL\nhead_teacher_role\t812\t1002661661w\t?????\t7\tNULL\nstudent_user\t648\t202600200201\t??1\t2\t123456789\nstudent_user\t649\t202600200202\t??2\t2\t123456789\nstudent_user\t650\t202600200203\t??3\t2\t123456789\nstudent_user\t651\t202600200204\t??4\t2\t123456789\nstudent_user\t652\t202600200205\t??5\t2\t123456789\nstudent_user\t653\t202600200206\t??6\t2\t123456789\nstudent_user\t654\t202600200207\t??7\t2\t123456789\nstudent_user\t655\t202600200208\t??8\t2\t123456789\nstudent_user\t656\t202600200209\t??9\t2\t123456789\nstudent_user\t657\t202600200210\t??10\t2\t123456789\nclass_monitor_role\t703\t18055117374\t??26\t3\tNULL\nclass_monitor_role\t809\t202524120155\tzy\t3\tNULL\n",
+  "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.\n"
+}

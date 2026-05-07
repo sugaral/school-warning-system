@@ -226,6 +226,7 @@ import {
   reviewHeadTeacherClassChangeRequest,
 } from '../api';
 import { loadUploadedFileObjectUrls, revokeObjectUrls } from '../lib/uploaded-files';
+import { formatDateTime } from '../lib/format';
 
 const loading = ref(false);
 const previewVisible = ref(false);
@@ -283,10 +284,7 @@ const clearPreview = () => {
   previewTitle.value = '';
 };
 
-const formatDateTime = (value?: string | Date | null) => {
-  if (!value) return '-';
-  return new Date(value).toLocaleString('zh-CN');
-};
+
 
 const formatRichText = (value?: string | null) => {
   const raw = String(value || '').trim();

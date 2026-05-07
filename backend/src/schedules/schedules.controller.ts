@@ -89,59 +89,38 @@ export class SchedulesController {
         ...where,
         status: 'active',
       },
+      include: {
+        courses: { select: { id: true, course_code: true, course_name: true } },
+        classes: { select: { id: true, class_name: true, enroll_year: true } },
+        users: { select: { id: true, name: true } },
+      },
       orderBy: {
         session_start: 'asc',
       },
     });
 
-    const courseIds = [...new Set(schedules.map((item: any) => item.course_id))] as bigint[];
-    const classIds = [...new Set(schedules.map((item: any) => item.class_id))] as bigint[];
-    const teacherUserIds = [...new Set(schedules.map((item: any) => item.teacher_user_id))] as bigint[];
-
-    const [courses, classes, users] = await Promise.all([
-      courseIds.length
-        ? this.prisma.courses.findMany({ where: { id: { in: courseIds } } })
-        : Promise.resolve([] as any[]),
-      classIds.length
-        ? this.prisma.classes.findMany({ where: { id: { in: classIds } } })
-        : Promise.resolve([] as any[]),
-      teacherUserIds.length
-        ? this.prisma.users.findMany({ where: { id: { in: teacherUserIds } } })
-        : Promise.resolve([] as any[]),
-    ]);
-
-    const courseMap = new Map(courses.map((item: any) => [item.id.toString(), item]));
-    const classMap = new Map(classes.map((item: any) => [item.id.toString(), item]));
-    const userMap = new Map(users.map((item: any) => [item.id.toString(), item]));
-
-    return schedules.map((item: any) => {
-      const course = courseMap.get(item.course_id.toString()) as any;
-      const clazz = classMap.get(item.class_id.toString()) as any;
-      const user = userMap.get(item.teacher_user_id.toString()) as any;
-
-      return {
-        id: item.id.toString(),
-        course_id: item.course_id?.toString() || '',
-        course_code: course?.course_code || '',
-        course_name: course?.course_name || '未命名课程',
-        class_id: item.class_id?.toString() || '',
-        class_name: clazz?.class_name || '未绑定班级',
-        teacher_user_id: item.teacher_user_id?.toString() || '',
-        teacher_name: user?.name || '未分配教师',
-        term_code: item.term_code || '',
-        session_start: this.toSafeIsoString(item.session_start),
-        session_end: this.toSafeIsoString(item.session_end),
-        expire_minutes:
-          item.session_start && item.session_end
-            ? Math.max(
-                1,
-                Math.round(
-                  (new Date(item.session_end).getTime() - new Date(item.session_start).getTime()) / 60000,
-                ),
-              )
-            : 15,
-      };
-    });
+    return schedules.map((item: any) => ({
+      id: item.id.toString(),
+      course_id: item.course_id?.toString() || '',
+      course_code: item.courses?.course_code || '',
+      course_name: item.courses?.course_name || '未命名课程',
+      class_id: item.class_id?.toString() || '',
+      class_name: item.classes?.class_name || '未绑定班级',
+      teacher_user_id: item.teacher_user_id?.toString() || '',
+      teacher_name: item.users?.name || '未分配教师',
+      term_code: item.term_code || '',
+      session_start: this.toSafeIsoString(item.session_start),
+      session_end: this.toSafeIsoString(item.session_end),
+      expire_minutes:
+        item.session_start && item.session_end
+          ? Math.max(
+              1,
+              Math.round(
+                (new Date(item.session_end).getTime() - new Date(item.session_start).getTime()) / 60000,
+              ),
+            )
+          : 15,
+    }));
   }
 
   @Get()
@@ -188,38 +167,20 @@ export class SchedulesController {
     const schedules = await this.prisma.schedules.findMany({
       where,
       include: {
-        courses: true,
-        users: true,
+        courses: { select: { id: true, course_name: true } },
+        users: { select: { id: true, name: true } },
       },
       orderBy: {
         session_start: 'asc',
       },
     });
 
-    const courseIds = [...new Set(schedules.map((item: any) => item.course_id))] as bigint[];
-    const teacherUserIds = [...new Set(schedules.map((item: any) => item.teacher_user_id))] as bigint[];
-
-    const courses = await this.prisma.courses.findMany({
-      where: { id: { in: courseIds } },
-    });
-    const users = await this.prisma.users.findMany({
-      where: { id: { in: teacherUserIds } },
-    });
-
-    const courseMap = new Map(courses.map((item: any) => [item.id, item]));
-    const userMap = new Map(users.map((item: any) => [item.id, item]));
-
-    const updatedSchedules = schedules.map((item: any) => {
-      const course = courseMap.get(item.course_id) as any;
-      const user = userMap.get(item.teacher_user_id) as any;
-
-      return {
-        course_name: course?.course_name || '未知课程',
-        teacher_name: user?.name || '未知教师',
-        session_start: this.toSafeIsoString(item.session_start),
-        session_end: this.toSafeIsoString(item.session_end),
-      };
-    });
+    const updatedSchedules = schedules.map((item: any) => ({
+      course_name: item.courses?.course_name || '未知课程',
+      teacher_name: item.users?.name || '未知教师',
+      session_start: this.toSafeIsoString(item.session_start),
+      session_end: this.toSafeIsoString(item.session_end),
+    }));
 
     return {
       code: 0,

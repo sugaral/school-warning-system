@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+﻿import * as fs from 'fs';
 import * as path from 'path';
 import {
   Controller,
@@ -278,6 +278,23 @@ export class ReportsController {
     };
   }
 
+  private buildOverviewCacheKey(
+    userId: bigint,
+    status: string | undefined,
+    scope: ReportScope,
+    selectedOrgId?: bigint | null,
+  ) {
+    return JSON.stringify({
+      userId: userId.toString(),
+      status: status || '',
+      selectedOrgId: selectedOrgId ? selectedOrgId.toString() : '',
+      scopeType: scope.type,
+      orgIds: scope.orgIds.map((item) => item.toString()).sort(),
+      classIds: scope.classIds.map((item) => item.toString()).sort(),
+      studentIds: scope.studentIds.map((item) => item.toString()).sort(),
+    });
+  }
+
   private async findWarningsForReport(
     range: ReportRange,
     status: string | undefined,
@@ -291,6 +308,20 @@ export class ReportsController {
 
     return this.prisma.warnings.findMany({
       where,
+      select: {
+        id: true,
+        student_id: true,
+        org_id: true,
+        level: true,
+        metric: true,
+        window: true,
+        period_start: true,
+        period_end: true,
+        trigger_summary: true,
+        trigger_detail_json: true,
+        status: true,
+        created_at: true,
+      },
       orderBy: { created_at: 'desc' },
     });
   }
@@ -306,13 +337,25 @@ export class ReportsController {
 
     const students = await this.prisma.student_profiles.findMany({
       where: { id: { in: studentIds } },
-      include: {
-        classes: {
-          include: {
-            orgs: true,
+      select: {
+        id: true,
+        student_no: true,
+        users: {
+          select: {
+            name: true,
           },
         },
-        users: true,
+        classes: {
+          select: {
+            class_name: true,
+            orgs: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -624,6 +667,160 @@ export class ReportsController {
         closeRate: stats.total > 0 ? `${((stats.closed / stats.total) * 100).toFixed(2)}%` : '0%',
       })),
     };
+  }
+
+  @Get('overview')
+  @Permissions('report:export')
+  async getReportsOverview(
+    @Query('status') status: string,
+    @Query('org_id') orgId: string,
+    @Req() req: any,
+  ) {
+    try {
+      const userId = this.getRequestUserId(req);
+      const scope = await this.resolveReportScope(userId);
+      const normalizedStatus = this.normalizeStatus(status);
+      const normalizedOrgId = /^\d+$/.test(String(orgId || '').trim())
+        ? BigInt(String(orgId).trim())
+        : null;
+
+      const cacheKey = this.buildOverviewCacheKey(userId, normalizedStatus, scope, normalizedOrgId);
+
+      const payload = await this.prisma.$transaction(async (tx) => {
+        const cache = await tx.dashboard_cache.findUnique({
+          where: { cache_key: cacheKey },
+          select: { payload_json: true, expires_at: true },
+        });
+        if (cache?.expires_at && cache.expires_at.getTime() > Date.now() && cache.payload_json) {
+          return cache.payload_json as any;
+        }
+
+        const [dailyRange, weeklyRange, monthlyRange, semesterRange] = await Promise.all([
+          Promise.resolve(this.getDailyRange()),
+          this.getWeeklyRange(),
+          Promise.resolve(this.getMonthlyRange()),
+          Promise.resolve(this.getSemesterRange()),
+        ]);
+
+        const [dailyWarnings, weeklyWarnings, monthlyWarnings, semesterWarnings, history] = await Promise.all([
+          this.findWarningsForReport(dailyRange, normalizedStatus, scope, normalizedOrgId),
+          this.findWarningsForReport(weeklyRange, normalizedStatus, scope, normalizedOrgId),
+          this.findWarningsForReport(monthlyRange, normalizedStatus, scope, normalizedOrgId),
+          this.findWarningsForReport(semesterRange, normalizedStatus, scope, normalizedOrgId),
+          tx.export_jobs.findMany({
+            where: { creator_user_id: userId },
+            orderBy: { created_at: 'desc' },
+            take: 10,
+            select: { id: true, report_type: true, status: true, created_at: true },
+          }),
+        ]);
+
+        const monthlyDedupedWarnings = this.dedupeWarnings(monthlyWarnings);
+        const semesterStudentMap = await this.buildWarningContext(semesterWarnings);
+      const levelSummary = { yellow: 0, orange: 0, red: 0, severe: 0, other: 0 };
+      const orgRankMap = new Map<string, { org_id: string | null; org_name: string; total: number; closed: number }>();
+
+      for (const warning of monthlyDedupedWarnings) {
+        const level = String(warning.level || 'other');
+        if (Object.prototype.hasOwnProperty.call(levelSummary, level)) {
+          (levelSummary as any)[level] += 1;
+        } else {
+          levelSummary.other += 1;
+        }
+      }
+
+      for (const warning of semesterWarnings) {
+        const student = semesterStudentMap.get(warning.student_id.toString()) as any;
+        const orgIdValue = student?.classes?.orgs?.id ? String(student.classes.orgs.id) : null;
+        const orgName = student?.classes?.orgs?.name || '未知学院';
+        const current = orgRankMap.get(orgName) || {
+          org_id: orgIdValue,
+          org_name: orgName,
+          total: 0,
+          closed: 0,
+        };
+        current.total += 1;
+        if (warning.status === 'closed') {
+          current.closed += 1;
+        }
+        orgRankMap.set(orgName, current);
+      }
+
+      const reportTypeLabels: Record<string, string> = {
+        daily: '日报表',
+        weekly: '周报表',
+        monthly: '月报表',
+        semester: '学期报表',
+      };
+
+        const result = {
+          summary: {
+            todayWarnings: dailyWarnings.length,
+            weeklyWarnings: weeklyWarnings.length,
+            monthlyWarnings: monthlyDedupedWarnings.length,
+            semesterWarnings: semesterWarnings.length,
+            exportCount: history.length,
+          },
+          ranges: {
+            daily: { date: dailyRange.startLabel },
+            weekly: {
+              startDate: weeklyRange.startLabel,
+              endDate: weeklyRange.endLabel,
+              weekNumber: weeklyRange.weekNumber,
+              weekLabel: weeklyRange.weekLabel,
+            },
+            monthly: {
+              month: monthlyRange.monthLabel,
+              startDate: monthlyRange.startLabel,
+              endDate: monthlyRange.endLabel,
+            },
+            semester: {
+              semester: semesterRange.semesterLabel,
+              startDate: semesterRange.startLabel,
+              endDate: semesterRange.endLabel,
+            },
+          },
+          monthlyLevelStats: levelSummary,
+          semesterOrgRank: Array.from(orgRankMap.values())
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 10)
+            .map((item) => ({
+              ...item,
+              closeRate: item.total > 0 ? Number(((item.closed / item.total) * 100).toFixed(2)) : 0,
+            })),
+          recentExports: history.map((item: any) => ({
+            id: item.id.toString(),
+            reportType: reportTypeLabels[item.report_type] || item.report_type,
+            status: item.status,
+            createdAt: item.created_at,
+          })),
+        };
+
+        await tx.dashboard_cache.upsert({
+          where: { cache_key: cacheKey },
+          update: {
+            payload_json: result as any,
+            expires_at: new Date(Date.now() + 60 * 1000),
+          },
+          create: {
+            cache_key: cacheKey,
+            payload_json: result as any,
+            expires_at: new Date(Date.now() + 60 * 1000),
+          },
+        });
+
+        return result;
+      });
+
+      return {
+        code: 0,
+        message: 'ok',
+        data: payload,
+      };
+    } catch (error: any) {
+      this.logError(error, 'getReportsOverview');
+      return { code: 500, message: '获取报表总览失败: ' + error.message };
+    }
   }
 
   @Post('generate/daily')

@@ -42,6 +42,9 @@ class UpdateMajorDto {
 @Controller('orgs')
 @UseGuards(AuthGuard, PermissionGuard)
 export class OrgsController {
+  private readonly payloadCache = new Map<string, { data: any; expiresAt: number }>();
+  private readonly cacheTtlSeconds = 60;
+
   constructor(
     private readonly prisma: PrismaService,
   ) {}
@@ -59,12 +62,26 @@ export class OrgsController {
   }
 
   private async getCachedPayload<T>(cacheKey: string, loader: () => Promise<T>) {
-    void cacheKey;
-    return loader();
+    const now = Date.now();
+    const cached = this.payloadCache.get(cacheKey);
+    if (cached && cached.expiresAt > now) {
+      return cached.data as T;
+    }
+    const data = await loader();
+    this.payloadCache.set(cacheKey, { data, expiresAt: now + this.cacheTtlSeconds * 1000 });
+    return data;
   }
 
   private async invalidateOrgCaches(orgId?: string) {
-    void orgId;
+    if (orgId) {
+      for (const key of this.payloadCache.keys()) {
+        if (key.includes(orgId)) {
+          this.payloadCache.delete(key);
+        }
+      }
+    } else {
+      this.payloadCache.clear();
+    }
   }
 
   @Get()

@@ -249,6 +249,7 @@ import {
   handleAdminFeedback,
 } from '../../api';
 import { loadUploadedFileObjectUrls, revokeObjectUrls } from '../../lib/uploaded-files';
+import { formatDateTime } from '../../lib/format';
 
 type FeedbackStatus = 'pending' | 'claimed' | 'resolved';
 
@@ -367,12 +368,7 @@ const formatIdentity = (row: Partial<FeedbackItem>) => {
   return [userType, roleText].filter(Boolean).join(' / ') || '-';
 };
 
-const formatDateTime = (value?: string | Date | null) => {
-  if (!value) {
-    return '-';
-  }
-  return new Date(value).toLocaleString('zh-CN');
-};
+
 
 const syncHandleForm = (row?: Partial<FeedbackItem> | null) => {
   handleForm.status = (row?.status || 'pending') as FeedbackStatus;

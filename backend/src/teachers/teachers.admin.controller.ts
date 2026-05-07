@@ -204,20 +204,11 @@ export class TeachersAdminController {
     const teachers = [...teacherUsers, ...extraHeadTeacherUsers];
 
     const teacherIds = teachers.map((item: any) => item.id);
-    const headTeacherRoles = teacherIds.length > 0
-      ? await this.prisma.user_roles.findMany({
-          where: {
-            user_id: { in: teacherIds },
-            role: 'head_teacher',
-          },
-          select: {
-            user_id: true,
-            role: true,
-            scope_type: true,
-            scope_id: true,
-          },
-        })
-      : [];
+    const teacherIdSet = new Set(teacherIds.map((id: bigint) => id.toString()));
+    // Reuse the already-fetched headTeacherRolesByKeyword instead of re-querying
+    const headTeacherRoles = headTeacherRolesByKeyword.filter((item: any) =>
+      teacherIdSet.has(item.user_id.toString()),
+    );
     const rolesByUserId = new Map<string, any[]>();
     headTeacherRoles.forEach((item: any) => {
       const key = item.user_id.toString();

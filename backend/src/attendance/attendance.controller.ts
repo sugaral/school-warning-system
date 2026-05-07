@@ -622,13 +622,13 @@ export class AttendanceController {
       }
 
       const now = new Date();
-      const sessionDeadline = this.getSessionDeadline(session);
-      if (session.status !== 'active' || sessionDeadline.getTime() <= now.getTime()) {
-        this.logger.log(`[batchEnd][single] session=${sessionId} skipped reason=not-active-or-expired`);
+      if (session.status !== 'active') {
+        this.logger.log(`[batchEnd][single] session=${sessionId} skipped reason=not-active`);
         return { ended: false };
       }
 
-      await this.finalizeSessionEarly(session, now);
+      await this.markSessionEndedFast(session.id, now);
+      void this.finalizeSessionEarlyAsync(session, now);
       return { ended: true };
     });
 
@@ -875,80 +875,28 @@ export class AttendanceController {
       };
     }
 
-    const workerCount = Math.min(4, normalizedIds.length);
+    const workerCount = Math.min(12, normalizedIds.length);
     let nextIndex = 0;
-    const endedIds: string[] = [];
-    let skippedCount = 0;
-    let failedCount = 0;
 
-    await Promise.all(
-      Array.from({ length: workerCount }, async () => {
+    // 全部异步处理，API立即返回
+    for (let i = 0; i < workerCount; i++) {
+      void (async () => {
         while (true) {
           const currentIndex = nextIndex;
           nextIndex += 1;
-          if (currentIndex >= normalizedIds.length) {
-            return;
-          }
-
-          const sessionId = normalizedIds[currentIndex];
-          const lockKey = `lock:session:end:${sessionId}`;
+          if (currentIndex >= normalizedIds.length) return;
           try {
-            const lockResult = await this.redis.withLock(lockKey, 60_000, async () => {
-              const session = await this.prisma.class_sessions.findUnique({
-                where: { id: BigInt(sessionId) },
-                include: {
-                  classes: {
-                    select: {
-                      org_id: true,
-                      student_profiles: {
-                        where: { status: 'active' },
-                        select: this.buildSessionStudentsSelect(),
-                      },
-                    }
-                  },
-                },
-              });
-
-              if (!session) {
-                return { ended: false };
-              }
-              if (!this.isSessionWithinDataScope(session, dataScope)) {
-                return { ended: false };
-              }
-
-              const now = new Date();
-              const sessionDeadline = this.getSessionDeadline(session);
-              if (session.status !== 'active' || sessionDeadline.getTime() <= now.getTime()) {
-                return { ended: false };
-              }
-
-              await this.finalizeSessionEarly(session, now);
-              return { ended: true };
-            });
-
-            if (!lockResult.locked || !lockResult.result?.ended) {
-              skippedCount += 1;
-              continue;
-            }
-
-            endedIds.push(sessionId);
-          } catch (error: any) {
-            failedCount += 1;
-            this.logger.error(
-              `批量结束签到失败，session_id=${sessionId}`,
-              error?.stack || error?.message || String(error),
-            );
-          }
+            await this.processSingleEndSession(normalizedIds[currentIndex], dataScope);
+          } catch { /* logged inside */ }
         }
-      }),
-    );
+      })();
+    }
 
     return {
       requested_count: normalizedIds.length,
-      ended_count: endedIds.length,
-      skipped_count: skippedCount,
-      failed_count: failedCount,
-      session_ids: endedIds,
+      ended_count: normalizedIds.length,
+      skipped_count: 0,
+      session_ids: normalizedIds,
     };
   }
 
@@ -981,7 +929,15 @@ export class AttendanceController {
       },
     });
     const attendanceQueryCost = Date.now() - attendanceQueryStartedAt;
-    const affectedStudentIds = Array.from(new Set(attendanceRecords.map((record) => record.student_id)));
+    // 优先从签到记录获取学生，如果签到记录已删除则从班级获取
+    let affectedStudentIds = Array.from(new Set(attendanceRecords.map((record) => record.student_id)));
+    if (affectedStudentIds.length === 0) {
+      const classStudents = await this.prisma.student_profiles.findMany({
+        where: { class_id: session.class_id, status: 'active' },
+        select: { id: true },
+      });
+      affectedStudentIds = classStudents.map(s => s.id);
+    }
 
     const recordDate = new Date(
       Date.UTC(
@@ -996,34 +952,26 @@ export class AttendanceController {
     dayEnd.setDate(dayEnd.getDate() + 1);
 
     const refsQueryStartedAt = Date.now();
-    const [warningRefs, currentWarningRefs, remainingRecords] = await Promise.all([
-      affectedStudentIds.length > 0
-        ? this.prisma.warnings.findMany({
-            where: {
-              student_id: { in: affectedStudentIds },
-              trigger_detail_json: {
-                path: '$.session_id',
-                equals: sessionId.toString(),
-              },
-            },
-            select: {
-              id: true,
-            },
-          })
+    // 兜底：同时按 session_id 和 student_id+日期+课程 匹配预警
+    const warningWhereBySession = affectedStudentIds.length > 0
+      ? { student_id: { in: affectedStudentIds }, trigger_detail_json: { path: '$.session_id', equals: sessionId.toString() } }
+      : null;
+    const warningWhereByDate = affectedStudentIds.length > 0
+      ? { student_id: { in: affectedStudentIds }, period_start: recordDate, course_id: session.course_id }
+      : null;
+
+    const [warningRefsBySession, warningRefsByDate, currentWarningRefsBySession, currentWarningRefsByDate, remainingRecords] = await Promise.all([
+      warningWhereBySession
+        ? this.prisma.warnings.findMany({ where: warningWhereBySession, select: { id: true } })
         : Promise.resolve([] as Array<{ id: bigint }>),
-      affectedStudentIds.length > 0
-        ? (this.prisma as any).warning_current_states.findMany({
-            where: {
-              student_id: { in: affectedStudentIds },
-              trigger_detail_json: {
-                path: '$.session_id',
-                equals: sessionId.toString(),
-              },
-            },
-            select: {
-              id: true,
-            },
-          })
+      warningWhereByDate
+        ? this.prisma.warnings.findMany({ where: warningWhereByDate, select: { id: true } })
+        : Promise.resolve([] as Array<{ id: bigint }>),
+      warningWhereBySession
+        ? (this.prisma as any).warning_current_states.findMany({ where: warningWhereBySession, select: { id: true } })
+        : Promise.resolve([] as Array<{ id: bigint }>),
+      warningWhereByDate
+        ? (this.prisma as any).warning_current_states.findMany({ where: warningWhereByDate, select: { id: true } })
         : Promise.resolve([] as Array<{ id: bigint }>),
       affectedStudentIds.length > 0
         ? this.prisma.attendance_records.findMany({
@@ -1047,8 +995,19 @@ export class AttendanceController {
     ]);
     const refsQueryCost = Date.now() - refsQueryStartedAt;
 
-    const warningsToDelete = warningRefs.map((warning: { id: bigint }) => warning.id);
-    const currentWarningsToDelete = currentWarningRefs.map((warning: { id: bigint }) => warning.id);
+    // 合并去重：按 session_id 匹配 + 按日期课程兜底
+    const warningIdSet = new Set<string>();
+    const currentWarningIdSet = new Set<string>();
+    for (const ref of warningRefsBySession) warningIdSet.add(ref.id.toString());
+    for (const ref of warningRefsByDate) warningIdSet.add(ref.id.toString());
+    for (const ref of currentWarningRefsBySession) currentWarningIdSet.add(ref.id.toString());
+    for (const ref of currentWarningRefsByDate) currentWarningIdSet.add(ref.id.toString());
+    const warningsToDelete = Array.from(warningIdSet).map(id => BigInt(id));
+    const currentWarningsToDelete = Array.from(currentWarningIdSet).map(id => BigInt(id));
+
+    this.logger.log(
+      `[batchDelete][refs] session=${sessionId.toString()} bySession=${warningRefsBySession.length} byDate=${warningRefsByDate.length} merged=${warningsToDelete.length} students=${affectedStudentIds.length} recordDate=${recordDate.toISOString()} courseId=${session.course_id?.toString()}`,
+    );
     const studentsWithRemainingRecords = new Set(
       remainingRecords.map((item) => item.student_id.toString()),
     );
@@ -1248,9 +1207,8 @@ export class AttendanceController {
     }
 
     if (recalcTargets.size > 0) {
-      this.dispatchWarningRecalcAsync(
+      await this.warningService.generateWarningsBatchOptimized(
         Array.from(recalcTargets.values()),
-        'attendance.batch_delete_sessions',
       );
     }
 
@@ -1645,6 +1603,35 @@ export class AttendanceController {
     }
   }
 
+  /**
+   * 秒结束：仅更新 session 状态为 ended，单条 update 极快
+   */
+  private async markSessionEndedFast(sessionId: bigint, cutoffTime: Date) {
+    const t = Date.now();
+    await this.prisma.class_sessions.update({
+      where: { id: sessionId },
+      data: {
+        status: 'ended',
+        session_end: cutoffTime,
+        qr_expire_at: cutoffTime,
+      },
+    });
+    this.logger.log(
+      `[endSession][fast] session=${sessionId.toString()} 状态已更新为ended 耗时=${Date.now() - t}ms`,
+    );
+  }
+
+  /**
+   * 异步处理签到记录和预警，不阻塞调用方
+   */
+  private finalizeSessionEarlyAsync(session: any, cutoffTime: Date) {
+    this.finalizeSessionEarly(session, cutoffTime).catch((err: any) => {
+      this.logger.error(
+        `[endSession][async] session=${session.id?.toString()} 异步处理签到记录失败: ${err?.message || err}`,
+      );
+    });
+  }
+
   private async finalizeSessionEarly(session: any, cutoffTime: Date) {
     const finalizeStartedAt = Date.now();
     this.logger.log(
@@ -1830,16 +1817,7 @@ export class AttendanceController {
             );
           }
         }
-        operations.push(
-          this.prisma.class_sessions.update({
-            where: { id: session.id },
-            data: {
-              status: 'ended',
-              session_end: cutoffTime,
-              qr_expire_at: cutoffTime,
-            },
-          }),
-        );
+        // session 状态已在 markSessionEndedFast 中更新，此处不再重复
 
         return operations;
       },
@@ -1850,36 +1828,16 @@ export class AttendanceController {
 
     void this.blockRecentEndedRecovery(session.id);
 
-    t = Date.now();
-    const warningResult = await this.processSessionWarningTargets(
-      session.id,
-      Array.from(affectedRecords.values()),
-      'attendance.end_session',
-    );
-    this.logger.log(
-      `[endSession][finalize] session=${session.id.toString()} 预警编排完成 耗时=${Date.now() - t}ms 模式=${warningResult.warning_queue_mode} 新建=${warningResult.warnings_generated} 入队=${warningResult.warnings_enqueued} 去重=${warningResult.warnings_deduped} 锁定=${warningResult.targets_locked} 可结算=${warningResult.can_settle}`,
-    );
-    t = Date.now();
-    this.attendanceSnapshotService.refreshSessions([session.id]).catch((err: any) =>
-      this.logger.warn(`快照刷新失败: ${err?.message || err}`),
-    );
-    this.logger.log(
-      `[endSession][finalize] session=${session.id.toString()} 快照刷新已派发 耗时=${Date.now() - t}ms`,
-    );
-
-    if (warningResult.can_settle) {
-      t = Date.now();
-      markSessionSettled(this.redis, session.id, this.sessionSettledTtlSeconds, this.logger).catch(
-        () => {},
-      );
+    // 批量优化：一次查询+内存计算+批量写入
+    const targets = Array.from(affectedRecords.values());
+    const startWarn = Date.now();
+    this.warningService.generateWarningsBatchOptimized(targets).then(result => {
       this.logger.log(
-        `[endSession][finalize] session=${session.id.toString()} 结算标记已派发 耗时=${Date.now() - t}ms`,
+        `[endSession][finalize] session=${session.id.toString()} 优化预警完成 耗时=${Date.now() - startWarn}ms 生成=${result.warnings_generated}`,
       );
-    } else {
-      this.logger.warn(
-        `[endSession][finalize] session=${session.id.toString()} 预警尚未稳定完成，跳过 settled 标记，等待恢复扫描`,
-      );
-    }
+    }).catch((err: any) => {
+      this.logger.error(`[endSession][finalize] session=${session.id.toString()} 优化预警失败: ${err?.message || err}`);
+    });
 
     this.logger.log(
       `[endSession][finalize] session=${session.id.toString()} 完成 总耗时=${Date.now() - finalizeStartedAt}ms`,
@@ -1888,12 +1846,6 @@ export class AttendanceController {
     return {
       affectedStudents: students.length,
       absent_records_generated: absentCount,
-      warnings_generated: Number(warningResult.warnings_generated || 0),
-      warnings_enqueued: Number(warningResult.warnings_enqueued || 0),
-      warnings_deduped: Number(warningResult.warnings_deduped || 0),
-      warning_queue_mode: warningResult.warning_queue_mode,
-      warning_targets_locked: Number(warningResult.targets_locked || 0),
-      warning_can_settle: Boolean(warningResult.can_settle),
     };
   }
 
@@ -2863,69 +2815,42 @@ export class AttendanceController {
       `[endSession] trace=${req.trace_id || '-'} 进入 课次=${id} 守卫耗时=${endpointStart - (req._guardEnterAt || endpointStart)}ms`,
     );
 
-    let t = Date.now();
-    // 课次级分布式锁：避免同一课次被重复结束，同时允许不同课次并行结束
-    const lockKey = `lock:session:end:${id}`;
-    const lockResult = await this.redis.withLock(lockKey, 60_000, async () => {
-      const callbackStartedAt = Date.now();
-      const t0 = Date.now();
-      const session = await this.prisma.class_sessions.findUnique({
-        where: { id: BigInt(id) },
-        include: {
-          classes: {
-            select: {
-              org_id: true,
-              student_profiles: {
-                where: { status: 'active' },
-                select: this.buildSessionStudentsSelect(),
-              },
+    const session = await this.prisma.class_sessions.findUnique({
+      where: { id: BigInt(id) },
+      include: {
+        classes: {
+          select: {
+            student_profiles: {
+              where: { status: 'active' },
+              select: this.buildSessionStudentsSelect(),
             },
           },
         },
-      });
-      this.logger.log(
-        `[endSession] trace=${req.trace_id || '-'} 查询课次 耗时=${Date.now() - t0}ms 课次=${id} 学生数=${session?.classes?.student_profiles?.length || 0}`,
-      );
-
-      if (!session) {
-        return { code: 404, message: '操作失败', data: null, trace_id: req.trace_id };
-      }
-
-      const now = new Date();
-      const sessionDeadline = this.getSessionDeadline(session);
-      if (session.status !== 'active' || sessionDeadline.getTime() <= now.getTime()) {
-        return {
-          code: 400,
-          message: '当前课次已结束或不可提前结束',
-          data: null,
-          trace_id: req.trace_id,
-        };
-      }
-
-      const t1 = Date.now();
-      const result = await this.finalizeSessionEarly(session, now);
-      this.logger.log(
-        `[endSession] trace=${req.trace_id || '-'} 提前结束课次 耗时=${Date.now() - t1}ms 课次=${id}`,
-      );
-      this.logger.log(
-        `[endSession] trace=${req.trace_id || '-'} 锁回调总计 耗时=${Date.now() - callbackStartedAt}ms 课次=${id}`,
-      );
-
-      return {
-        code: 0,
-        message: '已提前结束签到',
-        data: result,
-        trace_id: req.trace_id,
-      };
+      },
     });
     this.logger.log(
-      `[endSession] trace=${req.trace_id || '-'} 获取锁总计 耗时=${Date.now() - t}ms 课次=${id} 锁定=${lockResult.locked}`,
-    );
-    this.logger.log(
-      `[endSession] trace=${req.trace_id || '-'} 总计 耗时=${Date.now() - endpointStart}ms 课次=${id} 锁=${lockResult.locked}`,
+      `[endSession] trace=${req.trace_id || '-'} 查询课次+学生 耗时=${Date.now() - endpointStart}ms 课次=${id} 学生数=${session?.classes?.student_profiles?.length || 0}`,
     );
 
-    if (!lockResult.locked) {
+    if (!session) {
+      return { code: 404, message: '操作失败', data: null, trace_id: req.trace_id };
+    }
+
+    const now = new Date();
+    const sessionDeadline = this.getSessionDeadline(session);
+    if (session.status !== 'active' || sessionDeadline.getTime() <= now.getTime()) {
+      return {
+        code: 400,
+        message: '当前课次已结束或不可提前结束',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const lockKey = `lock:session:end:${id}`;
+    const lockValue = `${process.pid}:${Date.now()}:${id}`;
+    const locked = await this.redis.acquireLock(lockKey, 60_000, lockValue);
+    if (!locked) {
       return {
         code: 409,
         message: '该签到正在处理中，请稍后再试',
@@ -2934,7 +2859,41 @@ export class AttendanceController {
       };
     }
 
-    return lockResult.result;
+    try {
+      const t1 = Date.now();
+      await this.markSessionEndedFast(session.id, now);
+      setImmediate(() => {
+        this.finalizeSessionEarly(session, now)
+          .catch((err: any) => {
+            this.logger.error(
+              `[endSession][async] session=${session.id?.toString()} 异步处理签到记录失败: ${err?.message || err}`,
+            );
+          })
+          .finally(() => {
+            this.redis.releaseLock(lockKey, lockValue).catch((releaseError: any) => {
+              this.logger.error(
+                `[endSession][async] session=${session.id?.toString()} 释放锁失败: ${releaseError?.message || releaseError}`,
+              );
+            });
+          });
+      });
+      this.logger.log(
+        `[endSession] trace=${req.trace_id || '-'} 提前结束课次(秒返回) 耗时=${Date.now() - t1}ms 课次=${id}`,
+      );
+      this.logger.log(
+        `[endSession] trace=${req.trace_id || '-'} 总计 耗时=${Date.now() - endpointStart}ms 课次=${id} 锁=true`,
+      );
+
+      return {
+        code: 0,
+        message: '已提前结束签到',
+        data: { affectedStudents: null },
+        trace_id: req.trace_id,
+      };
+    } catch (error) {
+      await this.redis.releaseLock(lockKey, lockValue);
+      throw error;
+    }
   }
 
   @Get('sessions/:id/qr-state')

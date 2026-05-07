@@ -105,7 +105,7 @@ const publishNotification = async () => {
     if (response.data.code === 0) {
       ElMessage.success('发布成功');
       form.value = { title: '', content: '' };
-      loadNotifications();
+      await loadNotifications();
     } else {
       ElMessage.error(response.data.message || '发布失败');
     }

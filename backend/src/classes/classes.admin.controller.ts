@@ -213,36 +213,54 @@ export class ClassesAdminController {
       counselors.map((item: any) => [item.id.toString(), item.name]),
     );
 
-    // 计算每个班级的学生人数和学院名称
-    const classesWithCount = await Promise.all(
-      classes.map(async (c: any) => {
-        const studentCount = await this.prisma.student_profiles.count({
-          where: { class_id: c.id },
-        });
+    // Batch: collect all class IDs and org IDs, then do 2 queries instead of 2*N
+    const classIds = classes.map((c: any) => c.id);
+    const orgIds = Array.from(
+      new Set(classes.map((c: any) => c.org_id.toString())),
+    ).map((id) => BigInt(id));
 
-        // 获取学院信息
-        const org = await this.prisma.orgs.findUnique({
-          where: { id: c.org_id },
-        });
+    const [studentCountRows, orgs] = await Promise.all([
+      classIds.length > 0
+        ? this.prisma.student_profiles.groupBy({
+            by: ['class_id'],
+            where: { class_id: { in: classIds } },
+            _count: { _all: true },
+          })
+        : [],
+      orgIds.length > 0
+        ? this.prisma.orgs.findMany({
+            where: { id: { in: orgIds } },
+            select: { id: true, name: true },
+          })
+        : [],
+    ]);
 
-        return {
-          id: c.id.toString(),
-          org_id: c.org_id.toString(),
-          org_name: org?.name || '未知学院',
-          class_name: c.class_name,
-          enroll_year: c.enroll_year,
-          major: c.major,
-          grade_level: c.grade_level,
-          student_count: studentCount,
-          counselor_user_id: c.counselor_user_id?.toString(),
-          teacher_name: c.counselor_user_id
-            ? counselorMap.get(c.counselor_user_id.toString()) || ''
-            : '',
-          status: c.status,
-          created_at: c.created_at,
-        };
-      })
+    const studentCountMap = new Map(
+      studentCountRows.map((row: any) => [
+        row.class_id.toString(),
+        row._count._all,
+      ]),
     );
+    const orgMap = new Map(
+      orgs.map((org: any) => [org.id.toString(), org.name]),
+    );
+
+    const classesWithCount = classes.map((c: any) => ({
+      id: c.id.toString(),
+      org_id: c.org_id.toString(),
+      org_name: orgMap.get(c.org_id.toString()) || '未知学院',
+      class_name: c.class_name,
+      enroll_year: c.enroll_year,
+      major: c.major,
+      grade_level: c.grade_level,
+      student_count: studentCountMap.get(c.id.toString()) || 0,
+      counselor_user_id: c.counselor_user_id?.toString(),
+      teacher_name: c.counselor_user_id
+        ? counselorMap.get(c.counselor_user_id.toString()) || ''
+        : '',
+      status: c.status,
+      created_at: c.created_at,
+    }));
 
     return {
       code: 0,

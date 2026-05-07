@@ -62,6 +62,7 @@ import { ref, reactive } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getStudentWarnings } from '../api';
 import { getWarningLevelColor, getWarningLevelText } from '../lib/warning-level';
+import { formatDateTime } from '../lib/format';
 
 const searchForm = reactive({
   name: '',
@@ -136,15 +137,5 @@ const formatDate = (dateStr: string) => {
   return date.toLocaleDateString('zh-CN');
 };
 
-const formatDateTime = (dateStr: string) => {
-  if (!dateStr) return '-';
-  const date = new Date(dateStr);
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
+
 </script>

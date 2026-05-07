@@ -431,6 +431,7 @@ import {
   getSecurityEventDetail,
   getSecurityEvents,
 } from '../api';
+import { formatDateTime } from '../lib/format';
 
 const activeTab = ref('operations');
 
@@ -578,12 +579,7 @@ const formatDateParam = (value: string | Date) => {
   return `${year}-${month}-${day}`;
 };
 
-const formatDateTime = (value?: string) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleString('zh-CN');
-};
+
 
 const formatJson = (value: any) => {
   if (value === null || value === undefined || value === '') {

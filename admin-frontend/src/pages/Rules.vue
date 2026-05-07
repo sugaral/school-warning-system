@@ -132,6 +132,7 @@
 import { computed, ref, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { listRules, createRule as apiCreateRule, updateRule, deleteRule } from '../api';
+import { getWarningLevelColor as getLevelColor, getWarningLevelText as getLevelText } from '../lib/warning-level';
 
 const rules = ref<any[]>([]);
 const showCreateDialog = ref(false);
@@ -211,26 +212,6 @@ const confirmDelete = async (rule: any) => {
       ElMessage.error(e?.message || '删除失败');
     }
   }
-};
-
-const getLevelColor = (level: string) => {
-  const map: Record<string, string> = {
-    yellow: '#d4a017',
-    orange: '#f97316',
-    red: '#dc2626',
-    severe: '#7c3aed',
-  };
-  return map[level] || '#909399';
-};
-
-const getLevelText = (level: string) => {
-  const map: Record<string, string> = {
-    yellow: '黄色',
-    orange: '橙色',
-    red: '红色',
-    severe: '严重',
-  };
-  return map[level] || level;
 };
 
 const getMetricText = (metric: string) => {

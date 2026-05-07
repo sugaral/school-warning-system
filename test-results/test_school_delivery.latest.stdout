@@ -1,0 +1,488 @@
+{
+  "meta": {
+    "base": "http://localhost:3000",
+    "started_at": "2026-05-07T09:24:45.896542",
+    "account": "12345678911",
+    "finished_at": "2026-05-07T09:25:19.704640"
+  },
+  "precheck": {
+    "login_latency_ms": 317.89
+  },
+  "cleanup_before": {
+    "removed": 0,
+    "ids": []
+  },
+  "smoke_tests": [
+    {
+      "name": "health",
+      "method": "GET",
+      "path": "/health",
+      "ok": true,
+      "status": 200,
+      "latency_ms": 31.34
+    },
+    {
+      "name": "dashboard_summary",
+      "method": "GET",
+      "path": "/admin/stats/summary",
+      "ok": true,
+      "status": 200,
+      "latency_ms": 138.92
+    },
+    {
+      "name": "warnings_list",
+      "method": "GET",
+      "path": "/warnings?page=1&page_size=10",
+      "ok": true,
+      "status": 200,
+      "latency_ms": 374.95
+    },
+    {
+      "name": "warning_scan_status",
+      "method": "GET",
+      "path": "/jobs/scan-status",
+      "ok": true,
+      "status": 200,
+      "latency_ms": 27.55
+    },
+    {
+      "name": "reports_overview",
+      "method": "GET",
+      "path": "/admin/reports/overview",
+      "ok": false,
+      "status": 404,
+      "latency_ms": 11.01,
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "attendance_list",
+      "method": "GET",
+      "path": "/attendance/sessions?status=all&pageSize=20",
+      "ok": true,
+      "status": 200,
+      "latency_ms": 8.4
+    },
+    {
+      "name": "attendance_options",
+      "method": "GET",
+      "path": "/attendance/session-options",
+      "ok": true,
+      "status": 200,
+      "latency_ms": 50.83
+    },
+    {
+      "name": "system_config",
+      "method": "GET",
+      "path": "/admin/config",
+      "ok": true,
+      "status": 200,
+      "latency_ms": 30.73
+    }
+  ],
+  "latency_benchmarks": {
+    "health": {
+      "summary": {
+        "count": 5,
+        "min_ms": 2.43,
+        "avg_ms": 3.19,
+        "p50_ms": 2.89,
+        "p90_ms": 4.03,
+        "p95_ms": 4.08,
+        "max_ms": 4.14
+      },
+      "failures": []
+    },
+    "login_admin": {
+      "summary": {
+        "count": 5,
+        "min_ms": 188.47,
+        "avg_ms": 194.46,
+        "p50_ms": 193.65,
+        "p90_ms": 201.3,
+        "p95_ms": 203.1,
+        "max_ms": 204.9
+      },
+      "failures": []
+    },
+    "dashboard_summary": {
+      "summary": {
+        "count": 5,
+        "min_ms": 6.99,
+        "avg_ms": 15.57,
+        "p50_ms": 10.42,
+        "p90_ms": 27.08,
+        "p95_ms": 28.03,
+        "max_ms": 28.98
+      },
+      "failures": []
+    },
+    "warnings_list": {
+      "summary": {
+        "count": 5,
+        "min_ms": 477.2,
+        "avg_ms": 492.1,
+        "p50_ms": 491.61,
+        "p90_ms": 504.44,
+        "p95_ms": 504.63,
+        "max_ms": 504.81
+      },
+      "failures": []
+    },
+    "attendance_list": {
+      "summary": {
+        "count": 5,
+        "min_ms": 6.51,
+        "avg_ms": 14.6,
+        "p50_ms": 11.99,
+        "p90_ms": 23.4,
+        "p95_ms": 23.48,
+        "max_ms": 23.56
+      },
+      "failures": []
+    },
+    "reports_overview": {
+      "summary": {},
+      "failures": [
+        {
+          "status": 404,
+          "error": "HTTP Error 404: Not Found"
+        },
+        {
+          "status": 404,
+          "error": "HTTP Error 404: Not Found"
+        },
+        {
+          "status": 404,
+          "error": "HTTP Error 404: Not Found"
+        },
+        {
+          "status": 404,
+          "error": "HTTP Error 404: Not Found"
+        },
+        {
+          "status": 404,
+          "error": "HTTP Error 404: Not Found"
+        }
+      ]
+    },
+    "scan_status": {
+      "summary": {
+        "count": 5,
+        "min_ms": 6.15,
+        "avg_ms": 16.1,
+        "p50_ms": 12.2,
+        "p90_ms": 29.98,
+        "p95_ms": 34.36,
+        "max_ms": 38.73
+      },
+      "failures": []
+    }
+  },
+  "workflow_tests": {
+    "single_attendance_cycle": {
+      "warnings_before": {
+        "total": 113,
+        "latency_ms": 116.95,
+        "ok": true
+      },
+      "create_session": {
+        "ok": true,
+        "status": 201,
+        "latency_ms": 90.72,
+        "session_id": "1458"
+      },
+      "get_session_attendance": {
+        "ok": true,
+        "status": 200,
+        "latency_ms": 42.16
+      },
+      "get_qr_state": {
+        "ok": true,
+        "status": 200,
+        "latency_ms": 32.77
+      },
+      "end_session": {
+        "ok": true,
+        "status": 201,
+        "latency_ms": 9801.64
+      },
+      "warnings_after_end": {
+        "total": 113,
+        "latency_ms": 77.35,
+        "ok": true
+      },
+      "warning_delta_after_end": 0,
+      "delete_session": {
+        "ok": true,
+        "status": 200,
+        "latency_ms": 69.77,
+        "deleted_warnings_count": 0
+      },
+      "warnings_after_delete": {
+        "total": 113,
+        "latency_ms": 67.58,
+        "ok": true
+      },
+      "warning_delta_after_delete": 0
+    },
+    "batch_attendance_cycle": {
+      "create_batch": {
+        "ok": true,
+        "status": 201,
+        "latency_ms": 76.26,
+        "count": 10
+      },
+      "batch_end": {
+        "ok": true,
+        "status": 201,
+        "latency_ms": 11.25
+      },
+      "batch_delete": {
+        "ok": true,
+        "status": 201,
+        "latency_ms": 650.53
+      }
+    }
+  },
+  "pressure_tests": [
+    {
+      "name": "health_read_50x10",
+      "method": "GET",
+      "path": "/health",
+      "concurrency": 10,
+      "requests": 50,
+      "duration_s": 0.37,
+      "throughput_rps": 134.55,
+      "success": 50,
+      "failed": 0,
+      "status_counts": {
+        "200": 50
+      },
+      "latency_summary": {
+        "count": 50,
+        "min_ms": 13.05,
+        "avg_ms": 61.09,
+        "p50_ms": 50.11,
+        "p90_ms": 115.75,
+        "p95_ms": 117.58,
+        "max_ms": 153.52
+      },
+      "failure_samples": []
+    },
+    {
+      "name": "dashboard_summary_60x10",
+      "method": "GET",
+      "path": "/admin/stats/summary",
+      "concurrency": 10,
+      "requests": 60,
+      "duration_s": 1.03,
+      "throughput_rps": 58.0,
+      "success": 60,
+      "failed": 0,
+      "status_counts": {
+        "200": 60
+      },
+      "latency_summary": {
+        "count": 60,
+        "min_ms": 22.74,
+        "avg_ms": 155.69,
+        "p50_ms": 164.62,
+        "p90_ms": 192.01,
+        "p95_ms": 198.38,
+        "max_ms": 206.38
+      },
+      "failure_samples": []
+    },
+    {
+      "name": "warnings_list_60x10",
+      "method": "GET",
+      "path": "/warnings?page=1&page_size=20",
+      "concurrency": 10,
+      "requests": 60,
+      "duration_s": 4.75,
+      "throughput_rps": 12.63,
+      "success": 60,
+      "failed": 0,
+      "status_counts": {
+        "200": 60
+      },
+      "latency_summary": {
+        "count": 60,
+        "min_ms": 471.48,
+        "avg_ms": 737.19,
+        "p50_ms": 736.65,
+        "p90_ms": 853.63,
+        "p95_ms": 957.93,
+        "max_ms": 1007.94
+      },
+      "failure_samples": []
+    },
+    {
+      "name": "attendance_list_40x8",
+      "method": "GET",
+      "path": "/attendance/sessions?status=all&pageSize=20",
+      "concurrency": 8,
+      "requests": 40,
+      "duration_s": 0.52,
+      "throughput_rps": 76.6,
+      "success": 40,
+      "failed": 0,
+      "status_counts": {
+        "200": 40
+      },
+      "latency_summary": {
+        "count": 40,
+        "min_ms": 9.07,
+        "avg_ms": 91.3,
+        "p50_ms": 90.0,
+        "p90_ms": 139.18,
+        "p95_ms": 154.08,
+        "max_ms": 157.48
+      },
+      "failure_samples": []
+    },
+    {
+      "name": "login_admin_30x6",
+      "method": "POST",
+      "path": "/auth/login_admin",
+      "concurrency": 6,
+      "requests": 30,
+      "duration_s": 5.25,
+      "throughput_rps": 5.71,
+      "success": 24,
+      "failed": 6,
+      "status_counts": {
+        "201": 24,
+        "429": 6
+      },
+      "latency_summary": {
+        "count": 24,
+        "min_ms": 690.02,
+        "avg_ms": 1241.93,
+        "p50_ms": 1312.73,
+        "p90_ms": 1440.22,
+        "p95_ms": 1621.95,
+        "max_ms": 1664.63
+      },
+      "failure_samples": [
+        {
+          "status": 429,
+          "error": "HTTP Error 429: Too Many Requests"
+        },
+        {
+          "status": 429,
+          "error": "HTTP Error 429: Too Many Requests"
+        },
+        {
+          "status": 429,
+          "error": "HTTP Error 429: Too Many Requests"
+        },
+        {
+          "status": 429,
+          "error": "HTTP Error 429: Too Many Requests"
+        },
+        {
+          "status": 429,
+          "error": "HTTP Error 429: Too Many Requests"
+        },
+        {
+          "status": 429,
+          "error": "HTTP Error 429: Too Many Requests"
+        }
+      ]
+    }
+  ],
+  "backend_log_excerpt": [
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warning_total +19ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warning_total +8ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] student_total +21ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] student_total +10ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] violation_total +25ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] violation_total +14ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] page_students +28ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] page_students +18ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +33ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +24ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningProcessingService] \u001b[39m\u001b[33m[warning-processing] processing-map slow 642ms students=20\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +726ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +731ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +736ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] start +0ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] user_roles +9ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] scope_ready +9ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warning_total +14ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] student_total +16ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] violation_total +19ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] page_students +21ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +29ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningProcessingService] \u001b[39m\u001b[33m[warning-processing] processing-map slow 512ms students=20\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +750ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningProcessingService] \u001b[39m\u001b[33m[warning-processing] processing-map slow 510ms students=20\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +739ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +747ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +759ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +750ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +765ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] start +0ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] user_roles +18ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] scope_ready +19ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningProcessingService] \u001b[39m\u001b[33m[warning-processing] processing-map slow 490ms students=20\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +741ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warning_total +26ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +759ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningProcessingService] \u001b[39m\u001b[33m[warning-processing] processing-map slow 491ms students=20\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +775ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] student_total +52ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +772ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +792ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] violation_total +60ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] page_students +63ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +796ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] warnings_findMany +68ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningProcessingService] \u001b[39m\u001b[33m[warning-processing] processing-map slow 470ms students=20\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +564ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningProcessingService] \u001b[39m\u001b[33m[warning-processing] processing-map slow 454ms students=20\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +561ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningProcessingService] \u001b[39m\u001b[33m[warning-processing] processing-map slow 454ms students=20\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +558ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +576ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +587ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +584ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +580ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +596ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +595ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningProcessingService] \u001b[39m\u001b[33m[warning-processing] processing-map slow 425ms students=20\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +460ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningProcessingService] \u001b[39m\u001b[33m[warning-processing] processing-map slow 424ms students=20\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +448ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +463ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +453ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +465ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +457ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningProcessingService] \u001b[39m\u001b[33m[warning-processing] processing-map slow 421ms students=20\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +451ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +454ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +456ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningProcessingService] \u001b[39m\u001b[33m[warning-processing] processing-map slow 426ms students=20\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] processing_map +494ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] students_classes +498ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:13 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[WarningsController] \u001b[39m\u001b[33m[warnings.list] teachers_orgs +499ms\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:19 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[HttpExceptionFilter] \u001b[39m\u001b[33mPOST /auth/login_admin - status=429 trace_id=f18818bb-2a03-4856-ae20-684ed2da0a32 详情=\"ThrottlerException: Too Many Requests\"\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:19 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[HttpExceptionFilter] \u001b[39m\u001b[33mPOST /auth/login_admin - status=429 trace_id=376d6387-ca52-432b-9587-6fe01efd0247 详情=\"ThrottlerException: Too Many Requests\"\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:19 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[HttpExceptionFilter] \u001b[39m\u001b[33mPOST /auth/login_admin - status=429 trace_id=eb3b6f55-db1b-4af0-b717-0e45d12145a8 详情=\"ThrottlerException: Too Many Requests\"\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:19 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[HttpExceptionFilter] \u001b[39m\u001b[33mPOST /auth/login_admin - status=429 trace_id=f6b1125a-3ac7-4593-a7bd-0b03d52d4a73 详情=\"ThrottlerException: Too Many Requests\"\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:19 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[HttpExceptionFilter] \u001b[39m\u001b[33mPOST /auth/login_admin - status=429 trace_id=be1c7426-accd-41b1-82a7-9f8684d01cc1 详情=\"ThrottlerException: Too Many Requests\"\u001b[39m",
+    "\u001b[33m[Nest] 1  - \u001b[39m05/07/2026, 9:25:19 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[HttpExceptionFilter] \u001b[39m\u001b[33mPOST /auth/login_admin - status=429 trace_id=adc67449-84b2-4422-8998-c26fdf354014 详情=\"ThrottlerException: Too Many Requests\"\u001b[39m"
+  ],
+  "evaluation": {
+    "suitable_for_formal_school_delivery": false,
+    "conclusions": [
+      "基础健康检查延迟优秀，可视为生产可用。",
+      "管理员登录延迟较低，满足高频登录或会话续期场景。",
+      "管理端仪表盘汇总接口延迟可接受，适合校级正式使用。",
+      "预警列表查询速度达到日常值班和辅导员使用要求。",
+      "批量结束签到在中小规模并发下表现良好。",
+      "压力测试中存在失败请求，需要关注限流、连接池或个别慢查询。"
+    ]
+  }
+}

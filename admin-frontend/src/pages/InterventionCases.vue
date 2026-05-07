@@ -434,6 +434,7 @@ import {
   listClassesAdmin,
   listOrgs,
 } from '../api';
+import { formatDateTime } from '../lib/format';
 
 const items = ref<any[]>([]);
 const total = ref(0);
@@ -540,10 +541,7 @@ const getPriorityText = (priority: number) => {
   return '低';
 };
 
-const formatDateTime = (value: string) => {
-  if (!value) return '-';
-  return new Date(value).toLocaleString('zh-CN');
-};
+
 
 const formatSourceIds = (value: string[]) => {
   if (!Array.isArray(value) || value.length === 0) {

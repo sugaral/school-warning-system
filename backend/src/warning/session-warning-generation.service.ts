@@ -108,6 +108,7 @@ export class SessionWarningGenerationService {
       Date.UTC(periodDate.getUTCFullYear(), periodDate.getUTCMonth(), periodDate.getUTCDate()),
     );
     const periodEnd = new Date(periodStart);
+    periodEnd.setUTCHours(23, 59, 59, 999);
 
     const session = await this.prisma.class_sessions.findUnique({
       where: { id: sessionId },

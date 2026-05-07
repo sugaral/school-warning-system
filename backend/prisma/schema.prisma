@@ -109,6 +109,11 @@ model users {
   orgs             orgs?             @relation(fields: [org_id], references: [id])
 
   @@index([org_id], map: "users_org_id_fkey")
+  @@index([mobile])
+  @@index([email])
+  @@index([wx_openid])
+  @@index([user_type])
+  @@index([status])
   @@map("users")
 }
 
@@ -146,6 +151,8 @@ model student_profiles {
   users                    users                @relation(fields: [user_id], references: [id])
 
   @@index([major_id])
+  @@index([org_id])
+  @@index([status])
   @@index([class_id, status, student_no])
   @@index([class_id], map: "student_profiles_class_id_fkey")
   @@map("student_profiles")
@@ -160,6 +167,7 @@ model user_roles {
   created_at DateTime @default(now())
 
   @@unique([user_id, role, scope_type, scope_id])
+  @@index([user_id])
   @@map("user_roles")
 }
 
@@ -194,7 +202,20 @@ model security_events {
 
   @@index([event_type, created_at])
   @@index([user_id, created_at])
+  @@index([created_at])
   @@map("security_events")
+}
+
+
+model dashboard_cache {
+  cache_key   String   @id @db.VarChar(191)
+  payload_json Json
+  expires_at  DateTime
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@index([expires_at])
+  @@map("dashboard_cache")
 }
 
 model class_sessions {
@@ -310,6 +331,8 @@ model warnings {
   close_note          String?   @db.VarChar(500)
 
   @@index([student_id, created_at])
+  @@index([student_id, status])
+  @@index([student_id, level])
   @@index([student_id, period_start, period_end, created_at])
   @@index([student_id, status, created_at])
   @@index([student_id, metric, window, status, period_start, period_end])
@@ -351,6 +374,7 @@ model warning_current_states {
   @@index([student_id, period_start, period_end, updated_at])
   @@index([class_id, status])
   @@index([org_id, status])
+  @@index([org_id, level])
   @@index([course_id, status])
   @@index([status, course_id, updated_at])
   @@map("warning_current_states")
@@ -420,6 +444,9 @@ model notification_logs {
 
   @@index([job_id])
   @@index([sent_at])
+  @@index([send_status, sent_at])
+  @@index([channel, sent_at])
+  @@index([receiver(64), sent_at])
   @@map("notification_logs")
 }
 
@@ -440,6 +467,8 @@ model audit_logs {
   @@index([actor_user_id, created_at])
   @@index([entity_type, entity_id])
   @@index([action, created_at])
+  @@index([created_at])
+  @@index([entity_type, created_at])
   @@map("audit_logs")
 }
 
@@ -896,6 +925,7 @@ model notification {
   updated_at DateTime @default(now())
 
   @@index([user_id])
+  @@index([user_id, status])
   @@index([created_at])
   @@map("notification")
 }

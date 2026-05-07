@@ -16,6 +16,7 @@ import { AuthGuard } from '../shared/auth.guard';
 import { PermissionGuard } from '../rbac/permission.guard';
 import { Permissions, DataScope } from '../rbac/permission.decorator';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { Response } from 'express';
 import {
   generateStrongPassword,
@@ -143,7 +144,7 @@ export class StudentsAdminController {
     }
 
     for (let index = 0; index < safeLength; index += 1) {
-      const randomIndex = Math.floor(Math.random() * chars.length);
+      const randomIndex = crypto.randomInt(chars.length);
       password += chars[randomIndex];
     }
 

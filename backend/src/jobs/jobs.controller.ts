@@ -287,38 +287,66 @@ export class JobsController {
 
     for (const session of endedSessions) {
       const students = session.classes?.student_profiles || [];
-      let sessionHasWarningTargets = false;
-
-      for (const student of students) {
-        const existingRecord = await this.prisma.attendance_records.findFirst({
-          where: {
-            session_id: session.id,
-            student_id: student.id,
-          },
+      if (students.length === 0) {
+        await this.prisma.class_sessions.update({
+          where: { id: session.id },
+          data: { status: 'ended' },
         });
+        sessionsToSettle.add(session.id.toString());
+        processedCount += 1;
+        continue;
+      }
 
-        if (existingRecord) {
-          continue;
-        }
+      const sessionStudentIds = students.map((student) => student.id);
+      const existingRecords = await this.prisma.attendance_records.findMany({
+        where: {
+          session_id: session.id,
+          student_id: { in: sessionStudentIds },
+        },
+        select: {
+          student_id: true,
+        },
+      });
+      const existingStudentIdSet = new Set(existingRecords.map((record) => record.student_id.toString()));
 
-        await this.prisma.attendance_records.create({
-          data: {
-            session_id: session.id,
-            student_id: student.id,
-            checkin_time: session.session_end || session.qr_expire_at,
-            attendance_status: 'absent',
-            source: 'system',
-          },
+      const missingStudents = students.filter(
+        (student) => !existingStudentIdSet.has(student.id.toString()),
+      );
+
+      if (missingStudents.length === 0) {
+        await this.prisma.class_sessions.update({
+          where: { id: session.id },
+          data: { status: 'ended' },
         });
+        sessionsToSettle.add(session.id.toString());
+        processedCount += 1;
+        continue;
+      }
 
-        const recordDate = new Date(
-          Date.UTC(
-            session.session_start.getFullYear(),
-            session.session_start.getMonth(),
-            session.session_start.getDate(),
-          ),
-        );
+      const recordDate = new Date(
+        Date.UTC(
+          session.session_start.getFullYear(),
+          session.session_start.getMonth(),
+          session.session_start.getDate(),
+        ),
+      );
 
+      const attendanceCreateData = missingStudents.map((student) => ({
+        session_id: session.id,
+        student_id: student.id,
+        checkin_time: session.session_end || session.qr_expire_at,
+        attendance_status: 'absent',
+        source: 'system',
+      }));
+
+      if (attendanceCreateData.length > 0) {
+        await this.prisma.attendance_records.createMany({
+          data: attendanceCreateData,
+          skipDuplicates: true,
+        });
+      }
+
+      for (const student of missingStudents) {
         await this.prisma.daily_records.upsert({
           where: {
             student_id_record_date_course_id: {
@@ -358,22 +386,16 @@ export class JobsController {
             sessionId: session.id,
           },
         );
-
-        absentCount++;
-        sessionHasWarningTargets = true;
       }
+
+      absentCount += missingStudents.length;
 
       await this.prisma.class_sessions.update({
         where: { id: session.id },
         data: { status: 'ended' },
       });
-      if (sessionHasWarningTargets) {
-        sessionsPendingWarningSettlement.add(session.id.toString());
-      } else {
-        sessionsToSettle.add(session.id.toString());
-      }
-
-      processedCount++;
+      sessionsPendingWarningSettlement.add(session.id.toString());
+      processedCount += 1;
     }
 
     if (affectedRecords.size > 0) {
@@ -398,9 +420,11 @@ export class JobsController {
       warningQueueMode = 'skipped';
     }
 
-    for (const sessionId of sessionsToSettle) {
-      await markSessionSettled(this.redis, sessionId, this.sessionSettledTtlSeconds, this.logger);
-    }
+    await Promise.all(
+      Array.from(sessionsToSettle).map((sessionId) =>
+        markSessionSettled(this.redis, sessionId, this.sessionSettledTtlSeconds, this.logger),
+      ),
+    );
 
     return {
       sessions_processed: processedCount,

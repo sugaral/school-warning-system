@@ -290,8 +290,8 @@ const downloadReport = async (row: any) => {
     // 针对被下载器拦截的情况优化提示
     console.warn('Download process info:', e);
     ElMessage({
-      message: '如果下载没有自动启动，请检查您的下载器（如 IDM）或浏览器下载列表。',
-      type: 'success', // 改为 success/info 语气，因为通常 IDM 已经接管了
+      message: '下载失败，请稍后重试。',
+      type: 'error',
       duration: 5000
     });
   }

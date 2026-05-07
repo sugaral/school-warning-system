@@ -247,6 +247,7 @@ import {
   listTeachers,
   updateClass,
 } from '../api';
+import { formatDateTime } from '../lib/format';
 
 type OrgItem = { id: string; org_name: string };
 type TeacherItem = { id: string; name: string; org_id?: string };
@@ -359,16 +360,7 @@ function formatGender(value?: string) {
   return '未知';
 }
 
-function formatDateTime(dateTime: string) {
-  const date = new Date(dateTime);
-  if (Number.isNaN(date.getTime())) return '-';
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day} ${hours}:${minutes}`;
-}
+
 
 function resetForm() {
   form.id = '';
@@ -390,7 +382,7 @@ async function loadOrgs() {
 }
 
 async function loadTeachers() {
-  const resp = await listTeachers({ page: 1, pageSize: 1000 });
+  const resp = await listTeachers({ page: 1, pageSize: 200 });
   if (resp.code === 0) {
     allTeachers.value = resp.data?.list || [];
   }
