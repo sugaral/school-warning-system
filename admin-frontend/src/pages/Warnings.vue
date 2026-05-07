@@ -408,6 +408,7 @@ import {
   listOrgs,
 } from '../api';
 import { getWarningLevelColor, getWarningLevelText } from '../lib/warning-level';
+import { formatDateTime } from '../lib/format';
 
 const AUTO_REFRESH_INTERVAL = 30_000;
 const STUDENTS_PAGE_SIZE = 50;
@@ -945,17 +946,6 @@ const formatGender = (gender?: string) => {
   if (gender === 'male') return '男';
   if (gender === 'female') return '女';
   return '未知';
-};
-
-const formatDateTime = (value?: string | Date | null) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-    date.getDate(),
-  ).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(
-    date.getMinutes(),
-  ).padStart(2, '0')}`;
 };
 
 const countWarningCourses = (groups: any[]) =>

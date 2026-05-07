@@ -127,7 +127,7 @@
           </el-table-column>
           <el-table-column prop="status" label="状态" width="100">
             <template #default="{ row }">
-              <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
+              <el-tag :type="getAttendanceStatusType(row.status)">{{ getAttendanceStatusText(row.status) }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column label="操作" width="320" fixed="right">
@@ -398,6 +398,7 @@ import {
   ApiResponse,
   batchCreateSessions as batchCreateAttendanceSessions,
   createSession as createAttendanceSession,
+  endSession as endSessionApi,
   getAttendanceBatchJob,
   getAttendanceQrConfig,
   getAttendanceSessionCourses,
@@ -411,6 +412,7 @@ import {
 } from '../api';
 import { takePreloadedValue } from '../preload-cache';
 import { buildQrCodeDataUrl } from '../lib/qrcode';
+import { formatDateTime, getAttendanceStatusType, getAttendanceStatusText } from '../lib/format';
 
 const sessions = ref<any[]>([]);
 const allSessionClasses = ref<any[]>([]);
@@ -550,34 +552,6 @@ const bulkProgressHint = computed(() => {
   }
   return '处理完成，可关闭弹窗。';
 });
-
-const formatDateTime = (value?: string) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '-';
-  }
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day} ${hours}:${minutes}`;
-};
-
-const getStatusType = (status: string) => {
-  if (status === 'not_started') return 'info';
-  if (status === 'active') return 'success';
-  if (status === 'inactive') return 'warning';
-  return '';
-};
-
-const getStatusText = (status: string) => {
-  if (status === 'not_started') return '未开始';
-  if (status === 'active') return '进行中';
-  if (status === 'inactive') return '已结束';
-  return status;
-};
 
 const clearQrCountdown = () => {
   if (qrCountdownTimer) {
@@ -1038,7 +1012,7 @@ watch(showQRDialog, (visible) => {
 const createSession = createSessionSubmit;
 const deleteSession = deleteCurrentSession;
 
-const resetBulkProgress = (title: string, total: number) => {
+const resetBulkProgress = (title: string, total: number, visible = true) => {
   bulkProgressTitle.value = title;
   bulkProgressTotal.value = total;
   bulkProgressProcessed.value = 0;
@@ -1046,7 +1020,7 @@ const resetBulkProgress = (title: string, total: number) => {
   bulkProgressSkippedCount.value = 0;
   bulkProgressFailedCount.value = 0;
   bulkProgressRunning.value = true;
-  showBulkProgressDialog.value = true;
+  showBulkProgressDialog.value = visible;
 };
 
 const createChunks = (ids: string[], chunkSize = 10) => {
@@ -1078,6 +1052,7 @@ const runServerTrackedSessionAction = async (
   options: {
     title: string;
     starter: (sessionIds: string[]) => Promise<any>;
+    showProgressDialog?: boolean;
   },
 ) => {
   const actionStartedAt = performance.now();
@@ -1099,7 +1074,7 @@ const runServerTrackedSessionAction = async (
   });
 
   clearBatchJobPolling();
-  resetBulkProgress(options.title, normalizedIds.length);
+  resetBulkProgress(options.title, normalizedIds.length, options.showProgressDialog !== false);
 
   const starterStartedAt = performance.now();
   const startResponse = await options.starter(normalizedIds);
@@ -1154,7 +1129,7 @@ const runServerTrackedSessionAction = async (
         if (String(job.status || '') === 'running') {
           batchJobPollingTimer = setTimeout(() => {
             void poll();
-          }, 500);
+          }, 200);
           return;
         }
 
@@ -1363,54 +1338,28 @@ const endSession = async (session: any) => {
 
   endingSessionId.value = session.id;
   try {
-    const endedIds = await runServerTrackedSessionAction([String(session.id)], {
-      title: '结束签到进度',
-      starter: async (sessionIds) => {
-        return startBatchEndSessionJob({
-          session_ids: sessionIds,
-        });
-      },
-    });
-    console.log('[attendance][endSession] job resolved', {
+    // 单条结束走直接 API，不走批量轮询
+    await endSessionApi(String(session.id));
+    console.log('[attendance][endSession] done', {
       sessionId: String(session.id),
-      endedIds,
       costMs: Math.round(performance.now() - endStartedAt),
       at: new Date().toISOString(),
     });
-    const endedIdSet = new Set(endedIds);
+    // 乐观更新
+    sessions.value = sessions.value.map((item: any) =>
+      String(item.id) === String(session.id)
+        ? { ...item, status: 'inactive', session_end: new Date().toISOString(), qr_expire_at: new Date().toISOString() }
+        : item,
+    );
     if (currentSession.value?.id === session.id) {
       showQRDialog.value = false;
     }
-    sessions.value = sessions.value.map((item: any) =>
-      endedIdSet.has(String(item.id))
-        ? {
-            ...item,
-            status: 'inactive',
-            session_end: new Date().toISOString(),
-            qr_expire_at: new Date().toISOString(),
-          }
-        : item,
-    );
-    lastBatchCreatedSessionIds.value = lastBatchCreatedSessionIds.value.filter(
-      (item) => !endedIdSet.has(String(item)),
-    );
-    ElMessage.success(
-      `结束完成：成功 ${bulkProgressSuccessCount.value} 条，跳过 ${bulkProgressSkippedCount.value} 条，失败 ${bulkProgressFailedCount.value} 条`,
-    );
-    const reloadStartedAt = performance.now();
-    void loadSessions().finally(() => {
-      console.log('[attendance][endSession] loadSessions done', {
-        sessionId: String(session.id),
-        reloadCostMs: Math.round(performance.now() - reloadStartedAt),
-        totalCostMs: Math.round(performance.now() - endStartedAt),
-        at: new Date().toISOString(),
-      });
-    });
+    ElMessage.success('签到已结束');
+    void loadSessions();
   } catch (error: any) {
     console.error('[attendance][endSession] failed', {
       sessionId: String(session.id),
       costMs: Math.round(performance.now() - endStartedAt),
-      at: new Date().toISOString(),
       error,
     });
     ElMessage.error(error?.message || '结束签到失败');

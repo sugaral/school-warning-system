@@ -74,7 +74,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'special-approvals', name: 'special-approvals', redirect: '/approvals' },
 
       { path: '', redirect: '/warnings' },
-      { path: 'warnings', name: 'warnings', component: Warnings, meta: { keepAlive: true } },
+      { path: 'warnings', name: 'warnings', component: Warnings },
       { path: 'system-stats', name: 'system-stats', component: () => import('./pages/system/SystemStats.vue') },
       { path: 'system-stats-2', name: 'system-stats-2', component: () => import('./pages/system/SystemStats2.vue') },
       { path: 'approvals', name: 'approvals', component: Approvals },
@@ -87,7 +87,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'orgs', name: 'orgs', component: () => import('./pages/Orgs.vue') },
       { path: 'teachers', name: 'teachers', component: () => import('./pages/Teachers.vue') },
       { path: 'classes', name: 'classes', component: Classes, meta: { keepAlive: true } },
-      { path: 'users', name: 'users', component: SystemManagement },
+      { path: 'users', name: 'users', component: () => import('./pages/Users.vue') },
       { path: 'system-management', name: 'system-management', component: SystemManagement },
       { path: 'roles', name: 'roles', component: () => import('./pages/system/RoleManagement.vue') },
       {
