@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>学业预警系统 - 管理端</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script type="module" crossorigin src="/assets/index-CTxVbzaM.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-misc-BwLRKVpc.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-element-plus-deps-BnviDQY-.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-element-icons-0aEGRFaz.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-element-plus-D_XHMhsS.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-axios-C0Zqfgkc.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-router-8koBTkIW.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-pinia-Ckf3F3Fq.js">
+    <link rel="stylesheet" crossorigin href="/assets/vendor-element-plus-CnG6cTCG.css">
+    <link rel="stylesheet" crossorigin href="/assets/index-TowPtPwL.css">
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
+      // Auto-reload when switching back to warnings/attendance tab (handles stale data from keepAlive)
+      var _pages = ['/warnings','/attendance','/students','/classes','/'];
+      document.addEventListener('visibilitychange', function(){
+        if (!document.hidden && _pages.indexOf(location.pathname) !== -1) {
+          location.reload();
+        }
+      });
+    </script>
+  </body>
+</html>
