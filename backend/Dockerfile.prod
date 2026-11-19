@@ -1,0 +1,48 @@
+FROM node:20-alpine AS builder
+
+# migrate 服务以 builder 阶段为目标运行 `prisma migrate deploy`，
+# 而 Prisma 的 schema-engine 是动态链接 OpenSSL 的原生二进制：
+# 缺少 openssl 时引擎无法启动，报
+#   Could not parse schema engine response: SyntaxError: Unexpected token 'E'
+# 并且因为命令用 `||` 串联，失败会被静默吞掉、容器仍以 0 退出，
+# 最终表现为「migrate 显示成功但库是空的」。此处必须安装 openssl。
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY prisma ./prisma/
+
+RUN npm ci
+
+COPY . .
+
+RUN npx prisma@5 generate
+
+RUN npm run build
+
+FROM node:20-alpine AS runtime
+
+WORKDIR /app
+
+ENV TZ=Asia/Shanghai
+
+RUN apk add --no-cache openssl tzdata \
+  && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+  && echo $TZ > /etc/timezone
+
+COPY package*.json ./
+COPY prisma ./prisma/
+
+RUN npm ci --omit=dev
+
+RUN npx prisma@5 generate
+
+COPY --from=builder /app/dist ./dist
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1))"
+
+CMD ["node", "dist/main.js"]

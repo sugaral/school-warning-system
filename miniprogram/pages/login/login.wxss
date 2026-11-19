@@ -1,0 +1,83 @@
+.login-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #1677ff 0%, #4096ff 32%, #f5f6fa 32%, #f5f6fa 100%);
+  padding: 0 48rpx;
+  box-sizing: border-box;
+}
+
+.header {
+  padding: 100rpx 0 60rpx;
+  text-align: center;
+  color: #fff;
+}
+
+.logo {
+  width: 120rpx;
+  height: 120rpx;
+  line-height: 120rpx;
+  margin: 0 auto 24rpx;
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 56rpx;
+  font-weight: 700;
+}
+
+.title {
+  font-size: 44rpx;
+  font-weight: 600;
+  letter-spacing: 4rpx;
+}
+
+.subtitle {
+  font-size: 24rpx;
+  opacity: 0.85;
+  margin-top: 12rpx;
+}
+
+.form-card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 36rpx 32rpx 40rpx;
+  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.08);
+}
+
+.hint {
+  margin-top: 24rpx;
+  font-size: 24rpx;
+  color: #8c8c8c;
+  line-height: 1.7;
+}
+
+.error-tip {
+  margin-top: 20rpx;
+  padding: 18rpx 22rpx;
+  background: #fff1f0;
+  border: 1rpx solid #ffa39e;
+  border-radius: 10rpx;
+  color: #f5222d;
+  font-size: 25rpx;
+  line-height: 1.6;
+}
+
+.bound-info {
+  text-align: center;
+  padding: 30rpx 0 50rpx;
+}
+.bound-name {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 600;
+}
+.bound-no {
+  display: block;
+  margin-top: 12rpx;
+  color: #8c8c8c;
+  font-size: 26rpx;
+}
+
+.footer {
+  text-align: center;
+  color: #bfbfbf;
+  font-size: 22rpx;
+  padding: 60rpx 0 40rpx;
+}

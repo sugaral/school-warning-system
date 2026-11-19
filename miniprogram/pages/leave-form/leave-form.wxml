@@ -1,0 +1,17 @@
+<view class="page">
+  <view class="card">
+    <view class="form-item">
+      <text class="form-label form-required">开始日期</text>
+      <input class="form-input"  placeholder="YYYY-MM-DD" value="{{form.from_date}}" bindinput="onInput" data-key="from_date" />
+    </view>
+    <view class="form-item">
+      <text class="form-label form-required">结束日期</text>
+      <input class="form-input"  placeholder="YYYY-MM-DD" value="{{form.to_date}}" bindinput="onInput" data-key="to_date" />
+    </view>
+    <view class="form-item">
+      <text class="form-label form-required">请假原因</text>
+      <textarea class="form-textarea" placeholder="请说明请假原因" value="{{form.reason}}" bindinput="onInput" data-key="reason" maxlength="500" />
+    </view>
+    <button class="btn" bindtap="onSubmit" loading="{{submitting}}" disabled="{{submitting}}">提交</button>
+  </view>
+</view>

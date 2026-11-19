@@ -1,0 +1,31 @@
+.period-head {
+  font-size: 27rpx;
+  font-weight: 600;
+  color: #1677ff;
+  padding: 16rpx 0 6rpx;
+  border-top: 1rpx solid #f0f0f0;
+  margin-top: 12rpx;
+}
+.period-head:first-child {
+  border-top: none;
+  margin-top: 0;
+}
+.stat-grid {
+  display: flex;
+  justify-content: space-between;
+  padding: 12rpx 0 8rpx;
+}
+.stat {
+  flex: 1;
+  text-align: center;
+}
+.stat-value {
+  font-size: 38rpx;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.stat-label {
+  font-size: 23rpx;
+  color: #8c8c8c;
+  margin-top: 4rpx;
+}

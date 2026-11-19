@@ -1,0 +1,949 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model orgs {
+  id            BigInt    @id @default(autoincrement())
+  name          String    @db.VarChar(128)
+  org_kind      String    @default("school") @db.VarChar(16)
+  org_level     Int       @default(1)
+  parent_org_id BigInt?
+  status        String    @default("active") @db.VarChar(16)
+  meta_json     Json?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @default(now())
+  classes       classes[]
+  courses       courses[]
+  majors        majors[]
+  users         users[]
+
+  @@index([parent_org_id])
+  @@index([org_kind, org_level])
+  @@index([status])
+  @@map("orgs")
+}
+
+model majors {
+  id               BigInt             @id @default(autoincrement())
+  org_id           BigInt
+  name             String             @db.VarChar(128)
+  code             String?            @db.VarChar(64)
+  status           String             @default("active") @db.VarChar(16)
+  created_at       DateTime           @default(now())
+  updated_at       DateTime           @default(now())
+  classes          classes[]
+  orgs             orgs               @relation(fields: [org_id], references: [id])
+  student_profiles student_profiles[]
+
+  @@unique([org_id, name])
+  @@index([org_id])
+  @@index([status])
+  @@map("majors")
+}
+
+model classes {
+  id                BigInt             @id @default(autoincrement())
+  org_id            BigInt
+  class_name        String             @db.VarChar(128)
+  enroll_year       Int
+  major             String?            @db.VarChar(128)
+  grade_level       String?            @db.VarChar(32)
+  counselor_user_id BigInt?
+  status            String             @default("active") @db.VarChar(16)
+  created_at        DateTime           @default(now())
+  updated_at        DateTime           @default(now())
+  major_id          BigInt?
+  class_sessions    class_sessions[]
+  majors            majors?            @relation(fields: [major_id], references: [id])
+  orgs              orgs               @relation(fields: [org_id], references: [id])
+  course_classes    course_classes[]
+  class_monitor_snapshot class_monitor_snapshots?
+  schedules         schedules[]
+  student_profiles  student_profiles[]
+
+  @@unique([org_id, class_name, enroll_year])
+  @@index([org_id])
+  @@index([major_id])
+  @@index([counselor_user_id])
+  @@index([status])
+  @@map("classes")
+}
+
+model class_monitor_snapshots {
+  class_id          BigInt   @id
+  org_id            BigInt
+  total_students    Int      @default(0)
+  warning_count     Int      @default(0)
+  red_warning_count Int      @default(0)
+  leave_count       Int      @default(0)
+  updated_at        DateTime @updatedAt
+  classes           classes  @relation(fields: [class_id], references: [id], onDelete: Cascade)
+
+  @@index([org_id])
+  @@map("class_monitor_snapshots")
+}
+
+model users {
+  id               BigInt            @id @default(autoincrement())
+  org_id           BigInt?
+  user_type        String            @db.VarChar(16)
+  name             String            @db.VarChar(64)
+  mobile           String?           @db.VarChar(32)
+  email            String?           @db.VarChar(128)
+  status           String            @db.VarChar(16)
+  wx_openid        String?           @db.VarChar(64)
+  wx_unionid       String?           @db.VarChar(64)
+  password_hash    String?           @db.VarChar(255)
+  last_login_at    DateTime?
+  created_at       DateTime          @default(now())
+  updated_at       DateTime          @default(now())
+  teacher_position String?           @db.VarChar(32)
+  course_classes   course_classes[]
+  schedules        schedules[]
+  student_profile  student_profiles?
+  user_permissions user_permissions[]
+  orgs             orgs?             @relation(fields: [org_id], references: [id])
+
+  @@index([org_id], map: "users_org_id_fkey")
+  @@index([mobile])
+  @@index([email])
+  @@index([wx_openid])
+  @@index([user_type])
+  @@index([status])
+  @@map("users")
+}
+
+model student_profiles {
+  id                       BigInt               @id @default(autoincrement())
+  user_id                  BigInt               @unique
+  student_no               String               @unique @db.VarChar(64)
+  gender                   String?              @db.VarChar(8)
+  photo_file_id            BigInt?
+  class_id                 BigInt
+  org_id                   BigInt?
+  major                    String?              @db.VarChar(128)
+  enroll_year              Int?
+  mobile                   String?              @db.VarChar(32)
+  email                    String?              @db.VarChar(128)
+  emergency_contact_name   String?              @db.VarChar(64)
+  emergency_contact_mobile String?              @db.VarChar(32)
+  notify_prefs_json        Json?
+  status                   String               @db.VarChar(16)
+  created_at               DateTime             @default(now())
+  updated_at               DateTime             @default(now())
+  initial_password         String?              @db.VarChar(128)
+  student_position         String?              @db.VarChar(32)
+  wx_openid                String?              @db.VarChar(64)
+  wx_unionid               String?              @db.VarChar(64)
+  major_id                 BigInt?
+  appeals                  appeals[]
+  attendance_records       attendance_records[]
+  daily_records            daily_records[]
+  leave_requests           leave_requests[]
+  makeup_requests          makeup_requests[]
+  student_warning_snapshot  student_warning_snapshots?
+  classes                  classes              @relation(fields: [class_id], references: [id])
+  majors                   majors?              @relation(fields: [major_id], references: [id])
+  users                    users                @relation(fields: [user_id], references: [id])
+
+  @@index([major_id])
+  @@index([org_id])
+  @@index([status])
+  @@index([class_id, status, student_no])
+  @@index([class_id], map: "student_profiles_class_id_fkey")
+  @@map("student_profiles")
+}
+
+model user_roles {
+  id         BigInt   @id @default(autoincrement())
+  user_id    BigInt
+  role       String   @db.VarChar(32)
+  scope_type String   @db.VarChar(16)
+  scope_id   BigInt?
+  created_at DateTime @default(now())
+
+  @@unique([user_id, role, scope_type, scope_id])
+  @@index([user_id])
+  @@map("user_roles")
+}
+
+model auth_challenges {
+  id            BigInt    @id @default(autoincrement())
+  user_id       BigInt?
+  purpose       String    @db.VarChar(32)
+  channel       String    @db.VarChar(16)
+  target        String    @db.VarChar(128)
+  code_hash     String    @db.Char(64)
+  salt          String    @db.VarChar(32)
+  status        String    @db.VarChar(16)
+  expire_at     DateTime
+  verified_at   DateTime?
+  send_provider String?   @db.VarChar(32)
+  send_msg_id   String?   @db.VarChar(128)
+  try_count     Int       @default(0)
+  created_at    DateTime  @default(now())
+
+  @@index([target, created_at])
+  @@map("auth_challenges")
+}
+
+model security_events {
+  id          BigInt   @id @default(autoincrement())
+  user_id     BigInt?
+  event_type  String   @db.VarChar(32)
+  detail_json Json?
+  ip          String?  @db.VarChar(64)
+  user_agent  String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+
+  @@index([event_type, created_at])
+  @@index([user_id, created_at])
+  @@index([created_at])
+  @@map("security_events")
+}
+
+
+model dashboard_cache {
+  cache_key   String   @id @db.VarChar(191)
+  payload_json Json
+  expires_at  DateTime
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@index([expires_at])
+  @@map("dashboard_cache")
+}
+
+model class_sessions {
+  id                 BigInt               @id @default(autoincrement())
+  course_id          BigInt
+  class_id           BigInt
+  teacher_user_id    BigInt
+  session_start      DateTime
+  session_end        DateTime?
+  qr_token_hash      String               @unique @db.Char(64)
+  qr_expire_at       DateTime
+  status             String               @db.VarChar(16)
+  created_at         DateTime             @default(now())
+  attendance_records attendance_records[]
+  session_snapshot   class_session_snapshots?
+  classes            classes              @relation(fields: [class_id], references: [id])
+  courses            courses              @relation(fields: [course_id], references: [id])
+
+  @@index([class_id, session_start])
+  @@index([status, session_end])
+  @@index([status, qr_expire_at])
+  @@index([course_id], map: "class_sessions_course_id_fkey")
+  @@map("class_sessions")
+}
+
+model class_session_snapshots {
+  session_id       BigInt   @id
+  class_id         BigInt
+  org_id           BigInt
+  course_id        BigInt
+  total_students   Int      @default(0)
+  checked_in_count Int      @default(0)
+  on_time_count    Int      @default(0)
+  late_count       Int      @default(0)
+  leave_count      Int      @default(0)
+  absent_count     Int      @default(0)
+  updated_at       DateTime @updatedAt
+  class_sessions   class_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade)
+
+  @@index([class_id])
+  @@index([org_id])
+  @@index([course_id])
+  @@map("class_session_snapshots")
+}
+
+model attendance_records {
+  id                BigInt           @id @default(autoincrement())
+  session_id        BigInt
+  student_id        BigInt
+  checkin_time      DateTime
+  attendance_status String           @db.VarChar(16)
+  source            String           @db.VarChar(16)
+  created_at        DateTime         @default(now())
+  sessions          class_sessions   @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  students          student_profiles @relation(fields: [student_id], references: [id], onDelete: Cascade)
+
+  @@unique([session_id, student_id])
+  @@index([student_id, checkin_time])
+  @@index([session_id, attendance_status])
+  @@index([student_id, attendance_status, session_id])
+  @@map("attendance_records")
+}
+
+model daily_records {
+  id                BigInt           @id @default(autoincrement())
+  student_id        BigInt
+  record_date       DateTime         @db.Date
+  class_id          BigInt
+  org_id            BigInt
+  course_id         BigInt?
+  attendance_status String           @db.VarChar(16)
+  homework_status   String           @db.VarChar(16)
+  class_behavior    String?          @db.VarChar(16)
+  remarks           String?          @db.VarChar(500)
+  source            String           @db.VarChar(16)
+  approved_status   String           @db.VarChar(16)
+  approved_by       BigInt?
+  approved_at       DateTime?
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @default(now())
+  student_profiles  student_profiles @relation(fields: [student_id], references: [id])
+
+  @@unique([student_id, record_date, course_id])
+  @@index([class_id, record_date])
+  @@index([org_id, record_date])
+  @@index([student_id, record_date])
+  @@index([student_id, attendance_status, record_date, course_id])
+  @@map("daily_records")
+}
+
+model warnings {
+  id                  BigInt    @id @default(autoincrement())
+  student_id          BigInt
+  class_id            BigInt
+  org_id              BigInt
+  metric              String    @default("absent") @db.VarChar(32)
+  level               String    @db.VarChar(16)
+  window              String    @db.VarChar(16)
+  period_start        DateTime  @db.Date
+  period_end          DateTime  @db.Date
+  rule_id             BigInt
+  rule_snapshot_json  Json
+  trigger_summary     String    @db.VarChar(255)
+  trigger_detail_json Json?
+  course_id           BigInt?
+  status              String    @db.VarChar(16)
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @default(now())
+  acknowledged_at     DateTime?
+  acknowledged_by     BigInt?
+  closed_at           DateTime?
+  closed_by           BigInt?
+  close_note          String?   @db.VarChar(500)
+
+  @@index([student_id, created_at])
+  @@index([student_id, status])
+  @@index([student_id, level])
+  @@index([student_id, period_start, period_end, created_at])
+  @@index([student_id, status, created_at])
+  @@index([student_id, metric, window, status, period_start, period_end])
+  @@index([class_id, status])
+  @@index([class_id, created_at])
+  @@index([org_id, level])
+  @@index([org_id, created_at])
+  @@index([created_at, status])
+  @@index([status])
+  @@index([status, course_id, created_at])
+  @@map("warnings")
+}
+
+model warning_current_states {
+  id                 BigInt   @id @default(autoincrement())
+  student_id         BigInt
+  class_id           BigInt
+  org_id             BigInt
+  metric             String   @db.VarChar(32)
+  level              String   @db.VarChar(16)
+  window             String   @db.VarChar(16)
+  period_start       DateTime @db.Date
+  period_end         DateTime @db.Date
+  course_key         String   @db.VarChar(32)
+  course_id          BigInt?
+  rule_id            BigInt
+  rule_snapshot_json Json
+  trigger_summary    String   @db.VarChar(255)
+  trigger_detail_json Json?
+  current_count      Int      @default(0)
+  status             String   @db.VarChar(16)
+  acknowledged_at    DateTime?
+  acknowledged_by    BigInt?
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  @@unique([student_id, metric, window, period_start, period_end, course_key], map: "uq_warn_cur_state_course")
+  @@index([student_id, status])
+  @@index([student_id, period_start, period_end, updated_at])
+  @@index([class_id, status])
+  @@index([org_id, status])
+  @@index([org_id, level])
+  @@index([course_id, status])
+  @@index([status, course_id, updated_at])
+  @@map("warning_current_states")
+}
+
+model student_warning_snapshots {
+  student_id             BigInt    @id
+  class_id               BigInt
+  org_id                 BigInt
+  today_warning_total    Int       @default(0)
+  week_warning_total     Int       @default(0)
+  month_warning_total    Int       @default(0)
+  active_warning_count   Int       @default(0)
+  closed_warning_count   Int       @default(0)
+  all_warning_count      Int       @default(0)
+  active_highest_level   String?   @db.VarChar(16)
+  closed_highest_level   String?   @db.VarChar(16)
+  all_highest_level      String?   @db.VarChar(16)
+  active_last_warning_at DateTime?
+  closed_last_warning_at DateTime?
+  all_last_warning_at    DateTime?
+  updated_at             DateTime  @updatedAt
+  student_profiles       student_profiles @relation(fields: [student_id], references: [id], onDelete: Cascade)
+
+  @@index([class_id])
+  @@index([org_id])
+  @@map("student_warning_snapshots")
+}
+
+model notification_jobs {
+  id             BigInt    @id @default(autoincrement())
+  trigger_type   String    @db.VarChar(16)
+  warning_id     BigInt?
+  sender_user_id BigInt?
+  channel        String    @db.VarChar(16)
+  template_code  String?   @db.VarChar(64)
+  receivers_json Json
+  params_json    Json?
+  schedule_at    DateTime?
+  cooldown_key   String?   @db.VarChar(128)
+  status         String    @db.VarChar(16)
+  try_count      Int       @default(0)
+  last_error     String?   @db.VarChar(255)
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @default(now())
+
+  @@index([status, created_at])
+  @@index([status, schedule_at])
+  @@index([warning_id, channel])
+  @@map("notification_jobs")
+}
+
+model notification_logs {
+  id               BigInt    @id @default(autoincrement())
+  job_id           BigInt
+  channel          String    @db.VarChar(16)
+  receiver         String    @db.VarChar(128)
+  content_snapshot String?   @db.Text
+  send_status      String    @db.VarChar(16)
+  provider         String?   @db.VarChar(32)
+  provider_msg_id  String?   @db.VarChar(128)
+  error_msg        String?   @db.VarChar(255)
+  sent_at          DateTime  @default(now())
+  acknowledged     Boolean   @default(false)
+  acknowledged_at  DateTime?
+  acknowledged_by  BigInt?
+
+  @@index([job_id])
+  @@index([sent_at])
+  @@index([send_status, sent_at])
+  @@index([channel, sent_at])
+  @@index([receiver(64), sent_at])
+  @@map("notification_logs")
+}
+
+model audit_logs {
+  id            BigInt   @id @default(autoincrement())
+  actor_user_id BigInt
+  action        String   @db.VarChar(64)
+  entity_type   String   @db.VarChar(32)
+  entity_id     BigInt
+  before_json   Json?
+  after_json    Json?
+  ip            String?  @db.VarChar(64)
+  user_agent    String?  @db.VarChar(255)
+  created_at    DateTime @default(now())
+  action_desc   String?  @db.VarChar(255)
+  entity_desc   String?  @db.VarChar(255)
+
+  @@index([actor_user_id, created_at])
+  @@index([entity_type, entity_id])
+  @@index([action, created_at])
+  @@index([created_at])
+  @@index([entity_type, created_at])
+  @@map("audit_logs")
+}
+
+model leave_requests {
+  id               BigInt           @id @default(autoincrement())
+  student_id       BigInt
+  class_id         BigInt
+  from_date        DateTime         @db.DateTime(0)
+  to_date          DateTime         @db.DateTime(0)
+  reason           String           @db.VarChar(255)
+  proof_file_id    BigInt?
+  proof_file_ids_json Json?
+  status           String           @db.VarChar(16)
+  approver_user_id BigInt?
+  approved_at      DateTime?
+  rejected_at      DateTime?
+  reject_reason    String?          @db.VarChar(255)
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @default(now())
+  student          student_profiles @relation(fields: [student_id], references: [id])
+
+  @@index([student_id, created_at])
+  @@index([student_id, status, from_date, to_date])
+  @@index([class_id, status])
+  @@index([class_id, status, from_date, to_date])
+  @@map("leave_requests")
+}
+
+model makeup_requests {
+  id                      BigInt           @id @default(autoincrement())
+  student_id              BigInt
+  record_date             DateTime         @db.Date
+  course_id               BigInt?
+  change_json             Json
+  reason                  String           @db.VarChar(255)
+  status                  String           @db.VarChar(16)
+  approver_user_id        BigInt?
+  approved_at             DateTime?
+  rejected_at             DateTime?
+  reject_reason           String?          @db.VarChar(255)
+  applied_daily_record_id BigInt?
+  created_at              DateTime         @default(now())
+  updated_at              DateTime         @default(now())
+  student                 student_profiles @relation(fields: [student_id], references: [id])
+
+  @@index([student_id, record_date])
+  @@index([status])
+  @@map("makeup_requests")
+}
+
+model appeals {
+  id               BigInt           @id @default(autoincrement())
+  student_id       BigInt
+  appeal_type      String           @db.VarChar(32)
+  related_type     String?          @db.VarChar(32)
+  related_id       BigInt?
+  content          String           @db.VarChar(1000)
+  evidence_file_id BigInt?
+  evidence_file_ids_json Json?
+  status           String           @db.VarChar(16)
+  handler_user_id  BigInt?
+  result_note      String?          @db.VarChar(1000)
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @default(now())
+  student          student_profiles @relation(fields: [student_id], references: [id])
+
+  @@index([student_id, created_at])
+  @@index([status])
+  @@map("appeals")
+}
+
+model courses {
+  id             BigInt           @id @default(autoincrement())
+  org_id         BigInt
+  course_code    String?          @db.VarChar(64)
+  course_name    String           @db.VarChar(256)
+  credit         Decimal?         @db.Decimal(4, 1)
+  status         String           @default("active") @db.VarChar(16)
+  created_at     DateTime         @default(now())
+  updated_at     DateTime         @default(now())
+  class_sessions class_sessions[]
+  course_classes course_classes[]
+  orgs           orgs             @relation(fields: [org_id], references: [id])
+  schedules      schedules[]
+
+  @@unique([org_id, course_code])
+  @@index([org_id])
+  @@map("courses")
+}
+
+model course_classes {
+  id              BigInt   @id @default(autoincrement())
+  course_id       BigInt
+  class_id        BigInt
+  teacher_user_id BigInt
+  term_code       String   @db.VarChar(32)
+  created_at      DateTime @default(now())
+  classes         classes  @relation(fields: [class_id], references: [id])
+  courses         courses  @relation(fields: [course_id], references: [id])
+  users           users    @relation(fields: [teacher_user_id], references: [id])
+
+  @@unique([course_id, class_id, term_code])
+  @@index([class_id, term_code])
+  @@index([teacher_user_id, term_code])
+  @@map("course_classes")
+}
+
+model schedules {
+  id              BigInt   @id @default(autoincrement())
+  term_code       String   @db.VarChar(32)
+  course_id       BigInt
+  class_id        BigInt
+  teacher_user_id BigInt
+  session_start   DateTime
+  session_end     DateTime
+  expire_minutes  Int      @default(15)
+  status          String   @default("active") @db.VarChar(16)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now())
+  classes         classes  @relation(fields: [class_id], references: [id])
+  courses         courses  @relation(fields: [course_id], references: [id])
+  users           users    @relation(fields: [teacher_user_id], references: [id])
+
+  @@index([class_id, session_start])
+  @@index([term_code])
+  @@index([status])
+  @@index([course_id], map: "schedules_course_id_fkey")
+  @@index([teacher_user_id], map: "schedules_teacher_user_id_fkey")
+  @@map("schedules")
+}
+
+model files {
+  id               BigInt   @id @default(autoincrement())
+  uploader_user_id BigInt
+  file_name        String   @db.VarChar(256)
+  file_key         String   @unique @db.VarChar(512)
+  file_size        BigInt?
+  mime_type        String?  @db.VarChar(128)
+  sha256           String?  @db.Char(64)
+  source           String   @default("upload") @db.VarChar(32)
+  created_at       DateTime @default(now())
+
+  @@index([uploader_user_id, created_at])
+  @@map("files")
+}
+
+model weekly_summaries {
+  id                        BigInt   @id @default(autoincrement())
+  student_id                BigInt
+  week_start                DateTime @db.Date
+  week_end                  DateTime @db.Date
+  late_count                Int      @default(0)
+  absent_count              Int      @default(0)
+  homework_not_submit_count Int      @default(0)
+  generated_at              DateTime @default(now())
+
+  @@unique([student_id, week_start])
+  @@index([week_start, week_end])
+  @@map("weekly_summaries")
+}
+
+model monthly_summaries {
+  id                        BigInt   @id @default(autoincrement())
+  student_id                BigInt
+  year                      Int
+  month                     Int
+  late_count                Int      @default(0)
+  absent_count              Int      @default(0)
+  homework_not_submit_count Int      @default(0)
+  generated_at              DateTime @default(now())
+
+  @@unique([student_id, year, month])
+  @@index([year, month])
+  @@map("monthly_summaries")
+}
+
+model term_summaries {
+  id                  BigInt   @id @default(autoincrement())
+  student_id          BigInt
+  term_code           String   @db.VarChar(32)
+  failed_course_count Int      @default(0)
+  earned_credits      Decimal  @default(0.0) @db.Decimal(6, 1)
+  required_credits    Decimal  @default(0.0) @db.Decimal(6, 1)
+  gpa                 Decimal? @db.Decimal(4, 2)
+  generated_at        DateTime @default(now())
+
+  @@unique([student_id, term_code])
+  @@index([term_code])
+  @@map("term_summaries")
+}
+
+model grades {
+  id          BigInt   @id @default(autoincrement())
+  student_id  BigInt
+  course_id   BigInt
+  term_code   String   @db.VarChar(32)
+  score       Decimal? @db.Decimal(6, 2)
+  grade_point Decimal? @db.Decimal(4, 2)
+  pass_status String   @default("unknown") @db.VarChar(16)
+  source      String   @default("import") @db.VarChar(16)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+
+  @@unique([student_id, course_id, term_code])
+  @@index([term_code])
+  @@index([student_id])
+  @@map("grades")
+}
+
+model warning_rules {
+  id                   BigInt   @id @default(autoincrement())
+  scope                String   @default("school") @db.VarChar(16)
+  scope_id             BigInt?
+  rule_version         Int      @default(1)
+  level                String   @db.VarChar(16)
+  window               String   @db.VarChar(16)
+  metric               String   @db.VarChar(32)
+  threshold            Int
+  enabled              Boolean  @default(true)
+  exclusions_json      Json?
+  notify_strategy_json Json?
+  created_by           BigInt
+  created_at           DateTime @default(now())
+  updated_at           DateTime @default(now())
+
+  @@index([scope, scope_id])
+  @@index([level])
+  @@index([enabled])
+  @@map("warning_rules")
+}
+
+model warning_cases {
+  id                      BigInt    @id @default(autoincrement())
+  student_id              BigInt
+  class_id                BigInt
+  org_id                  BigInt
+  primary_warning_id      BigInt?
+  source_warning_ids_json Json?
+  risk_score              Int       @default(0)
+  risk_breakdown_json     Json?
+  warning_summary_json    Json?
+  handling_priority       Int       @default(0)
+  status                  String    @default("pending_assignment") @db.VarChar(32)
+  handler_user_id         BigInt?
+  assigned_by             BigInt?
+  assigned_at             DateTime?
+  accepted_at             DateTime?
+  completed_at            DateTime?
+  resolved_at             DateTime?
+  completion_summary      String?   @db.VarChar(255)
+  completion_detail_json  Json?
+  latest_warning_at       DateTime?
+  last_risk_at            DateTime?
+  is_active               Boolean   @default(true)
+  created_at              DateTime  @default(now())
+  updated_at              DateTime  @updatedAt
+
+  @@index([student_id, is_active])
+  @@index([status, is_active])
+  @@index([handler_user_id, status])
+  @@index([class_id, status])
+  @@index([org_id, status])
+  @@index([class_id, is_active, updated_at])
+  @@index([org_id, is_active, updated_at])
+  @@index([class_id, created_at])
+  @@index([org_id, created_at])
+  @@map("warning_cases")
+}
+
+model warning_case_logs {
+  id            BigInt   @id @default(autoincrement())
+  case_id       BigInt
+  action        String   @db.VarChar(32)
+  actor_user_id BigInt?
+  note          String?  @db.VarChar(255)
+  detail_json   Json?
+  created_at    DateTime @default(now())
+
+  @@index([case_id, created_at])
+  @@index([actor_user_id, created_at])
+  @@map("warning_case_logs")
+}
+
+model calendar_exclusions {
+  id             BigInt   @id @default(autoincrement())
+  scope          String   @default("school") @db.VarChar(16)
+  scope_id       BigInt?
+  exclusion_date DateTime @db.Date
+  reason         String?  @db.VarChar(255)
+  created_by     BigInt
+  created_at     DateTime @default(now())
+
+  @@unique([scope, scope_id, exclusion_date])
+  @@index([exclusion_date])
+  @@map("calendar_exclusions")
+}
+
+model message_templates {
+  id            BigInt   @id @default(autoincrement())
+  channel       String   @db.VarChar(16)
+  template_code String   @db.VarChar(64)
+  title         String?  @db.VarChar(128)
+  content       String   @db.Text
+  status        String   @default("active") @db.VarChar(16)
+  created_by    BigInt
+  created_at    DateTime @default(now())
+  updated_at    DateTime @default(now())
+
+  @@unique([channel, template_code])
+  @@map("message_templates")
+}
+
+model export_jobs {
+  id              BigInt   @id @default(autoincrement())
+  creator_user_id BigInt
+  scope_type      String   @db.VarChar(16)
+  scope_id        BigInt?
+  report_type     String   @db.VarChar(32)
+  params_json     Json?
+  status          String   @default("queued") @db.VarChar(16)
+  file_id         BigInt?
+  error_msg       String?  @db.VarChar(255)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now())
+
+  @@index([status, created_at])
+  @@index([scope_type, scope_id])
+  @@map("export_jobs")
+}
+
+model change_requests {
+  id                BigInt    @id @default(autoincrement())
+  requester_user_id BigInt
+  target_type       String    @db.VarChar(32)
+  target_id         BigInt
+  change_json       Json
+  reason            String?   @db.VarChar(255)
+  status            String    @default("submitted") @db.VarChar(16)
+  approver_user_id  BigInt?
+  approved_at       DateTime?
+  rejected_at       DateTime?
+  reject_reason     String?   @db.VarChar(255)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @default(now())
+
+  @@index([target_type, target_id])
+  @@index([status])
+  @@index([requester_user_id, created_at])
+  @@map("change_requests")
+}
+
+model idempotency_keys {
+  id              BigInt   @id @default(autoincrement())
+  user_id         BigInt
+  idempotency_key String   @db.VarChar(64)
+  request_hash    String   @db.Char(64)
+  response_json   Json?
+  created_at      DateTime @default(now())
+
+  @@unique([user_id, idempotency_key])
+  @@index([user_id, created_at])
+  @@map("idempotency_keys")
+}
+
+model permissions {
+  id               BigInt             @id @default(autoincrement())
+  code             String             @unique @db.VarChar(64)
+  name             String             @db.VarChar(128)
+  description      String?            @db.VarChar(255)
+  resource         String             @db.VarChar(32)
+  action           String             @db.VarChar(32)
+  created_at       DateTime           @default(now())
+  updated_at       DateTime           @default(now())
+  role_permissions role_permissions[]
+  user_permissions user_permissions[]
+
+  @@index([resource])
+  @@index([action])
+  @@map("permissions")
+}
+
+/// 用户级自定义权限（覆盖角色默认，实现「每个用户单独分配」）
+model user_permissions {
+  id            BigInt      @id @default(autoincrement())
+  user_id       BigInt
+  permission_id BigInt
+  granted_by    BigInt?
+  created_at    DateTime    @default(now())
+  permission    permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+  user          users       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, permission_id])
+  @@index([user_id])
+  @@index([permission_id], map: "user_permissions_permission_id_fkey")
+  @@map("user_permissions")
+}
+
+model role_permissions {
+  id            BigInt      @id @default(autoincrement())
+  role          String      @db.VarChar(32)
+  permission_id BigInt
+  created_at    DateTime    @default(now())
+  permission    permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+
+  @@unique([role, permission_id])
+  @@index([role])
+  @@index([permission_id], map: "role_permissions_permission_id_fkey")
+  @@map("role_permissions")
+}
+
+model system_settings {
+  id          BigInt   @id @default(autoincrement())
+  setting_key String   @unique @db.VarChar(64)
+  setting_val String   @db.Text
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+model class_notifications {
+  id             BigInt   @id @default(autoincrement())
+  class_id       BigInt
+  org_id         BigInt
+  title          String   @db.VarChar(256)
+  content        String   @db.Text
+  publisher_id   BigInt
+  publisher_name String   @db.VarChar(64)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @default(now())
+
+  @@index([class_id, created_at])
+  @@index([org_id])
+  @@map("class_notifications")
+}
+
+model student_notification_reads {
+  id              BigInt    @id @default(autoincrement())
+  student_id      BigInt
+  notification_id BigInt
+  read_at         DateTime?
+
+  @@unique([student_id, notification_id])
+  @@index([student_id])
+  @@index([notification_id])
+  @@map("student_notification_reads")
+}
+
+model teacher_course_bindings {
+  id         BigInt   @id @default(autoincrement())
+  teacher_id BigInt
+  org_id     BigInt
+  course_id  BigInt
+  class_id   BigInt
+  created_at DateTime @default(now())
+
+  @@unique([teacher_id, course_id, class_id])
+  @@index([teacher_id])
+  @@index([org_id])
+  @@index([course_id])
+  @@map("teacher_course_bindings")
+}
+
+model notification {
+  id         BigInt   @id @default(autoincrement())
+  user_id    BigInt
+  type       String   @db.VarChar(32)
+  content    String   @db.Text
+  status     String   @default("unread") @db.VarChar(16)
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  @@index([user_id])
+  @@index([user_id, status])
+  @@index([created_at])
+  @@map("notification")
+}

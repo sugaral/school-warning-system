@@ -1,0 +1,26 @@
+.warn-item {
+  padding: 26rpx 28rpx;
+}
+.warn-head {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-bottom: 16rpx;
+}
+.warn-metric {
+  font-size: 28rpx;
+  font-weight: 600;
+  flex: 1;
+}
+.warn-summary {
+  font-size: 28rpx;
+  color: #1f1f1f;
+  line-height: 1.6;
+  margin-bottom: 14rpx;
+}
+.warn-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 22rpx;
+  color: #8c8c8c;
+}

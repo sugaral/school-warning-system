@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Responsive Data Preview</title>
+  <link rel="stylesheet" href="./responsive-data-preview.css" />
+</head>
+<body>
+  <main class="page-shell">
+    <section class="hero">
+      <p class="eyebrow">RESPONSIVE DATA LAB</p>
+      <h1>表格类页面小屏适配预览</h1>
+      <p class="intro">
+        这个离线页模拟“高风险干预 / 用户管理 / 审批中心”一类数据页。
+        宽屏保留表格阅读效率，中屏取消固定列，小屏直接切卡片，不再强撑二维表格。
+      </p>
+      <div class="hero-pills">
+        <span class="pill">>= 1280px：桌面表格</span>
+        <span class="pill">960px - 1279px：横向滚动</span>
+        <span class="pill pill-accent">< 960px：卡片视图</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>桌面 / 平板视图</h2>
+          <p>适合高密度浏览，操作列保留在右边。缩窄窗口后会自动切到卡片模式。</p>
+        </div>
+        <div class="stats-row">
+          <div class="stat-chip">
+            <span class="stat-label">总记录</span>
+            <strong>24</strong>
+          </div>
+          <div class="stat-chip">
+            <span class="stat-label">高风险</span>
+            <strong>6</strong>
+          </div>
+          <div class="stat-chip">
+            <span class="stat-label">处理中</span>
+            <strong>11</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-shell">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="sticky-left col-id">ID</th>
+              <th class="col-name">姓名</th>
+              <th class="col-no">学号</th>
+              <th class="col-org">学院</th>
+              <th class="col-class">班级</th>
+              <th class="col-risk">风险分</th>
+              <th class="col-status">状态</th>
+              <th class="col-summary">摘要</th>
+              <th class="col-time">最近时间</th>
+              <th class="sticky-right col-action">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="sticky-left col-id">WC-2026-001</td>
+              <td class="col-name">张晨曦</td>
+              <td class="col-no">2023010101</td>
+              <td class="col-org">计算机学院</td>
+              <td class="col-class">23级软件工程1班</td>
+              <td class="col-risk"><span class="risk danger">92</span></td>
+              <td class="col-status"><span class="tag warning">待分配</span></td>
+              <td class="col-summary">高数周预警累计 6 次，英语月预警累计 2 次，建议优先家校联动。</td>
+              <td class="col-time">2026-04-05 14:20</td>
+              <td class="sticky-right col-action">
+                <div class="action-row">
+                  <a href="/">查看</a>
+                  <a href="/">分配</a>
+                  <a href="/" class="danger-link">删除</a>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="sticky-left col-id">WC-2026-002</td>
+              <td class="col-name">李思远</td>
+              <td class="col-no">2023010116</td>
+              <td class="col-org">机械学院</td>
+              <td class="col-class">23级机械设计2班</td>
+              <td class="col-risk"><span class="risk warn">74</span></td>
+              <td class="col-status"><span class="tag info">处理中</span></td>
+              <td class="col-summary">工程制图周预警累计 4 次，已安排班主任谈话，等待跟踪记录回填。</td>
+              <td class="col-time">2026-04-05 11:36</td>
+              <td class="sticky-right col-action">
+                <div class="action-row">
+                  <a href="/">查看</a>
+                  <a href="/">记录</a>
+                  <a href="/" class="danger-link">删除</a>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="sticky-left col-id">WC-2026-003</td>
+              <td class="col-name">周若宁</td>
+              <td class="col-no">2023010208</td>
+              <td class="col-org">经管学院</td>
+              <td class="col-class">23级会计学3班</td>
+              <td class="col-risk"><span class="risk safe">58</span></td>
+              <td class="col-status"><span class="tag success">已完成</span></td>
+              <td class="col-summary">课程维度聚合后只保留 2 条活跃预警，干预结论已归档。</td>
+              <td class="col-time">2026-04-04 18:05</td>
+              <td class="sticky-right col-action">
+                <div class="action-row">
+                  <a href="/">查看</a>
+                  <a href="/">归档</a>
+                  <a href="/" class="danger-link">删除</a>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>手机卡片视图</h2>
+          <p>同一份数据在窄屏下不再强行展示为表格，避免重叠、透字和按钮挤压。</p>
+        </div>
+      </div>
+
+      <div class="card-grid">
+        <article class="data-card">
+          <div class="data-card__head">
+            <div>
+              <h3>张晨曦</h3>
+              <p>2023010101 · 23级软件工程1班</p>
+            </div>
+            <span class="risk danger">92</span>
+          </div>
+          <div class="data-card__meta">计算机学院 · 待分配</div>
+          <p class="data-card__summary">高数周预警累计 6 次，英语月预警累计 2 次，建议优先家校联动。</p>
+          <div class="data-card__footer">
+            <span>2026-04-05 14:20</span>
+            <div class="card-actions">
+              <a href="/">查看</a>
+              <a href="/">分配</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="data-card">
+          <div class="data-card__head">
+            <div>
+              <h3>李思远</h3>
+              <p>2023010116 · 23级机械设计2班</p>
+            </div>
+            <span class="risk warn">74</span>
+          </div>
+          <div class="data-card__meta">机械学院 · 处理中</div>
+          <p class="data-card__summary">工程制图周预警累计 4 次，已安排班主任谈话，等待跟踪记录回填。</p>
+          <div class="data-card__footer">
+            <span>2026-04-05 11:36</span>
+            <div class="card-actions">
+              <a href="/">查看</a>
+              <a href="/">记录</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="data-card">
+          <div class="data-card__head">
+            <div>
+              <h3>周若宁</h3>
+              <p>2023010208 · 23级会计学3班</p>
+            </div>
+            <span class="risk safe">58</span>
+          </div>
+          <div class="data-card__meta">经管学院 · 已完成</div>
+          <p class="data-card__summary">课程维度聚合后只保留 2 条活跃预警，干预结论已归档。</p>
+          <div class="data-card__footer">
+            <span>2026-04-04 18:05</span>
+            <div class="card-actions">
+              <a href="/">查看</a>
+              <a href="/">归档</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

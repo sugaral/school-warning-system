@@ -1,0 +1,76 @@
+<view class="login-page">
+  <view class="header">
+    <view class="logo">预</view>
+    <view class="title">学业预警</view>
+    <view class="subtitle">发现 · 确认 · 处置 · 追溯</view>
+  </view>
+
+  <!-- 学号 + 姓名 双匹配绑定（与后端 student/login 契约一致：两者都必须命中） -->
+  <view class="form-card" wx:if="{{!bound}}">
+    <view class="form-item">
+      <text class="form-label form-required">学号</text>
+      <input
+        class="form-input"
+        type="text"
+        placeholder="请输入学号"
+        value="{{studentNo}}"
+        bindinput="onStudentNoInput"
+        maxlength="32"
+      />
+    </view>
+
+    <view class="form-item">
+      <text class="form-label form-required">姓名</text>
+      <input
+        class="form-input"
+        type="text"
+        placeholder="请输入姓名（需与学籍一致）"
+        value="{{name}}"
+        bindinput="onNameInput"
+        maxlength="32"
+      />
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">密码</text>
+      <input
+        class="form-input"
+        password
+        placeholder="首次绑定后可留空"
+        value="{{password}}"
+        bindinput="onPasswordInput"
+        maxlength="64"
+      />
+    </view>
+
+    <button
+      class="btn"
+      bindtap="onSubmit"
+      loading="{{submitting}}"
+      disabled="{{submitting}}"
+    >
+      登录 / 绑定
+    </button>
+
+    <view class="hint">
+      首次使用请填写学号与姓名完成绑定；已绑定微信的账号可直接授权登录。
+    </view>
+
+    <view class="error-tip" wx:if="{{errorMsg}}">{{errorMsg}}</view>
+  </view>
+
+  <!-- 已绑定：一键微信登录 -->
+  <view class="form-card" wx:else>
+    <view class="bound-info">
+      <text class="bound-name">{{student.name}}</text>
+      <text class="bound-no">学号 {{student.student_no}}</text>
+    </view>
+    <button class="btn" bindtap="onWechatLogin" loading="{{submitting}}" disabled="{{submitting}}">
+      微信一键登录
+    </button>
+  </view>
+
+  <view class="footer">
+    <text>登录即表示同意学校相关数据使用规范</text>
+  </view>
+</view>

@@ -1,0 +1,200 @@
+/* 全局样式：与后端管理端保持同一主色（#1677FF），风格简洁 */
+page {
+  background-color: #f5f6fa;
+  font-size: 28rpx;
+  color: #1f1f1f;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, sans-serif;
+}
+
+.page {
+  padding: 24rpx;
+  box-sizing: border-box;
+  min-height: 100vh;
+}
+
+/* 卡片 */
+.card {
+  background: #ffffff;
+  border-radius: 16rpx;
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  margin-bottom: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 行 */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+.row:last-child {
+  border-bottom: none;
+}
+.row-label {
+  color: #8c8c8c;
+  flex-shrink: 0;
+  margin-right: 20rpx;
+}
+.row-value {
+  flex: 1;
+  text-align: right;
+  word-break: break-all;
+}
+
+/* 等级徽标（与预警 level 对应） */
+.badge {
+  display: inline-block;
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  line-height: 1.6;
+  color: #fff;
+}
+.badge-yellow { background: #faad14; }
+.badge-orange { background: #fa8c16; }
+.badge-red { background: #f5222d; }
+.badge-severe { background: #a8071a; }
+.badge-gray { background: #bfbfbf; }
+
+/* 状态标签 */
+.tag {
+  display: inline-block;
+  padding: 2rpx 14rpx;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+  background: #f0f5ff;
+  color: #1677ff;
+  border: 1rpx solid #adc6ff;
+}
+.tag-success { background: #f6ffed; color: #52c41a; border-color: #b7eb8f; }
+.tag-warn { background: #fffbe6; color: #faad14; border-color: #ffe58f; }
+.tag-danger { background: #fff1f0; color: #f5222d; border-color: #ffa39e; }
+.tag-plain { background: #fafafa; color: #8c8c8c; border-color: #e8e8e8; }
+
+/* 按钮 */
+.btn {
+  height: 88rpx;
+  line-height: 88rpx;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  text-align: center;
+  background: #1677ff;
+  color: #fff;
+  margin-top: 24rpx;
+}
+.btn[disabled] { background: #bfbfbf; color: #fff; }
+.btn-ghost {
+  background: #fff;
+  color: #1677ff;
+  border: 1rpx solid #1677ff;
+}
+.btn-danger { background: #f5222d; }
+
+/* 表单 */
+.form-item {
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+.form-label {
+  font-size: 26rpx;
+  color: #595959;
+  margin-bottom: 14rpx;
+  display: block;
+}
+.form-input {
+  height: 80rpx;
+  font-size: 30rpx;
+  border: 1rpx solid #e8e8e8;
+  border-radius: 10rpx;
+  padding: 0 20rpx;
+  box-sizing: border-box;
+  background: #fff;
+}
+.form-textarea {
+  width: 100%;
+  min-height: 160rpx;
+  font-size: 28rpx;
+  border: 1rpx solid #e8e8e8;
+  border-radius: 10rpx;
+  padding: 20rpx;
+  box-sizing: border-box;
+  background: #fff;
+}
+.form-required::before {
+  content: '*';
+  color: #f5222d;
+  margin-right: 6rpx;
+}
+
+/* 空态 */
+.empty {
+  text-align: center;
+  color: #bfbfbf;
+  padding: 120rpx 0;
+  font-size: 28rpx;
+}
+
+/* 加载更多 */
+.load-more {
+  text-align: center;
+  color: #bfbfbf;
+  font-size: 24rpx;
+  padding: 30rpx 0;
+}
+
+/* 筛选栏 */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+.filter-item {
+  padding: 10rpx 26rpx;
+  border-radius: 30rpx;
+  background: #fff;
+  color: #595959;
+  font-size: 26rpx;
+  border: 1rpx solid #e8e8e8;
+}
+.filter-item.active {
+  background: #1677ff;
+  color: #fff;
+  border-color: #1677ff;
+}
+
+/* 图片九宫格 */
+.image-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 16rpx;
+}
+.image-item {
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 12rpx;
+  background: #f0f0f0;
+}
+.image-add {
+  width: 180rpx;
+  height: 180rpx;
+  border: 1rpx dashed #d9d9d9;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #bfbfbf;
+  font-size: 48rpx;
+}

@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>签到看板预览</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        background: #f2f4f7;
+        color: #1f2937;
+      }
+      .page-shell { padding: 28px; }
+      .page-title { font-size: 15px; color: #6b7280; margin: 0 0 16px; }
+      .signin-mask {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: rgba(15, 23, 42, 0.42);
+        border-radius: 12px;
+        min-height: 720px;
+      }
+      .signin-panel {
+        width: min(1040px, 92vw);
+        height: min(640px, 84vh);
+        display: flex;
+        flex-direction: column;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+        overflow: hidden;
+      }
+      .signin-panel__header {
+        display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+        padding: 18px 22px 14px; border-bottom: 1px solid #f0f2f5;
+      }
+      .signin-panel__title { margin: 0; font-size: 17px; font-weight: 600; color: #1f2937; }
+      .signin-panel__subtitle {
+        margin-top: 6px; display: flex; align-items: center; gap: 6px; font-size: 12px; color: #8f95a3;
+      }
+      .dot { opacity: 0.5; }
+      .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #18a058; }
+      .signin-panel__actions { display: flex; align-items: center; gap: 8px; }
+      .panel-btn {
+        padding: 6px 12px; border-radius: 8px; border: 1px solid #dcdfe6; background: #fff;
+        color: #4b5563; font-size: 12px; line-height: 1.4; cursor: pointer;
+      }
+      .panel-btn--icon { width: 30px; padding: 6px 0; text-align: center; color: #909399; }
+      .signin-panel__body {
+        flex: 1; min-height: 0; display: grid; grid-template-columns: 300px 1fr;
+        gap: 20px; padding: 18px 22px 20px;
+      }
+      .panel-qr { display: flex; flex-direction: column; gap: 10px; }
+      .panel-qr__frame {
+        position: relative; width: 100%; aspect-ratio: 1; display: flex; align-items: center;
+        justify-content: center; padding: 10px; border: 1px solid #ebeef5; border-radius: 12px;
+        background: #fff; cursor: zoom-in;
+      }
+      .panel-qr__frame img { width: 100%; height: 100%; object-fit: contain; }
+      .panel-qr__zoom {
+        position: absolute; right: 8px; bottom: 8px; padding: 2px 8px; border-radius: 999px;
+        background: rgba(31, 41, 55, 0.72); color: #fff; font-size: 11px;
+      }
+      .panel-qr__meta { font-size: 12px; color: #6b7280; text-align: center; }
+      .panel-qr__meta b { color: #409eff; }
+      .panel-qr__hint { font-size: 11px; color: #a8abb2; text-align: center; }
+      .panel-roster { display: flex; flex-direction: column; min-height: 0; gap: 12px; }
+      .roster-tabs { display: flex; align-items: center; gap: 10px; }
+      .roster-tab {
+        display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 10px;
+        border: 1px solid #e5e7eb; background: #fff; color: #6b7280; font-size: 13px; cursor: pointer;
+      }
+      .roster-tab--checked.is-active { border-color: #18a058; color: #0f7a43; background: #f0fbf5; }
+      .roster-tab__count {
+        min-width: 24px; padding: 1px 7px; border-radius: 999px; background: #f4f5f7;
+        color: #4b5563; font-size: 12px; font-weight: 600; text-align: center;
+      }
+      .roster-tab--checked.is-active .roster-tab__count { background: #d8f5e6; color: #0f7a43; }
+      .roster-tab--unchecked .roster-tab__count { background: #f4f5f7; color: #4b5563; }
+      .roster-summary { margin-left: auto; font-size: 12px; color: #a8abb2; }
+      .roster-grid {
+        flex: 1; min-height: 0; overflow-y: auto; display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 14px 8px;
+        padding: 14px 6px; border: 1px solid #f0f2f5; border-radius: 12px;
+        background: #fcfcfd; align-content: start;
+      }
+      .roster-member {
+        position: relative; display: flex; flex-direction: column; align-items: center;
+        gap: 4px; padding: 6px 2px 8px;
+      }
+      .roster-avatar {
+        width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center;
+        justify-content: center; font-size: 17px; font-weight: 600;
+        border: 1px solid rgba(15, 23, 42, 0.04);
+      }
+      .roster-name {
+        max-width: 100%; font-size: 12px; color: #374151; text-align: center;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .roster-no { font-size: 10px; color: #b0b4bd; }
+      .roster-tag {
+        position: absolute; top: 0; right: 2px; padding: 0 5px; border-radius: 999px;
+        font-size: 9px; line-height: 15px;
+      }
+      .roster-tag--late { background: #fff7e6; color: #b76b00; border: 1px solid #ffe1ab; }
+      /* 面板内放大 */
+      .signin-panel__body.is-qr-zoomed { grid-template-columns: minmax(340px, 46%) 1fr; }
+      .signin-panel__body.is-qr-zoomed .panel-qr__frame { width: min(100%, 420px); margin: 0 auto; cursor: zoom-out; border-color: #c6d7ff; }
+      #zoomDemo { position: fixed; left: 16px; bottom: 16px; z-index: 10; padding: 8px 16px; border-radius: 8px; border: 1px solid #dcdfe6; background: #fff; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <div class="page-shell">
+      <p class="page-title">签到看板 · 视觉预览（白色小框，点击二维码全屏）</p>
+      <div class="signin-mask">
+        <div class="signin-panel">
+          <header class="signin-panel__header">
+            <div class="signin-panel__title-group">
+              <h3 class="signin-panel__title">高等数学 · 25软1班</h3>
+              <div class="signin-panel__subtitle">
+                <span>课次 #801</span>
+                <span class="dot">·</span>
+                <span>截止 2026-11-19 23:34</span>
+                <span class="dot">·</span>
+                <span class="live-dot"></span>
+                <span>更新于 23:07:12</span>
+              </div>
+            </div>
+            <div class="signin-panel__actions">
+              <button class="panel-btn">刷新名单</button>
+              <button class="panel-btn">换二维码</button>
+              <button class="panel-btn">结束签到</button>
+              <button class="panel-btn panel-btn--icon">✕</button>
+            </div>
+          </header>
+          <main class="signin-panel__body" id="boardBody">
+            <section class="panel-qr">
+              <div class="panel-qr__frame" id="qrFrame">
+                <img src="/assets/qr-preview.svg" alt="签到二维码" />
+                <span class="panel-qr__zoom">点击放大</span>
+              </div>
+              <div class="panel-qr__meta">剩余 <b>892s</b> 刷新（每 900s）</div>
+              <div class="panel-qr__hint">学生用小程序扫码签到</div>
+            </section>
+            <section class="panel-roster">
+              <div class="roster-tabs">
+                <button class="roster-tab roster-tab--checked is-active">已签到 <span class="roster-tab__count">10</span></button>
+                <button class="roster-tab roster-tab--unchecked">未签到 <span class="roster-tab__count">20</span></button>
+                <span class="roster-summary">应到 30 · 请假 0</span>
+              </div>
+              <div class="roster-grid" id="grid"></div>
+            </section>
+          </main>
+        </div>
+      </div>
+    </div>
+    <script>
+      const members = [
+        ['张三', '202600200201', '#eef3ff', '#3557c9', ''],
+        ['李明', '202600200202', '#e8f7f2', '#0f7a5a', ''],
+        ['王华', '202600200203', '#f3eeff', '#5b3fc0', '迟到'],
+        ['赵强', '202600200204', '#fff1e8', '#b4551c', ''],
+        ['陈晨', '202600200205', '#e9f8ee', '#17803d', ''],
+        ['刘洋', '202600200206', '#fdecec', '#b32f34', ''],
+        ['孙悦', '202600200207', '#e9f5ff', '#17679b', ''],
+        ['周涛', '202600200208', '#fdecf5', '#a52d76', ''],
+        ['吴敏', '202600200209', '#eef3ff', '#3557c9', ''],
+        ['郑凯', '202600200210', '#e8f7f2', '#0f7a5a', '迟到'],
+      ];
+      const grid = document.getElementById('grid');
+      grid.innerHTML = members
+        .map(([name, no, bg, color, tag]) => {
+          const ch = name.slice(-1);
+          return `<div class="roster-member">
+            <div class="roster-avatar" style="background:${bg};color:${color}">${ch}</div>
+            <div class="roster-name" title="${name}">${name}</div>
+            <div class="roster-no">${no}</div>
+            ${tag ? `<span class="roster-tag roster-tag--late">${tag}</span>` : ''}
+          </div>`;
+        })
+        .join('');
+    </script>
+      <button id="zoomDemo" type="button">切换放大</button>
+    <script>
+      document.getElementById('zoomDemo').addEventListener('click', () => {
+        document.getElementById('boardBody').classList.toggle('is-qr-zoomed');
+      });
+      document.getElementById('qrFrame').addEventListener('click', () => {
+        document.getElementById('boardBody').classList.toggle('is-qr-zoomed');
+      });
+    </script>
+  </body>
+</html>

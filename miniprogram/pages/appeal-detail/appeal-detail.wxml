@@ -1,0 +1,11 @@
+<view class="page">
+  <view class="card" wx:if="{{detail}}">
+    <view class="card-title">申诉详情</view>
+    <view class="row"><text class="row-label">状态</text><text class="row-value">{{detail.status || '-'}}</text></view>
+    <view class="row"><text class="row-label">申诉类型</text><text class="row-value">{{detail.appeal_type || '-'}}</text></view>
+    <view class="row"><text class="row-label">申诉内容</text><text class="row-value">{{detail.content || '-'}}</text></view>
+    <view class="row"><text class="row-label">处理结果</text><text class="row-value">{{detail.result_note || '-'}}</text></view>
+    <view class="row"><text class="row-label">提交时间</text><text class="row-value">{{detail.created_at || '-'}}</text></view>
+  </view>
+  <view class="empty" wx:else>{{loading ? '加载中...' : '记录不存在'}}</view>
+</view>

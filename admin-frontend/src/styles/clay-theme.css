@@ -1,0 +1,892 @@
+/* ============================================================================
+   Claymorphism 视觉层（全局 UI 皮肤）
+
+   定位：只改视觉，不动任何业务逻辑。
+   - 通过 CSS 变量重映射 + 组件级覆盖实现「软陶」风格
+   - 载入顺序：element-plus → theme.css → page-layout.css → clay-theme.css（本文件）
+     同优先级时后载入生效；页面 <style scoped> 用 :deep() 提权的地方用 !important 兜底
+   - 尊重 prefers-reduced-motion：关闭全部过渡与动画
+   ========================================================================== */
+
+:root {
+  /* ---- Claymorphism 权威 token ---- */
+  --dp-color-ground: #f1f2fa;
+  --dp-color-ink: #383139;
+  --dp-color-ink-secondary: #48404b;
+  --dp-color-accent: #8ed3a5;
+  --dp-color-surface-support: #c0efdc;
+  /* 除「预警等级标签」外，全站统一绿色系：
+     下面四个语义面（support/compare/warm/cool）全部收敛为绿色不同明度，
+     不再出现蓝/黄/薰衣草等杂色。等级标签由 :color 内联着色，不受这里影响。 */
+  --dp-color-surface-support: #d8f0e1;
+  --dp-color-surface-compare: #e4f4ea;
+  --dp-color-surface-warm: #edf9f1;
+  --dp-color-surface-cool: #ddf1e5;
+  --dp-color-surface: #fffdf7;
+
+  /* 字体：Instrument Sans 未随包分发时回落到系统无衬线，保证字形不塌 */
+  --dp-typography-face: "Claymorphism Instrument", "Instrument Sans",
+    "Segoe UI Variable", "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  --dp-typography-body: 16px;
+  --dp-typography-small: 15px;
+  --dp-typography-metadata: 13px;
+  --dp-typography-caption: 12px;
+  --dp-typography-reading-leading: 1.55;
+  --dp-typography-emphasis: 700;
+
+  --dp-spacing-gap: 24px;
+  --dp-spacing-gap-compact: 20px;
+  --dp-spacing-paragraph-gap: 18px;
+
+  --dp-radius-surface: 38px;
+  --dp-radius-tray: 70px;
+  --dp-radius-control: 999px;
+  --dp-radius-disclosure: 25px;
+
+  --dp-border-focus-width: 3px;
+  --dp-motion-interaction: 180ms;
+
+  /* ---- 软陶阴影：左上高光 + 右下暗边 + 外部落地影 ---- */
+  --clay-shadow-cushion:
+    0 14px 30px rgba(56, 49, 57, 0.14),
+    inset 3px 3px 8px rgba(255, 253, 247, 0.92),
+    inset -4px -4px 10px rgba(56, 49, 57, 0.10);
+  --clay-shadow-tray:
+    0 26px 60px rgba(56, 49, 57, 0.16),
+    inset 3px 3px 10px rgba(255, 253, 247, 0.9),
+    inset -5px -5px 14px rgba(56, 49, 57, 0.08);
+  --clay-shadow-control:
+    0 8px 18px rgba(56, 49, 57, 0.16),
+    inset 2px 2px 5px rgba(255, 253, 247, 0.95),
+    inset -3px -3px 7px rgba(56, 49, 57, 0.12);
+  --clay-shadow-inset:
+    inset 3px 3px 7px rgba(56, 49, 57, 0.14),
+    inset -3px -3px 7px rgba(255, 253, 247, 0.95);
+  --clay-shadow-pressed:
+    inset 4px 4px 9px rgba(56, 49, 57, 0.2),
+    inset -3px -3px 8px rgba(255, 252, 242, 0.8);
+
+  /* ---- 重映射既有 ws-* 设计变量（大量页面直接消费这些） ---- */
+  --ws-font-sans: var(--dp-typography-face);
+  --ws-color-bg: var(--dp-color-ground);
+  --ws-color-bg-soft: #f6f5fc;
+  --ws-color-surface: var(--dp-color-surface);
+  --ws-color-surface-strong: var(--dp-color-surface);
+  --ws-color-border: rgba(56, 49, 57, 0.12);
+  --ws-color-border-strong: rgba(56, 49, 57, 0.2);
+  --ws-color-text: var(--dp-color-ink);
+  --ws-color-text-soft: var(--dp-color-ink-secondary);
+  --ws-color-accent: #4f9e6f;
+  --ws-color-accent-strong: #3f8a5d;
+  --ws-color-warm: #a8791a;
+  --ws-color-danger: #c04a52;
+  --ws-shadow-soft: var(--clay-shadow-cushion);
+  --ws-shadow-panel: var(--clay-shadow-tray);
+  --ws-radius-xl: var(--dp-radius-surface);
+  --ws-radius-lg: var(--dp-radius-disclosure);
+  --ws-grid-color: rgba(56, 49, 57, 0.06);
+  --ws-table-fixed-bg: var(--dp-color-surface);
+  --ws-table-fixed-bg-strong: var(--dp-color-surface);
+  --ws-table-fixed-blur: none;
+  --ws-table-shell-bg: var(--dp-color-surface);
+  --ws-table-shell-border: rgba(56, 49, 57, 0.1);
+  --ws-table-shell-shadow: var(--clay-shadow-tray);
+  --ws-table-header-bg: linear-gradient(
+    180deg,
+    rgba(192, 239, 220, 0.35),
+    rgba(255, 253, 247, 0.9)
+  );
+  --ws-table-row-bg: var(--dp-color-surface);
+  --ws-table-row-bg-hover: #eff8f2;
+  --ws-table-row-border: rgba(56, 49, 57, 0.08);
+
+  /* ---- 重映射 Element Plus 主题变量 ---- */
+  --el-font-family: var(--dp-typography-face);
+  --el-color-primary: #4f9e6f;
+  --el-color-primary-light-3: #7fbf98;
+  --el-color-primary-light-5: #a4d4b7;
+  --el-color-primary-light-7: #c9e7d5;
+  --el-color-primary-light-8: #dcf1e3;
+  --el-color-primary-light-9: #eef8f2;
+  --el-color-primary-dark-2: #3f8a5d;
+  --el-color-success: #3f9d78;
+  --el-color-warning: #b8860b;
+  --el-color-danger: #c04a52;
+  --el-color-info: #6f6875;
+  --el-bg-color: var(--dp-color-surface);
+  --el-bg-color-page: var(--dp-color-ground);
+  --el-bg-color-overlay: var(--dp-color-surface);
+  --el-text-color-primary: var(--dp-color-ink);
+  --el-text-color-regular: var(--dp-color-ink-secondary);
+  --el-text-color-secondary: #6f6875;
+  --el-text-color-placeholder: #9a929f;
+  --el-border-color: rgba(56, 49, 57, 0.14);
+  --el-border-color-light: rgba(56, 49, 57, 0.1);
+  --el-border-color-lighter: rgba(56, 49, 57, 0.08);
+  --el-fill-color: #f4f2f7;
+  --el-fill-color-light: #f7f5fa;
+  --el-fill-color-blank: var(--dp-color-surface);
+  --el-border-radius-base: var(--dp-radius-disclosure);
+  --el-border-radius-small: 16px;
+  --el-border-radius-round: var(--dp-radius-control);
+  --el-box-shadow: var(--clay-shadow-cushion);
+  --el-box-shadow-light: var(--clay-shadow-cushion);
+  --el-box-shadow-lighter: var(--clay-shadow-cushion);
+  --el-mask-color: rgba(56, 49, 57, 0.28);
+  --el-menu-bg-color: transparent;
+  --el-menu-text-color: var(--dp-color-ink-secondary);
+  --el-menu-active-color: var(--dp-color-ink);
+  --el-menu-hover-bg-color: rgba(142, 211, 165, 0.32);
+}
+
+/* ============================== 基座 ============================== */
+
+html,
+body,
+#app,
+.app-shell {
+  background: var(--dp-color-ground);
+  color: var(--dp-color-ink);
+  font-family: var(--dp-typography-face);
+  font-size: var(--dp-typography-body);
+  line-height: var(--dp-typography-reading-leading);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(142, 211, 165, 0.55);
+  color: var(--dp-color-ink);
+}
+
+/* 键盘可达：焦点环独立于阴影，始终可见 */
+:focus-visible {
+  outline: var(--dp-border-focus-width) solid var(--dp-color-accent);
+  outline-offset: 3px;
+  border-radius: 12px;
+}
+
+/* 动效降级 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================== 应用外壳 ============================== */
+
+.dashboard-layout,
+.dashboard-content {
+  background: var(--dp-color-ground);
+}
+
+.dashboard-aside {
+  background: var(--dp-color-surface) !important;
+  border-right: 1px solid rgba(56, 49, 57, 0.06);
+  box-shadow: 0 18px 40px rgba(56, 49, 57, 0.1);
+}
+
+.brand-panel {
+  background: var(--dp-color-accent) !important;
+  border-radius: var(--dp-radius-surface) !important;
+  box-shadow: var(--clay-shadow-cushion) !important;
+  color: var(--dp-color-ink) !important;
+}
+
+.header {
+  background: var(--dp-color-surface) !important;
+  border-bottom: 1px solid rgba(56, 49, 57, 0.06) !important;
+  box-shadow: 0 10px 26px rgba(56, 49, 57, 0.08) !important;
+  backdrop-filter: none !important;
+}
+
+.header-title {
+  font-weight: var(--dp-typography-emphasis);
+  letter-spacing: -0.01em;
+  color: var(--dp-color-ink);
+}
+
+.header-chip {
+  background: var(--dp-color-surface-support) !important;
+  color: var(--dp-color-ink) !important;
+  border: none !important;
+  border-radius: var(--dp-radius-control) !important;
+  box-shadow: var(--clay-shadow-control) !important;
+}
+
+.header-eyebrow {
+  color: var(--dp-color-ink-secondary) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.dashboard-main-shell {
+  background: var(--dp-color-ground) !important;
+  padding: var(--dp-spacing-gap) !important;
+}
+
+/* 侧边导航：做成「下拉栏 + 果冻胶囊」，与筛选面板同一套托盘语言
+   —— 外层一张奶油托盘，分组标题是凹槽胶囊，展开后凸起成绿色胶囊。 */
+.dashboard-aside {
+  /* 导航栏底色：白色（外层容器），里面菜单仍是一张奶油托盘 */
+  background: #ffffff !important;
+  border-right: 1px solid rgba(56, 49, 57, 0.08) !important;
+  box-shadow: 6px 0 24px rgba(56, 49, 57, 0.08) !important;
+  padding: 16px 14px !important;
+  overflow-y: auto !important;
+}
+
+.brand-panel {
+  background: var(--dp-color-accent) !important;
+  border-radius: var(--dp-radius-surface) !important;
+  box-shadow: var(--clay-shadow-cushion) !important;
+  color: var(--dp-color-ink) !important;
+  padding: 18px 20px !important;
+  margin-bottom: 14px;
+}
+
+.menu :deep(.el-menu),
+.menu {
+  background: var(--dp-color-surface) !important;
+  border-right: none !important;
+  border: 1px solid rgba(56, 49, 57, 0.06) !important;
+  border-radius: var(--dp-radius-surface) !important;
+  box-shadow: var(--clay-shadow-tray) !important;
+  padding: 12px 10px !important;
+}
+
+/* 分组标题 / 无子级菜单：果冻胶囊（凹陷态） */
+.menu > .el-menu-item,
+.menu > .el-sub-menu > .el-sub-menu__title,
+.menu .el-sub-menu__title {
+  height: auto !important;
+  line-height: 1.35 !important;
+  margin: 6px 2px !important;
+  padding: 12px 18px !important;
+  border-radius: var(--dp-radius-control) !important;
+  background: rgba(216, 240, 225, 0.72) !important;
+  box-shadow: var(--clay-shadow-inset) !important;
+  color: var(--dp-color-ink) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  transition: background var(--dp-motion-interaction) ease,
+    box-shadow var(--dp-motion-interaction) ease,
+    transform var(--dp-motion-interaction) ease !important;
+}
+
+.menu > .el-menu-item:hover,
+.menu .el-sub-menu__title:hover {
+  background: rgba(142, 211, 165, 0.62) !important;
+  transform: translateY(-1px);
+}
+
+/* 展开的分组：凸起成绿色胶囊 */
+.menu .el-sub-menu.is-opened > .el-sub-menu__title {
+  background: var(--dp-color-accent) !important;
+  box-shadow: var(--clay-shadow-control) !important;
+}
+
+/* 展开后的子菜单容器不要再叠一层底色，否则会出现灰色块 */
+.menu .el-sub-menu .el-menu,
+.menu .el-menu--inline {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+/* 子项：缩进的小胶囊 */
+.menu .el-sub-menu .el-menu-item {
+  height: auto !important;
+  line-height: 1.3 !important;
+  margin: 4px 2px 4px 16px !important;
+  padding: 10px 16px !important;
+  border-radius: var(--dp-radius-control) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--dp-color-ink-secondary) !important;
+  font-size: 13.5px !important;
+}
+
+.menu .el-sub-menu .el-menu-item:hover {
+  background: rgba(142, 211, 165, 0.42) !important;
+  color: var(--dp-color-ink) !important;
+}
+
+.menu .el-sub-menu .el-menu-item.is-active {
+  background: var(--dp-color-accent) !important;
+  color: #173b28 !important;
+  font-weight: var(--dp-typography-emphasis) !important;
+  box-shadow: var(--clay-shadow-control) !important;
+}
+
+.menu .el-sub-menu__icon-arrow {
+  color: #2f5c43 !important;
+}
+
+/* ============================== 卡片 / 托盘 ============================== */
+
+.el-card,
+.ws-table-card,
+.ws-overview-card {
+  background: var(--dp-color-surface) !important;
+  border: 1px solid rgba(56, 49, 57, 0.06) !important;
+  border-radius: var(--dp-radius-surface) !important;
+  box-shadow: var(--clay-shadow-tray) !important;
+  overflow: hidden;
+}
+
+.el-card__header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(56, 49, 57, 0.06) !important;
+  padding: 20px 26px !important;
+  font-weight: var(--dp-typography-emphasis);
+  color: var(--dp-color-ink);
+}
+
+.el-card__body {
+  padding: 22px 26px !important;
+  color: var(--dp-color-ink-secondary);
+}
+
+/* 共享托盘（页面骨架） */
+.ws-page {
+  gap: var(--dp-spacing-gap-compact) !important;
+}
+
+.ws-page-hero {
+  background: var(--dp-color-surface) !important;
+  border: 1px solid rgba(56, 49, 57, 0.06) !important;
+  border-radius: var(--dp-radius-surface) !important;
+  box-shadow: var(--clay-shadow-tray) !important;
+  padding: 26px 30px !important;
+}
+
+.ws-page-overview,
+.student-summary-grid {
+  gap: var(--dp-spacing-gap-compact) !important;
+}
+
+/* 概览小垫子 */
+.ws-overview-card,
+.student-summary-card {
+  background: var(--dp-color-surface) !important;
+  border: 1px solid rgba(56, 49, 57, 0.06) !important;
+  border-radius: var(--dp-radius-disclosure) !important;
+  box-shadow: var(--clay-shadow-cushion) !important;
+  padding: 18px 22px !important;
+}
+
+/* 概览卡统一奶油底：底色不再参与语义表达。
+   之前用四色轮转，会把「黄色预警」放进蓝色卡里，读起来像配色错误；
+   现在卡片只负责承载，颜色语义交给里面的等级标签。 */
+
+.student-summary-card span,
+.ws-overview-card span {
+  color: var(--dp-color-ink-secondary) !important;
+  font-size: var(--dp-typography-caption) !important;
+  letter-spacing: 0.02em;
+}
+
+.student-summary-card strong,
+.ws-overview-card strong {
+  color: var(--dp-color-ink) !important;
+  font-weight: var(--dp-typography-emphasis) !important;
+}
+
+/* ============================== 按钮 ============================== */
+
+.el-button {
+  border-radius: var(--dp-radius-control) !important;
+  border: 1px solid rgba(56, 49, 57, 0.08) !important;
+  background: var(--dp-color-surface) !important;
+  color: var(--dp-color-ink) !important;
+  font-family: var(--dp-typography-face) !important;
+  font-weight: 600;
+  box-shadow: var(--clay-shadow-control) !important;
+  transition: transform var(--dp-motion-interaction) ease,
+    box-shadow var(--dp-motion-interaction) ease !important;
+}
+
+.el-button:hover:not(.is-disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 12px 24px rgba(56, 49, 57, 0.18),
+    inset 2px 2px 6px rgba(255, 253, 247, 0.95),
+    inset -3px -3px 8px rgba(56, 49, 57, 0.12) !important;
+}
+
+.el-button:active:not(.is-disabled) {
+  transform: translateY(1px) scale(0.99);
+  box-shadow: var(--clay-shadow-pressed) !important;
+}
+
+.el-button--primary {
+  background: var(--dp-color-accent) !important;
+  border-color: rgba(56, 49, 57, 0.08) !important;
+  color: var(--dp-color-ink) !important;
+}
+
+.el-button--success {
+  background: #b7e6c9 !important;
+  color: #1f4d33 !important;
+}
+
+.el-button--warning {
+  background: #ccefd9 !important;
+  color: #1f4d33 !important;
+}
+
+/* 危险操作同样收敛为绿色（深一档以保留层级感） */
+.el-button--danger {
+  background: #a5dbb9 !important;
+  color: #1b452c !important;
+}
+
+.el-button--info {
+  background: #d8f0e1 !important;
+  color: #1f4d33 !important;
+}
+
+.el-button.is-text,
+.el-button.is-link {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: var(--el-color-primary) !important;
+  padding: 4px 8px !important;
+}
+
+.el-button.is-text:hover,
+.el-button.is-link:hover {
+  transform: none;
+  box-shadow: none !important;
+  background: rgba(142, 211, 165, 0.3) !important;
+}
+
+.el-button.is-disabled,
+.el-button.is-disabled:hover {
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 0.55;
+}
+
+/* ============================== 表单控件 ============================== */
+
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper,
+.el-input-number,
+.el-date-editor.el-input__wrapper {
+  background: var(--dp-color-surface) !important;
+  border-radius: var(--dp-radius-disclosure) !important;
+  box-shadow: var(--clay-shadow-inset) !important;
+  border: 1px solid rgba(56, 49, 57, 0.08) !important;
+  padding: 4px 16px !important;
+  min-height: 44px;
+  transition: box-shadow var(--dp-motion-interaction) ease !important;
+}
+
+.el-textarea__inner {
+  padding: 12px 16px !important;
+}
+
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused,
+.el-textarea__inner:focus {
+  box-shadow:
+    var(--clay-shadow-inset),
+    0 0 0 var(--dp-border-focus-width) rgba(79, 158, 111, 0.45) !important;
+}
+
+.el-input__inner,
+.el-textarea__inner {
+  color: var(--dp-color-ink) !important;
+  font-family: var(--dp-typography-face) !important;
+}
+
+.el-input__inner::placeholder,
+.el-textarea__inner::placeholder {
+  color: #9a929f !important;
+}
+
+.el-form-item__label {
+  color: var(--dp-color-ink-secondary) !important;
+  font-size: var(--dp-typography-metadata) !important;
+  font-weight: 600;
+}
+
+/* 复选框 / 单选 / 开关：软陶质感 */
+.el-checkbox__inner,
+.el-radio__inner {
+  border-radius: 8px !important;
+  border-color: rgba(56, 49, 57, 0.24) !important;
+  background: var(--dp-color-surface) !important;
+}
+
+.el-checkbox__input.is-checked .el-checkbox__inner,
+.el-radio__input.is-checked .el-radio__inner {
+  background: var(--dp-color-accent) !important;
+  border-color: #4f9e6f !important;
+}
+
+.el-switch__core {
+  border-radius: var(--dp-radius-control) !important;
+  box-shadow: var(--clay-shadow-inset) !important;
+}
+
+.el-switch.is-checked .el-switch__core {
+  background: var(--dp-color-accent) !important;
+  border-color: #4f9e6f !important;
+}
+
+/* ============================== 表格 ============================== */
+
+.el-table {
+  background: var(--dp-color-surface) !important;
+  border-radius: var(--dp-radius-surface) !important;
+  color: var(--dp-color-ink-secondary) !important;
+  font-family: var(--dp-typography-face) !important;
+}
+
+.el-table th.el-table__cell {
+  background: rgba(192, 239, 220, 0.32) !important;
+  color: var(--dp-color-ink) !important;
+  font-weight: var(--dp-typography-emphasis) !important;
+  border-bottom: 1px solid rgba(56, 49, 57, 0.08) !important;
+}
+
+.el-table td.el-table__cell {
+  border-bottom: 1px solid rgba(56, 49, 57, 0.06) !important;
+  color: var(--dp-color-ink-secondary) !important;
+}
+
+.el-table tr:hover > td.el-table__cell {
+  background: #eff8f2 !important;
+}
+
+.el-table__empty-block {
+  background: var(--dp-color-surface) !important;
+  color: var(--dp-color-ink-secondary) !important;
+}
+
+.el-table::before,
+.el-table--border::after {
+  background-color: transparent !important;
+}
+
+/* ============================== 弹层 ============================== */
+
+.el-dialog,
+.el-message-box,
+.el-drawer {
+  background: var(--dp-color-surface) !important;
+  border-radius: var(--dp-radius-surface) !important;
+  box-shadow: var(--clay-shadow-tray) !important;
+  border: 1px solid rgba(56, 49, 57, 0.06) !important;
+}
+
+.el-dialog__header,
+.el-dialog__body,
+.el-dialog__footer {
+  background: transparent !important;
+  padding-left: 28px !important;
+  padding-right: 28px !important;
+}
+
+.el-dialog__title,
+.el-message-box__title {
+  color: var(--dp-color-ink) !important;
+  font-weight: var(--dp-typography-emphasis) !important;
+}
+
+.el-overlay {
+  background: rgba(56, 49, 57, 0.28) !important;
+  backdrop-filter: none !important;
+}
+
+.el-message,
+.el-notification {
+  background: var(--dp-color-surface) !important;
+  border: 1px solid rgba(56, 49, 57, 0.08) !important;
+  border-radius: var(--dp-radius-disclosure) !important;
+  box-shadow: var(--clay-shadow-cushion) !important;
+  color: var(--dp-color-ink) !important;
+}
+
+.el-popper,
+.el-dropdown__popper,
+.el-select__popper {
+  background: var(--dp-color-surface) !important;
+  border-radius: var(--dp-radius-disclosure) !important;
+  box-shadow: var(--clay-shadow-cushion) !important;
+  border: 1px solid rgba(56, 49, 57, 0.08) !important;
+  color: var(--dp-color-ink-secondary) !important;
+}
+
+.el-dropdown-menu__item:hover {
+  background: rgba(142, 211, 165, 0.35) !important;
+  border-radius: 16px;
+}
+
+/* ============================== 标签 / 分页 / 选项卡 ============================== */
+
+/* 注意：预警等级标签是用 :color 传内联底色的（黄/橙/红/紫），
+   这里绝不能对 background 加 !important，否则内联色会被压掉、全部变成主题绿。
+   所以只给「没有内联 background」的标签套陶土色。 */
+.el-tag {
+  border-radius: var(--dp-radius-control) !important;
+  border: none !important;
+  font-weight: 600 !important;
+  padding: 0 12px !important;
+}
+
+.el-tag:not([style*='background']) {
+  background: var(--dp-color-surface-compare);
+  color: var(--dp-color-ink);
+}
+
+.el-tag--success:not([style*='background']) {
+  background: var(--dp-color-surface-support);
+}
+
+.el-tag--warning:not([style*='background']) {
+  background: #ccefd9;
+  color: #1f4d33;
+}
+
+.el-tag--danger:not([style*='background']) {
+  background: #a5dbb9;
+  color: #1b452c;
+}
+
+.el-tag--info:not([style*='background']) {
+  background: #e4f4ea;
+  color: #2f5c43;
+}
+
+.el-tag--primary:not([style*='background']) {
+  background: var(--dp-color-accent);
+  color: var(--dp-color-ink);
+}
+.el-pagination .el-pager li,
+.el-pagination button {
+  border-radius: var(--dp-radius-control) !important;
+  background: var(--dp-color-surface) !important;
+  box-shadow: var(--clay-shadow-control) !important;
+  border: none !important;
+  color: var(--dp-color-ink-secondary) !important;
+  margin: 0 4px;
+}
+
+.el-pagination .el-pager li.is-active {
+  background: var(--dp-color-accent) !important;
+  color: var(--dp-color-ink) !important;
+}
+
+.el-tabs__item {
+  border-radius: var(--dp-radius-control) !important;
+  color: var(--dp-color-ink-secondary) !important;
+  font-weight: 600;
+  transition: color 220ms ease, background 220ms ease !important;
+}
+
+/* 卡片式分类页签：高亮交给滑动胶囊 .tab-glider，自身不再硬切背景 */
+.el-tabs--card > .el-tabs__header .el-tabs__item.is-active {
+  color: var(--dp-color-ink) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.el-tabs__item.is-active {
+  color: var(--dp-color-ink) !important;
+}
+
+/* 页签内容切换：淡入 + 轻微上浮，去掉“弹跳” */
+/* 只做淡入，不做位移：位移会让人感觉「页面在跳」 */
+@keyframes clay-pane-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.el-tab-pane {
+  animation: clay-pane-in 320ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .el-tab-pane {
+    animation: none;
+  }
+}
+
+.el-tabs__nav-wrap::after {
+  background-color: rgba(56, 49, 57, 0.08) !important;
+}
+
+/* 折叠 / 描述列表：小垫子 */
+.el-collapse,
+.el-collapse-item__header,
+.el-collapse-item__wrap,
+.el-descriptions__body {
+  background: transparent !important;
+  border-color: rgba(56, 49, 57, 0.08) !important;
+  color: var(--dp-color-ink-secondary) !important;
+}
+
+.el-empty__description p {
+  color: var(--dp-color-ink-secondary) !important;
+}
+
+/* ============================== 登录页 ============================== */
+
+.judge-shell {
+  background: var(--dp-color-ground) !important;
+  font-family: var(--dp-typography-face) !important;
+}
+
+.login-card {
+  background: var(--dp-color-surface) !important;
+  border-radius: var(--dp-radius-surface) !important;
+  border: 1px solid rgba(56, 49, 57, 0.06) !important;
+  box-shadow: var(--clay-shadow-tray) !important;
+  clip-path: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.login-core {
+  background: transparent !important;
+}
+
+.login-card .eyebrow,
+.login-card .login-header .eyebrow {
+  color: #3f8a5d !important;
+  letter-spacing: 0.16em !important;
+}
+
+.login-card h1,
+.login-card h2 {
+  color: var(--dp-color-ink) !important;
+  font-weight: var(--dp-typography-emphasis) !important;
+  letter-spacing: -0.015em;
+}
+
+.login-card .login-desc,
+.login-card p {
+  color: var(--dp-color-ink-secondary) !important;
+}
+
+.login-card input:not([type='checkbox']):not([type='radio']) {
+  background: var(--dp-color-surface) !important;
+  border: 1px solid rgba(56, 49, 57, 0.08) !important;
+  border-radius: var(--dp-radius-disclosure) !important;
+  box-shadow: var(--clay-shadow-inset) !important;
+  color: var(--dp-color-ink) !important;
+  min-height: 46px;
+}
+
+/* 复选框/单选框保持原生尺寸，只做软陶描边 */
+.login-card input[type='checkbox'],
+.login-card input[type='radio'] {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  border-radius: 6px;
+  border: 1.5px solid rgba(56, 49, 57, 0.35);
+  background: var(--dp-color-surface);
+  box-shadow: none;
+  accent-color: #4f9e6f;
+}
+
+.login-card input:focus {
+  box-shadow:
+    var(--clay-shadow-inset),
+    0 0 0 var(--dp-border-focus-width) rgba(79, 158, 111, 0.45) !important;
+  outline: none;
+}
+
+.login-card .login-submit,
+.login-card button[type='submit'] {
+  background: var(--dp-color-accent) !important;
+  color: var(--dp-color-ink) !important;
+  border-radius: var(--dp-radius-control) !important;
+  box-shadow: var(--clay-shadow-control) !important;
+  font-weight: var(--dp-typography-emphasis) !important;
+}
+
+/* 登录页残留的光效装饰：软陶风格下压掉 */
+.seed-frame,
+.scan-beam,
+.stage-badge,
+.feature-cloud,
+.preflight-panel {
+  display: none !important;
+}
+
+/* ============================== 签到看板（保持白色，仅去阴影毛刺） ============================== */
+
+.signin-panel {
+  background: var(--dp-color-surface) !important;
+  border-radius: var(--dp-radius-surface) !important;
+  box-shadow: var(--clay-shadow-tray) !important;
+}
+
+/* ============================== 响应式 ============================== */
+
+@media (max-width: 1100px) {
+  :root {
+    --dp-radius-tray: 56px;
+    --dp-radius-surface: 32px;
+    --dp-spacing-gap: 20px;
+  }
+
+  .el-card__body,
+  .ws-page-hero {
+    padding: 20px 22px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --dp-radius-tray: 44px;
+    --dp-radius-surface: 28px;
+    --dp-radius-disclosure: 20px;
+    --dp-typography-body: 15px;
+  }
+
+  .dashboard-main-shell {
+    padding: 16px !important;
+  }
+
+  .ws-page-hero {
+    border-radius: var(--dp-radius-surface) !important;
+  }
+
+  .el-table {
+    border-radius: var(--dp-radius-surface) !important;
+  }
+}
+
+@media (max-width: 460px) {
+  :root {
+    --dp-radius-tray: 34px;
+    --dp-radius-surface: 24px;
+    --dp-radius-disclosure: 18px;
+  }
+
+  .el-card__body,
+  .ws-page-hero {
+    padding: 16px !important;
+  }
+}

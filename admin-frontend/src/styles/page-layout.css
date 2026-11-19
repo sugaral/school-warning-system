@@ -1,0 +1,181 @@
+/* ==========================================================================
+   Shared page layout patterns
+   Extracted from Students, Classes, Warnings, TeacherAttendance, Attendance,
+   UserManagement, BindCourses, SchoolStats, Audit, CourseClasses, CourseManage,
+   Orgs, Reports, Approvals, and similar pages.
+
+   Usage: apply ws-page-* classes alongside page-specific classes.
+   Pages using <style scoped> can reference these global classes in templates.
+   ========================================================================== */
+
+/* --- Page container --- */
+.ws-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* --- Hero section --- */
+.ws-page-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 24px 26px;
+  border: 1px solid rgba(108, 140, 158, 0.16);
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(246, 250, 252, 0.82));
+  box-shadow: 0 24px 48px rgba(34, 59, 78, 0.1);
+}
+
+.ws-page-hero__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 760px;
+}
+
+.ws-page-hero__eyebrow {
+  color: #5c7284;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.ws-page-hero__title {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #173145;
+}
+
+.ws-page-hero__desc {
+  margin: 0;
+  color: #5d7283;
+  line-height: 1.6;
+}
+
+.ws-page-hero__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+
+.ws-page-hero__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+  padding: 14px 16px;
+  border: 1px solid rgba(108, 140, 158, 0.14);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.68);
+  color: #5e7384;
+  font-size: 12px;
+}
+
+.ws-page-hero__meta strong {
+  color: #173145;
+  font-size: 26px;
+  line-height: 1;
+}
+
+/* --- Overview stat cards grid --- */
+.ws-page-overview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.ws-overview-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px;
+  border: 1px solid rgba(108, 140, 158, 0.14);
+  border-radius: 24px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.88),
+    rgba(247, 251, 252, 0.8)
+  );
+  box-shadow: 0 18px 36px rgba(34, 59, 78, 0.08);
+}
+
+.ws-overview-card__label {
+  color: #678090;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ws-overview-card__value {
+  color: #173145;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ws-overview-card__desc {
+  margin: 0;
+  color: #607384;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* --- Table card header --- */
+.ws-table-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ws-table-card__title {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1d3648;
+}
+
+.ws-table-card__desc {
+  margin: 6px 0 0;
+  color: #66798a;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* --- Responsive --- */
+@media (max-width: 1200px) {
+  .ws-page-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .ws-page-hero {
+    padding: 20px;
+  }
+
+  .ws-page-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .ws-page-hero__actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .ws-page-hero__actions > * {
+    width: 100%;
+  }
+}

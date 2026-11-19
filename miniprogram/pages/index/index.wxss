@@ -1,0 +1,83 @@
+.hero {
+  background: linear-gradient(135deg, #1677ff 0%, #4096ff 100%);
+  border-radius: 16rpx;
+  padding: 40rpx 32rpx;
+  color: #fff;
+  margin-bottom: 24rpx;
+}
+.hero-name {
+  font-size: 40rpx;
+  font-weight: 600;
+}
+.hero-sub {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+
+.stat-grid {
+  display: flex;
+  justify-content: space-between;
+}
+.stat {
+  flex: 1;
+  text-align: center;
+}
+.stat-value {
+  font-size: 40rpx;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.stat-label {
+  font-size: 24rpx;
+  color: #8c8c8c;
+  margin-top: 6rpx;
+}
+
+.level-line {
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f0f0f0;
+  font-size: 26rpx;
+  color: #595959;
+}
+
+.trend {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 180rpx;
+  padding-top: 20rpx;
+}
+.trend-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+.trend-bar {
+  width: 32rpx;
+  border-radius: 8rpx 8rpx 0 0;
+  background: #d9d9d9;
+}
+.trend-bar.ok { background: #52c41a; }
+.trend-bar.warn { background: #faad14; }
+.trend-bar.bad { background: #f5222d; }
+.trend-label {
+  font-size: 20rpx;
+  color: #8c8c8c;
+  margin-top: 10rpx;
+}
+
+.quick {
+  display: flex;
+  flex-wrap: wrap;
+}
+.quick-item {
+  width: 25%;
+  text-align: center;
+  padding: 16rpx 0;
+  font-size: 26rpx;
+  color: #1677ff;
+}

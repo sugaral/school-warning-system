@@ -1,0 +1,15 @@
+<view class="page">
+  <view class="card" wx:if="{{items.length > 0}}">
+    <block wx:for="{{items}}" wx:key="index">
+      <view class="row">
+        <view style="flex:1">
+          <view>{{item.course_name || item.course_code}}</view>
+          <view class="row-label" style="margin-top:8rpx">学分 {{item.credit || '-'}}</view>
+        </view>
+        <text class="tag {{item.pass_status === 'pass' ? 'tag-success' : (item.pass_status === 'fail' ? 'tag-danger' : 'tag-plain')}}">{{item.score || '-'}}</text>
+      </view>
+    </block>
+  </view>
+  <view class="empty" wx:else>{{loading ? '加载中...' : '暂无成绩数据'}}</view>
+  <view class="load-more" wx:if="{{hasMore && items.length > 0}}" bindtap="loadMore">点击加载更多</view>
+</view>

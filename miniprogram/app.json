@@ -1,0 +1,60 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/index/index",
+    "pages/warnings/warnings",
+    "pages/warning-detail/warning-detail",
+    "pages/leaves/leaves",
+    "pages/leave-detail/leave-detail",
+    "pages/leave-form/leave-form",
+    "pages/appeals/appeals",
+    "pages/appeal-detail/appeal-detail",
+    "pages/appeal-form/appeal-form",
+    "pages/notifications/notifications",
+    "pages/notification-detail/notification-detail",
+    "pages/schedules/schedules",
+    "pages/attendance/attendance",
+    "pages/checkin/checkin",
+    "pages/grades/grades",
+    "pages/summaries/summaries",
+    "pages/profile/profile",
+    "pages/profile-edit/profile-edit",
+    "pages/preferences/preferences",
+    "pages/change-password/change-password",
+    "pages/bind-class/bind-class",
+    "pages/teachers/teachers",
+    "pages/about/about"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#1677FF",
+    "navigationBarTitleText": "学业预警",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#F5F6FA"
+  },
+  "tabBar": {
+    "color": "#8C8C8C",
+    "selectedColor": "#1677FF",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页" },
+      { "pagePath": "pages/warnings/warnings", "text": "我的预警" },
+      { "pagePath": "pages/schedules/schedules", "text": "课表" },
+      { "pagePath": "pages/profile/profile", "text": "我的" }
+    ]
+  },
+  "networkTimeout": {
+    "request": 30000,
+    "uploadFile": 60000,
+    "downloadFile": 60000
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于扫码签到时校验签到位置"
+    }
+  },
+  "sitemapLocation": "sitemap.json",
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents"
+}

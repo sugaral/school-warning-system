@@ -1,0 +1,31 @@
+<view class="page">
+  <view class="card profile-head">
+    <view class="avatar">{{student.name ? student.name[0] : '学'}}</view>
+    <view class="info">
+      <view class="name">{{student.name || '未登录'}}</view>
+      <view class="sub">{{student.student_no || ''}} {{student.class_name ? '· ' + student.class_name : ''}}</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="row" bindtap="goEdit"><text class="row-label">编辑资料</text><text class="row-value">></text></view>
+    <view class="row" bindtap="goPreferences"><text class="row-label">通知偏好</text><text class="row-value">></text></view>
+    <view class="row" bindtap="goBindClass"><text class="row-label">绑定班级</text><text class="row-value">></text></view>
+    <view class="row" bindtap="goPassword"><text class="row-label">修改密码</text><text class="row-value">></text></view>
+  </view>
+
+  <view class="card">
+    <view class="row" bindtap="goSummaries"><text class="row-label">我的汇总</text><text class="row-value">></text></view>
+    <view class="row" bindtap="goAttendance"><text class="row-label">我的考勤</text><text class="row-value">></text></view>
+    <view class="row" bindtap="goGrades"><text class="row-label">我的成绩</text><text class="row-value">></text></view>
+    <view class="row" bindtap="goTeachers"><text class="row-label">我的老师</text><text class="row-value">></text></view>
+  </view>
+
+  <view class="card">
+    <view class="row"><text class="row-label">微信绑定</text><text class="row-value">{{student.wx_openid ? '已绑定' : '未绑定'}}</text></view>
+    <view class="row"><text class="row-label">紧急联系人</text><text class="row-value">{{student.emergency_contact_name || '未填写'}}</text></view>
+  </view>
+
+  <button class="btn btn-danger" bindtap="onLogout">退出登录</button>
+  <view class="version">学业预警系统 v3.0.0</view>
+</view>
