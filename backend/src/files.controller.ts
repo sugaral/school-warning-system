@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
@@ -21,6 +22,7 @@ import { AuthGuard } from './shared/auth.guard';
 import { PermissionGuard } from './rbac/permission.guard';
 import { Permissions } from './rbac/permission.decorator';
 import { serializeFileRecord } from './shared/file.util';
+import { canAccessFileRecord as canAccessFileRecordByRule } from './shared/file-access.util';
 import { MinioService } from './shared/minio.service';
 import { PrismaService } from './shared/prisma.service';
 import {
@@ -109,6 +111,23 @@ export class FilesController {
     return this.prisma.files.findUnique({
       where: { id: fileId },
     });
+  }
+
+  /**
+   * 文件归属校验。
+   *
+   * 原实现的 GET /files/:id 没有任何权限码，GET /files/:id/download 只校验
+   * `file:download`，两者都不校验归属 —— 只要 id 是数字就能遍历读取别人的
+   * 证件照、请假凭证、申诉证据。判定规则抽到 file-access.util 里，便于单测。
+   */
+  private canAccessFileRecord(req: any, record: any) {
+    return canAccessFileRecordByRule(
+      {
+        userId: req?.user?.sub ?? req?.user?.userId,
+        userType: req?.user?.user_type ?? req?.user?.userType,
+      },
+      record,
+    );
   }
 
   @Post(['files/images', 'admin/files/images'])
@@ -200,6 +219,13 @@ export class FilesController {
       });
     }
 
+    if (!this.canAccessFileRecord(req, record)) {
+      this.logger.warn(
+        `[文件] 越权下载被拦截: id=${fileId.toString()} user=${String(req?.user?.sub || '')}`,
+      );
+      throw new ForbiddenException('无权访问该文件');
+    }
+
     let buffer: Buffer | null = null;
 
     if (this.minioService.isConfigured()) {
@@ -241,6 +267,15 @@ export class FilesController {
       return {
         code: 404,
         message: '文件不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (!this.canAccessFileRecord(req, record)) {
+      return {
+        code: 403,
+        message: '无权访问该文件',
         data: null,
         trace_id: req.trace_id,
       };

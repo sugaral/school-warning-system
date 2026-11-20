@@ -14,6 +14,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PinoLogger } from 'nestjs-pino';
 import * as https from 'https';
 import * as querystring from 'querystring';
+import { randomBytes } from 'crypto';
 import { AuthGuard, Public } from '../shared/auth.guard';
 import {
   hashPassword,
@@ -159,6 +160,8 @@ export class StudentsController {
       user_type: 'student',
       student_id: student.id.toString(),
       wx_openid: wxOpenid,
+      // 安全修复：显式 jti，登出/强制下线才有可吊销的标识（AuthGuard 按 jti 查黑名单）
+      jti: randomBytes(16).toString('hex'),
     });
   }
 
@@ -980,6 +983,7 @@ export class StudentsController {
       sub: user.id.toString(),
       user_type: 'student',
       wx_openid: openid,
+      jti: randomBytes(16).toString('hex'),
     });
 
     return {
@@ -2351,7 +2355,8 @@ export class StudentsController {
       };
     }
 
-    if (!dto.class_id) {
+    const classIdRaw = String(dto.class_id ?? '').trim();
+    if (!classIdRaw) {
       return {
         code: 400,
         message: '请选择班级',
@@ -2360,8 +2365,18 @@ export class StudentsController {
       };
     }
 
+    // 先做格式校验再 BigInt()：非数字会让 BigInt 抛 SyntaxError 变成 500
+    if (!/^\d+$/.test(classIdRaw)) {
+      return {
+        code: 400,
+        message: '班级 ID 无效',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
     const classInfo = await this.prisma.classes.findUnique({
-      where: { id: BigInt(dto.class_id) },
+      where: { id: BigInt(classIdRaw) },
       include: {
         orgs: true,
       },
@@ -2398,6 +2413,23 @@ export class StudentsController {
     const existingProfile = await this.prisma.student_profiles.findUnique({
       where: { user_id: BigInt(userId) },
     });
+
+    // 安全修复：已绑定班级的学生不允许自行改绑。
+    //
+    // 原实现无条件 update class_id，并顺带把该用户 class_monitor 角色的
+    // scope_id 改成目标班级 —— 任意学生发一次请求就能把自己挪进任何班级，
+    // 并立刻获得该班班干的可见范围（/class-monitor/*），同时绕过
+    // change_requests 的两级审批流。
+    //
+    // 现在只允许「首次绑定」（档案没有 class_id），转班必须走换班申请。
+    if (existingProfile?.class_id) {
+      return {
+        code: 409,
+        message: '已绑定班级，如需转班请提交「换班申请」由班主任审批',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
 
     let boundProfile:
       | {

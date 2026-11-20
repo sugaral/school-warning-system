@@ -9,7 +9,7 @@
  * 另外注意后端序列化规则：bigint → 字符串、Date → ISO 字符串、
  * Decimal → 字符串。因此页面里**不要把 id 当 number 运算或比较**。
  */
-const config = require('./config');
+const config = require('../config');
 
 /** 读取 token */
 function getToken() {

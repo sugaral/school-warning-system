@@ -1,4 +1,4 @@
-﻿import { Controller, Get, Post, Body, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req, Query } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
 import { PrismaService } from '../shared/prisma.service';
 import { AuthGuard } from '../shared/auth.guard';
@@ -150,15 +150,26 @@ export class StudentAdminController {
     await this.prisma.ensureConnected();
     
     const userId = BigInt(req.user.userId);
-    const orgId = BigInt(dto.org_id);
+    const orgIdRaw = String(dto.org_id ?? '').trim();
+    if (!/^\d+$/.test(orgIdRaw)) {
+      return {
+        code: 400,
+        message: '学院 ID 无效',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+    const orgId = BigInt(orgIdRaw);
     
     const userRoles = await this.prisma.user_roles.findMany({
       where: { user_id: userId }
     });
     
-    let studentAdminRole = userRoles.find((ur: any) => ur.role === 'student_admin');
+    const studentAdminRole = userRoles.find((ur: any) => ur.role === 'student_admin');
     
-    if (!studentAdminRole) {
+    const isSysAdmin = userRoles.some((ur: any) => ur.role === 'sys_admin');
+
+    if (!studentAdminRole && !isSysAdmin) {
       return {
         code: 400,
         message: '您不是学工管理员',
@@ -166,11 +177,43 @@ export class StudentAdminController {
         trace_id: req.trace_id,
       };
     }
-    
-    await this.prisma.user_roles.update({
-      where: { id: studentAdminRole.id },
-      data: { scope_id: orgId }
+
+    const targetOrg = await this.prisma.orgs.findUnique({
+      where: { id: orgId },
+      select: { id: true },
     });
+    if (!targetOrg) {
+      return {
+        code: 404,
+        message: '学院不存在',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    // 安全修复：学工管理员只能「首次绑定」（当前 scope 为空）或停留在自己已管理的学院。
+    // 原实现直接 update scope_id = dto.org_id，A 学院学工把 org_id 改成 B 学院后，
+    // DataScope 缓存一过，/admin/students、统计、报表全部换到 B 学院范围。
+    if (!isSysAdmin) {
+      const currentScopeId = studentAdminRole?.scope_id
+        ? studentAdminRole.scope_id.toString()
+        : '';
+      if (currentScopeId && currentScopeId !== orgIdRaw) {
+        return {
+          code: 403,
+          message: '无权切换到其他学院，请联系系统管理员调整数据范围',
+          data: null,
+          trace_id: req.trace_id,
+        };
+      }
+    }
+    
+    if (studentAdminRole) {
+      await this.prisma.user_roles.update({
+        where: { id: studentAdminRole.id },
+        data: { scope_id: orgId },
+      });
+    }
     
     await this.prisma.users.update({
       where: { id: userId },

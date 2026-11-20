@@ -1,4 +1,4 @@
-﻿import {
+import {
   BadRequestException,
   Body,
   Controller,
@@ -2120,6 +2120,9 @@ export class AuthController {
     const payload: Record<string, string> = {
       sub: user.id.toString(),
       user_type: user.user_type,
+      // 安全修复：JWT 必须带 jti，否则 logout 的 `token:revoked:<jti>` 黑名单
+      // 永远写不进去，已签发的 token 在 exp 之前（默认 7d）无法吊销。
+      jti: randomBytes(16).toString('hex'),
     };
     if (studentProfileId) {
       payload.student_id = studentProfileId;

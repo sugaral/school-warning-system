@@ -124,6 +124,21 @@ export class AuthGuard implements CanActivate {
         }
       }
 
+      // 强制下线标记：/auth/revoke-all-tokens 会写入 user:token_version:<userId>，
+      // 值形如 `revoke:<userId>:<毫秒时间戳>`。签发时间早于该标记的 token 一律拒绝。
+      // 原实现只写不读，这个接口对已签发 token 完全无效。
+      if (decoded?.sub) {
+        const revokeMarker = await this.redis.get(`user:token_version:${decoded.sub}`);
+        if (revokeMarker) {
+          const revokedAtMs = Number(String(revokeMarker).split(':').pop());
+          const issuedAtMs = Number(decoded?.iat || 0) * 1000;
+          // jti 里的 iat 只精确到秒，留 1 秒容差，避免「刚强制下线就重新登录」被误杀
+          if (Number.isFinite(revokedAtMs) && issuedAtMs > 0 && issuedAtMs + 1000 <= revokedAtMs) {
+            throw new UnauthorizedException('Token has been revoked');
+          }
+        }
+      }
+
       const jwtStart = Date.now();
       const payload = await this.jwtService.verifyAsync(token, {
         secret: this.config.get('JWT_SECRET'),
