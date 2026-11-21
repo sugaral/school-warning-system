@@ -1,12 +1,36 @@
 <view class="page">
-  <view class="card" wx:if="{{detail}}">
-    <view class="card-title">请假详情</view>
-    <view class="row"><text class="row-label">状态</text><text class="row-value">{{detail.status || '-'}}</text></view>
-    <view class="row"><text class="row-label">开始日期</text><text class="row-value">{{detail.from_date || '-'}}</text></view>
-    <view class="row"><text class="row-label">结束日期</text><text class="row-value">{{detail.to_date || '-'}}</text></view>
-    <view class="row"><text class="row-label">请假原因</text><text class="row-value">{{detail.reason || '-'}}</text></view>
-    <view class="row"><text class="row-label">审批意见</text><text class="row-value">{{detail.reject_reason || '-'}}</text></view>
-    <view class="row"><text class="row-label">提交时间</text><text class="row-value">{{detail.created_at || '-'}}</text></view>
-  </view>
-  <view class="empty" wx:else>{{loading ? '加载中...' : '记录不存在'}}</view>
+  <block wx:if="{{detail}}">
+    <view class="card">
+      <view class="card-title">
+        <text>请假详情</text>
+        <text class="tag {{detail.statusClass}}">{{detail.statusText}}</text>
+      </view>
+      <view class="row"><text class="row-label">请假类型</text><text class="row-value">{{detail.leave_type}}</text></view>
+      <view class="row"><text class="row-label">开始时间</text><text class="row-value">{{detail.startText || '-'}}</text></view>
+      <view class="row"><text class="row-label">结束时间</text><text class="row-value">{{detail.endText || '-'}}</text></view>
+      <view class="row"><text class="row-label">请假原因</text><text class="row-value">{{detail.reason || '-'}}</text></view>
+      <view class="row" wx:if="{{detail.reject_reason}}">
+        <text class="row-label">审批说明</text>
+        <text class="row-value" style="color:#c04a52">{{detail.reject_reason}}</text>
+      </view>
+      <view class="row"><text class="row-label">提交时间</text><text class="row-value">{{detail.createdText || '-'}}</text></view>
+    </view>
+
+    <view class="card" wx:if="{{proofImages.length > 0}}">
+      <view class="card-title">证明图片（点击预览）</view>
+      <view class="image-grid">
+        <image
+          wx:for="{{proofImages}}"
+          wx:key="index"
+          class="image-item"
+          src="{{item}}"
+          mode="aspectFill"
+          bindtap="onPreviewImage"
+          data-index="{{index}}"
+        />
+      </view>
+    </view>
+  </block>
+
+  <view class="empty" wx:else>{{loading ? '加载中...' : '请假记录不存在'}}</view>
 </view>

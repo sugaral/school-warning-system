@@ -1,1 +1,10 @@
-/* 关于 */
+.about-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+.about-item {
+  font-size: 26rpx;
+  color: #383139;
+  line-height: 1.65;
+}

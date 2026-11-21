@@ -668,24 +668,24 @@ const clearRememberedCredentials = () => {
 
 const persistRememberedCredentials = () => {
   persistRememberPasswordPreference();
+  localStorage.removeItem(REMEMBERED_PASSWORD_KEY);
   if (!rememberPassword.value) {
     clearRememberedCredentials();
     return;
   }
 
   localStorage.setItem(REMEMBERED_ACCOUNT_KEY, form.account.trim());
-  localStorage.setItem(REMEMBERED_PASSWORD_KEY, form.password);
 };
 
 const restoreRememberedCredentials = () => {
   restoreRememberPasswordPreference();
+  localStorage.removeItem(REMEMBERED_PASSWORD_KEY);
   if (!rememberPassword.value) {
     clearRememberedCredentials();
     return;
   }
 
   form.account = localStorage.getItem(REMEMBERED_ACCOUNT_KEY) || '';
-  form.password = localStorage.getItem(REMEMBERED_PASSWORD_KEY) || '';
 };
 
 const handleRememberPasswordChange = () => {

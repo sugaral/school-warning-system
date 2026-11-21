@@ -1,16 +1,24 @@
 <view class="page">
-  <view class="card">
-    <view class="card-title">学业预警系统</view>
-    <view class="row"><text class="row-label">版本</text><text class="row-value">3.0.0</text></view>
-    <view class="row"><text class="row-label">定位</text><text class="row-value">学业风险闭环治理平台</text></view>
+  <view class="hero-clay" style="text-align:center">
+    <view style="font-size:40rpx;font-weight:700">学业预警系统 · 学生端</view>
+    <view style="font-size:24rpx;opacity:0.9;margin-top:10rpx">学业风险早发现 · 早确认 · 早处置 · 可追溯</view>
   </view>
+
   <view class="card">
-    <view class="card-title">闭环流程</view>
-    <view style="line-height:2;color:#595959;font-size:27rpx">
-      发现 → 确认 → 处置 → 追溯
-    </view>
-    <view class="hint" style="padding-top:16rpx;color:#8c8c8c;font-size:24rpx;line-height:1.7">
-      系统的价值不在于报了多少警，而在于风险是否被真正处理。
+    <view class="card-title">版本信息</view>
+    <view class="row"><text class="row-label">端别定位</text><text class="row-value">仅供在校学生使用</text></view>
+    <view class="row"><text class="row-label">版本号</text><text class="row-value">3.1.0 (Claymorphism)</text></view>
+    <view class="row"><text class="row-label">界面风格</text><text class="row-value">与 Web 端统一绿系软陶风格</text></view>
+  </view>
+
+  <view class="card card-tint">
+    <view class="card-title">学生端闭环能力</view>
+    <view class="about-list">
+      <view class="about-item">1. 课堂动态二维码签到与近 7 天考勤作业查询</view>
+      <view class="about-item">2. 预警实时提醒（站内信+班级公告）、确认与一键申诉</view>
+      <view class="about-item">3. 在线请假审批及多图病历证明上传预览</view>
+      <view class="about-item">4. 本班课表学期/周次筛选、个人成绩与学业汇总</view>
+      <view class="about-item">5. 资料维护、邮箱手机核验绑定与跨班换班申请</view>
     </view>
   </view>
 </view>

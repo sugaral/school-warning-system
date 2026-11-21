@@ -25,13 +25,12 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 async function bootstrap() {
-  await preloadAppCaches();
-
   const app = createApp(App);
   app.use(pinia);
   app.use(router);
   app.mount('#app');
   initResponsiveTableEnhancer();
+  void preloadAppCaches();
 }
 
 void bootstrap();

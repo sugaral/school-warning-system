@@ -70,7 +70,16 @@ function buildAllowedOriginSet() {
 async function bootstrap() {
   // 使用默认 Logger，PinoLogger 仍用于 AuditInterceptor
   const app = await NestFactory.create(AppModule);
-  app.getHttpAdapter().getInstance().set('trust proxy', true);
+  const trustProxyEnv = String(process.env.TRUST_PROXY || '').trim();
+  const trustProxySetting =
+    trustProxyEnv === 'true'
+      ? true
+      : trustProxyEnv === 'false'
+        ? false
+        : /^\d+$/.test(trustProxyEnv)
+          ? Number(trustProxyEnv)
+          : 1;
+  app.getHttpAdapter().getInstance().set('trust proxy', trustProxySetting);
 
   const allowedOrigins = buildAllowedOriginSet();
 

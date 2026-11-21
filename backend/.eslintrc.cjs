@@ -12,7 +12,7 @@ module.exports = {
   },
   plugins: ['@typescript-eslint'],
   extends: ['eslint:recommended', 'prettier'],
-  ignorePatterns: ['dist', 'node_modules', '*.js', '*.cjs', '*.mjs'],
+  ignorePatterns: ['dist', 'node_modules', '*.js', '*.cjs', '*.mjs', 'src/**/*.spec.ts'],
   rules: {
     'no-undef': 'off',
     'no-unused-vars': 'off',

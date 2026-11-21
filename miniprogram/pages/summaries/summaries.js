@@ -1,32 +1,41 @@
 const { api } = require('../../utils/request');
 
 Page({
-  data: { weekly: [], monthly: [], term: [] },
+  data: {
+    weekly: [],
+    monthly: [],
+    term: [],
+    loading: true,
+  },
 
   onLoad() {
     this.fetchSummaries();
   },
 
+  onPullDownRefresh() {
+    this.fetchSummaries().then(() => wx.stopPullDownRefresh());
+  },
+
   async fetchSummaries() {
+    this.setData({ loading: true });
     try {
-      // 读的是后端 P1-5 落地的三张汇总表（weekly/monthly/term_summaries），
-      // 不是每次实时聚合 daily_records，因此打开很快。
       const data = await api.summaries({ weeks: 8, months: 6 });
       const weekly = ((data && data.weekly) || []).map((w) => ({
         ...w,
-        label: `${String(w.week_start).slice(0, 10)} ~ ${String(w.week_end).slice(0, 10)}`,
+        label: String(w.week_start).slice(0, 10) + ' ~ ' + String(w.week_end).slice(0, 10),
       }));
       const monthly = ((data && data.monthly) || []).map((m) => ({
         ...m,
-        label: `${m.year} 年 ${m.month} 月`,
+        label: m.year + ' 年 ' + m.month + ' 月',
       }));
       this.setData({
         weekly,
         monthly,
         term: (data && data.term) || [],
+        loading: false,
       });
     } catch (e) {
-      /* ignore */
+      this.setData({ loading: false });
     }
   },
 });

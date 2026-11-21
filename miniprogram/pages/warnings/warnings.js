@@ -1,86 +1,105 @@
 const { api } = require('../../utils/request');
-
-const LEVEL_TEXT = { yellow: '黄色', orange: '橙色', red: '红色', severe: '严重' };
-const METRIC_TEXT = {
-  late: '迟到',
-  absent: '缺勤',
-  early_leave: '早退',
-  warning_total: '累计预警',
-  homework_not_submit: '作业未交',
-  homework_late_submit: '作业迟交',
-  class_behavior: '课堂违纪',
-  leave: '请假',
-};
-const WINDOW_TEXT = { day: '日', week: '周', month: '月', term: '学期' };
-const STATUS_TEXT = { open: '待确认', acknowledged: '已确认', closed: '已关闭', suppressed: '已豁免', escalated: '已升级' };
-const STATUS_CLASS = {
-  open: 'tag-warn',
-  acknowledged: '',
-  closed: 'tag-success',
-  suppressed: 'tag-plain',
-  escalated: 'tag-danger',
-};
+const {
+  LEVEL_SHORT_TEXT,
+  METRIC_TEXT,
+  WINDOW_TEXT,
+  WARNING_STATUS_TEXT,
+  WARNING_STATUS_CLASS,
+  formatDateTime,
+  formatDateOnly,
+} = require('../../utils/format');
 
 Page({
   data: {
     items: [],
+    stats: { total: 0, pending: 0, processing: 0, closed: 0 },
+    courses: [{ id: 'all', course_name: '全部课程' }],
+    courseIndex: 0,
+    courseId: 'all',
     level: '',
     status: '',
-    page: 1,
-    pageSize: 20,
-    hasMore: false,
     loading: true,
   },
 
   onShow() {
-    this.fetchList(true);
+    this.loadCourses();
+    this.fetchList();
   },
 
   onPullDownRefresh() {
-    this.fetchList(true).then(() => wx.stopPullDownRefresh());
+    Promise.all([this.loadCourses(), this.fetchList()]).then(() => wx.stopPullDownRefresh());
   },
 
-  onReachBottom() {
-    if (this.data.hasMore) this.loadMore();
+  async loadCourses() {
+    try {
+      const data = await api.courses();
+      const rows = Array.isArray(data) ? data : [];
+      this.setData({
+        courses: [{ id: 'all', course_name: '全部课程' }].concat(rows),
+      });
+    } catch (e) {
+      /* ignore */
+    }
+  },
+
+  onCourseChange(e) {
+    const idx = Number(e.detail.value) || 0;
+    const picked = this.data.courses[idx] || { id: 'all' };
+    this.setData(
+      {
+        courseIndex: idx,
+        courseId: picked.id || 'all',
+      },
+      () => this.fetchList(),
+    );
   },
 
   onFilter(e) {
     const { key, value } = e.currentTarget.dataset;
-    this.setData({ [key]: value }, () => this.fetchList(true));
+    this.setData({ [key]: value }, () => this.fetchList());
   },
 
-  async fetchList(reset) {
-    if (reset) this.setData({ page: 1 });
+  async fetchList() {
     this.setData({ loading: true });
-
-    const params = { page: this.data.page, pageSize: this.data.pageSize };
+    const params = {};
     if (this.data.level) params.level = this.data.level;
     if (this.data.status) params.status = this.data.status;
+    if (this.data.courseId && this.data.courseId !== 'all') params.course_id = this.data.courseId;
 
     try {
       const data = await api.warnings(params);
-      const list = Array.isArray(data) ? data : (data && data.list) || [];
-      const total = (data && data.total) || list.length;
+      const list = Array.isArray(data) ? data : (data && (data.items || data.list)) || [];
+      const stats = (data && data.stats) || {
+        total: list.length,
+        pending: list.filter((w) => w.status === 'open').length,
+        processing: list.filter(
+          (w) => w.status === 'acknowledged' || w.status === 'student_acknowledged',
+        ).length,
+        closed: list.filter((w) => w.status === 'closed').length,
+      };
 
-      // 统一在客户端做展示字段映射，避免模板里堆叠三元表达式
-      const mapped = list.map((w) => ({
-        ...w,
-        levelText: LEVEL_TEXT[w.level] || w.level,
-        metricText: METRIC_TEXT[w.metric] || w.metric,
-        windowText: WINDOW_TEXT[w.window] || w.window,
-        statusText: STATUS_TEXT[w.status] || w.status,
-        statusClass: STATUS_CLASS[w.status] || 'tag-plain',
-        periodText: [w.period_start, w.period_end]
-          .filter(Boolean)
-          .map((d) => String(d).slice(0, 10))
-          .join(' ~ '),
-        createdText: w.created_at ? String(w.created_at).slice(0, 16).replace('T', ' ') : '',
-      }));
+      const mapped = list.map((w) => {
+        const level = w.level || w.warning_level || '';
+        const periodStart = formatDateOnly(w.period_start_raw || w.period_start);
+        const periodEnd = formatDateOnly(w.period_end_raw || w.period_end);
+        return {
+          ...w,
+          level,
+          levelText: LEVEL_SHORT_TEXT[level] || w.level_text || level,
+          metricText: METRIC_TEXT[w.metric] || w.violation_type || '学业预警',
+          windowText: WINDOW_TEXT[w.window] || w.window_text || w.window || '',
+          statusText: WARNING_STATUS_TEXT[w.status] || w.status_text || w.status,
+          statusClass: WARNING_STATUS_CLASS[w.status] || 'tag-plain',
+          canConfirm: w.status === 'open' || w.status === 'pending',
+          canAppeal: w.status !== 'closed',
+          periodText: [periodStart, periodEnd].filter(Boolean).join(' ~ ') || w.period_start || '',
+          createdText: formatDateTime(w.created_at_raw || w.created_at),
+        };
+      });
 
-      const merged = reset ? mapped : this.data.items.concat(mapped);
       this.setData({
-        items: merged,
-        hasMore: merged.length < total,
+        items: mapped,
+        stats,
         loading: false,
       });
     } catch (err) {
@@ -88,8 +107,28 @@ Page({
     }
   },
 
-  loadMore() {
-    this.setData({ page: this.data.page + 1 }, () => this.fetchList(false));
+  async onQuickConfirm(e) {
+    const id = e.currentTarget.dataset.id;
+    if (!id) return;
+    try {
+      await api.confirmWarning(id);
+      wx.showToast({ title: '确认成功', icon: 'success' });
+      this.fetchList();
+    } catch (err) {
+      /* request 层已提示 */
+    }
+  },
+
+  onQuickAppeal(e) {
+    const { id, course, reason } = e.currentTarget.dataset;
+    const qs =
+      'warning_id=' +
+      encodeURIComponent(String(id || '')) +
+      '&course_name=' +
+      encodeURIComponent(String(course || '')) +
+      '&warning_reason=' +
+      encodeURIComponent(String(reason || ''));
+    wx.navigateTo({ url: '/pages/appeal-form/appeal-form?' + qs });
   },
 
   goDetail(e) {

@@ -150,18 +150,37 @@ export class StudentAdminController {
     await this.prisma.ensureConnected();
     
     const userId = BigInt(req.user.userId);
-    const orgId = BigInt(dto.org_id);
+    const rawOrgId = String(dto.org_id || '').trim();
+    if (!/^\d+$/.test(rawOrgId)) {
+      return {
+        code: 400,
+        message: '学院 ID 无效',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+    const orgId = BigInt(rawOrgId);
     
     const userRoles = await this.prisma.user_roles.findMany({
       where: { user_id: userId }
     });
     
-    let studentAdminRole = userRoles.find((ur: any) => ur.role === 'student_admin');
+    const isSysAdmin = userRoles.some((ur: any) => ur.role === 'sys_admin');
+    const studentAdminRole = userRoles.find((ur: any) => ur.role === 'student_admin');
     
     if (!studentAdminRole) {
       return {
         code: 400,
         message: '您不是学工管理员',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (studentAdminRole.scope_id && studentAdminRole.scope_id !== orgId && !isSysAdmin) {
+      return {
+        code: 403,
+        message: '已绑定学院，如需变更请联系系统管理员',
         data: null,
         trace_id: req.trace_id,
       };

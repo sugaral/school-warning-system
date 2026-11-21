@@ -1,21 +1,27 @@
 <view class="login-page">
-  <view class="header">
-    <view class="logo">预</view>
-    <view class="title">学业预警</view>
-    <view class="subtitle">发现 · 确认 · 处置 · 追溯</view>
+  <view class="login-hero">
+    <view class="logo-clay">预</view>
+    <view class="hero-title">学业预警学生端</view>
+    <view class="hero-subtitle">发现 · 确认 · 处置 · 追溯</view>
   </view>
 
-  <!-- 学号 + 姓名 双匹配绑定（与后端 student/login 契约一致：两者都必须命中） -->
-  <view class="form-card" wx:if="{{!bound}}">
+  <view class="segmented login-tabs">
+    <view class="seg-item {{mode === 'login' ? 'active' : ''}}" bindtap="switchMode" data-mode="login">账号登录</view>
+    <view class="seg-item {{mode === 'recovery' ? 'active' : ''}}" bindtap="switchMode" data-mode="recovery">找回密码</view>
+  </view>
+
+  <!-- 登录表单 -->
+  <view class="card" wx:if="{{mode === 'login'}}">
     <view class="form-item">
-      <text class="form-label form-required">学号</text>
+      <text class="form-label form-required">学号 / 账号</text>
       <input
         class="form-input"
         type="text"
-        placeholder="请输入学号"
+        placeholder="请输入学号、手机号或邮箱"
         value="{{studentNo}}"
-        bindinput="onStudentNoInput"
-        maxlength="32"
+        bindinput="onInput"
+        data-field="studentNo"
+        maxlength="64"
       />
     </view>
 
@@ -24,21 +30,23 @@
       <input
         class="form-input"
         type="text"
-        placeholder="请输入姓名（需与学籍一致）"
+        placeholder="请输入真实姓名（与学籍一致）"
         value="{{name}}"
-        bindinput="onNameInput"
+        bindinput="onInput"
+        data-field="name"
         maxlength="32"
       />
     </view>
 
     <view class="form-item">
-      <text class="form-label">密码</text>
+      <text class="form-label form-required">登录密码</text>
       <input
         class="form-input"
         password
-        placeholder="首次绑定后可留空"
+        placeholder="请输入密码（首次登录填初始密码）"
         value="{{password}}"
-        bindinput="onPasswordInput"
+        bindinput="onInput"
+        data-field="password"
         maxlength="64"
       />
     </view>
@@ -49,28 +57,139 @@
       loading="{{submitting}}"
       disabled="{{submitting}}"
     >
-      登录 / 绑定
+      登录并绑定微信
     </button>
 
-    <view class="hint">
-      首次使用请填写学号与姓名完成绑定；已绑定微信的账号可直接授权登录。
+    <button
+      class="btn btn-ghost"
+      bindtap="onWechatLogin"
+      loading="{{submitting}}"
+      disabled="{{submitting}}"
+    >
+      已绑定学生 · 微信一键登录
+    </button>
+
+    <view class="hint-text">
+      仅限本校学生本人使用。首次通过账号登录后将自动关联当前微信，后续可免密一键进入。
     </view>
 
-    <view class="error-tip" wx:if="{{errorMsg}}">{{errorMsg}}</view>
+    <view class="error-box" wx:if="{{errorMsg}}">{{errorMsg}}</view>
   </view>
 
-  <!-- 已绑定：一键微信登录 -->
-  <view class="form-card" wx:else>
-    <view class="bound-info">
-      <text class="bound-name">{{student.name}}</text>
-      <text class="bound-no">学号 {{student.student_no}}</text>
+  <!-- 忘记密码 / 验证码重置 -->
+  <view class="card" wx:else>
+    <view class="form-item">
+      <text class="form-label form-required">学号</text>
+      <view class="code-row">
+        <input
+          class="form-input"
+          type="text"
+          placeholder="请输入学号查询绑定渠道"
+          value="{{recoveryAccount}}"
+          bindinput="onInput"
+          data-field="recoveryAccount"
+          maxlength="32"
+        />
+        <button class="code-btn" bindtap="onQueryRecoveryOptions" disabled="{{recoveryLoading}}">查询</button>
+      </view>
     </view>
-    <button class="btn" bindtap="onWechatLogin" loading="{{submitting}}" disabled="{{submitting}}">
-      微信一键登录
-    </button>
+
+    <block wx:if="{{recoveryOptions}}">
+      <view class="form-item">
+        <text class="form-label">验证方式</text>
+        <view class="filters" style="margin-bottom:0">
+          <view
+            class="filter-item {{recoveryChannel === 'email' ? 'active' : ''}}"
+            bindtap="selectRecoveryChannel"
+            data-channel="email"
+          >
+            邮箱 {{recoveryOptions.email.bound ? '(' + recoveryOptions.email.masked + ')' : '(未绑定)'}}
+          </view>
+          <view
+            class="filter-item {{recoveryChannel === 'sms' ? 'active' : ''}}"
+            bindtap="selectRecoveryChannel"
+            data-channel="sms"
+          >
+            手机 {{recoveryOptions.sms.bound ? '(' + recoveryOptions.sms.masked + ')' : '(未绑定)'}}
+          </view>
+        </view>
+        <view class="hint-text" wx:if="{{recoveryChannel === 'email' && !recoveryOptions.email.enabled}}">
+          {{recoveryOptions.email.reason || '当前无法使用邮箱找回'}}
+        </view>
+        <view class="hint-text" wx:if="{{recoveryChannel === 'sms' && !recoveryOptions.sms.enabled}}">
+          {{recoveryOptions.sms.reason || '当前无法使用短信找回'}}
+        </view>
+      </view>
+
+      <view class="form-item">
+        <text class="form-label form-required">{{recoveryChannel === 'sms' ? '完整手机号' : '完整绑定邮箱'}}</text>
+        <view class="code-row">
+          <input
+            class="form-input"
+            type="text"
+            placeholder="{{recoveryChannel === 'sms' ? '输入完整手机号确认身份' : '输入完整邮箱确认身份'}}"
+            value="{{recoveryTarget}}"
+            bindinput="onInput"
+            data-field="recoveryTarget"
+          />
+          <button
+            class="code-btn"
+            bindtap="onSendRecoveryCode"
+            disabled="{{recoveryLoading || cooldownSeconds > 0}}"
+          >
+            {{cooldownSeconds > 0 ? cooldownSeconds + 's' : '发验证码'}}
+          </button>
+        </view>
+      </view>
+
+      <view class="form-item">
+        <text class="form-label form-required">验证码</text>
+        <input
+          class="form-input"
+          type="number"
+          placeholder="请输入 6 位验证码"
+          value="{{recoveryCode}}"
+          bindinput="onInput"
+          data-field="recoveryCode"
+          maxlength="8"
+        />
+      </view>
+
+      <view class="form-item">
+        <text class="form-label form-required">新密码</text>
+        <input
+          class="form-input"
+          password
+          placeholder="至少 8 位，包含字母、数字等两类字符"
+          value="{{recoveryNewPassword}}"
+          bindinput="onInput"
+          data-field="recoveryNewPassword"
+          maxlength="64"
+        />
+      </view>
+
+      <view class="form-item">
+        <text class="form-label form-required">确认新密码</text>
+        <input
+          class="form-input"
+          password
+          placeholder="请再次输入新密码"
+          value="{{recoveryConfirmPassword}}"
+          bindinput="onInput"
+          data-field="recoveryConfirmPassword"
+          maxlength="64"
+        />
+      </view>
+
+      <button class="btn" bindtap="onResetPassword" loading="{{recoveryLoading}}" disabled="{{recoveryLoading}}">
+        确认重置密码
+      </button>
+    </block>
+
+    <view class="error-box" wx:if="{{recoveryError}}">{{recoveryError}}</view>
   </view>
 
   <view class="footer">
-    <text>登录即表示同意学校相关数据使用规范</text>
+    <text>学业风险闭环治理平台 · 学生端</text>
   </view>
 </view>

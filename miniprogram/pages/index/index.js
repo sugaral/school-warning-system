@@ -1,79 +1,104 @@
 const { api, config } = require('../../utils/request');
-
-/** 考勤状态中文与展示映射 */
-const ATTENDANCE_TEXT = {
-  on_time: '正常',
-  late: '迟到',
-  absent: '缺勤',
-  early_leave: '早退',
-  leave: '请假',
-};
-const HOMEWORK_TEXT = {
-  submitted: '已交',
-  not_submit: '未交',
-  late_submit: '迟交',
-  unknown: '未知',
-};
-const LEVEL_TEXT = {
-  yellow: '黄色',
-  orange: '橙色',
-  red: '红色',
-  severe: '严重',
-};
+const {
+  ATTENDANCE_TEXT,
+  ATTENDANCE_TAG_CLASS,
+  HOMEWORK_TEXT,
+  LEVEL_TEXT,
+} = require('../../utils/format');
 
 Page({
   data: {
     student: {},
-    today: {},
-    warnStats: {},
+    isBound: true,
+    today: {
+      date: '',
+      attendanceText: '-',
+      attendanceTag: 'tag-plain',
+      homeworkText: '-',
+      courseCount: 0,
+      records: [],
+    },
+    warnStats: {
+      total: 0,
+      pending: 0,
+      processing: 0,
+      closed: 0,
+      week: 0,
+      month: 0,
+      highestLevel: '',
+      highestLevelText: '',
+    },
     trend: [],
-    notifyStat: null,
+    messageSummary: {
+      inboxUnread: 0,
+      classUnread: 0,
+      totalUnread: 0,
+    },
   },
 
   onShow() {
-    this.loadStudent();
-    this.loadToday();
-    this.loadTrend();
-    this.loadWarnings();
-    this.loadNotifyStat();
+    const token = wx.getStorageSync(config.STORAGE_TOKEN);
+    if (!token) {
+      wx.reLaunch({ url: '/pages/login/login' });
+      return;
+    }
+    this.refreshAll();
   },
 
   onPullDownRefresh() {
-    Promise.all([
+    this.refreshAll().then(() => wx.stopPullDownRefresh());
+  },
+
+  async refreshAll() {
+    this.loadCachedStudent();
+    await Promise.all([
+      this.loadProfile(),
       this.loadToday(),
       this.loadTrend(),
       this.loadWarnings(),
-      this.loadNotifyStat(),
-    ]).then(() => wx.stopPullDownRefresh());
+      this.loadMessages(),
+    ]);
   },
 
-  loadStudent() {
+  loadCachedStudent() {
     const student = wx.getStorageSync(config.STORAGE_STUDENT) || {};
     this.setData({ student });
   },
 
-  /** 今日考勤与作业 */
+  async loadProfile() {
+    try {
+      const profile = await api.getProfile();
+      if (profile && profile.id) {
+        getApp().setStudent(profile);
+        this.setData({
+          student: profile,
+          isBound: profile.is_bound !== false && Boolean(profile.class_id),
+        });
+      }
+    } catch (e) {
+      /* 保留缓存展示 */
+    }
+  },
+
   async loadToday() {
     try {
       const data = await api.today();
-      // 后端 /student/today 的返回可能是单条或数组（一天多门课，每门一行）
-      const rows = Array.isArray(data) ? data : data && data.records ? data.records : [data || {}];
-      const first = rows[0] || {};
-      const hasAbsent = rows.some((r) => r && r.attendance_status === 'absent');
-      const hasLate = rows.some((r) => r && r.attendance_status === 'late');
-      const hasNotSubmit = rows.some((r) => r && r.homework_status === 'not_submit');
+      const rows = Array.isArray(data && data.records) ? data.records : [];
+      const attendanceCode = (data && (data.attendance_status || data.attendance)) || 'unknown';
+      const homeworkCode = (data && data.homework_status) || 'unknown';
+
       this.setData({
         today: {
-          date: first.record_date ? String(first.record_date).slice(0, 10) : '',
-          courseCount: rows.filter((r) => r && r.course_id).length,
-          attendanceText: hasAbsent
-            ? '缺勤'
-            : hasLate
-              ? '迟到'
-              : ATTENDANCE_TEXT[first.attendance_status] || '—',
-          homeworkText: hasNotSubmit
-            ? '未交'
-            : HOMEWORK_TEXT[first.homework_status] || '—',
+          date: (data && data.record_date) || '',
+          courseCount: Number((data && data.course_count) || rows.length || 0),
+          attendanceText: ATTENDANCE_TEXT[attendanceCode] || '未记录',
+          attendanceTag: ATTENDANCE_TAG_CLASS[attendanceCode] || 'tag-plain',
+          homeworkText: HOMEWORK_TEXT[homeworkCode] || '未录入',
+          records: rows.slice(0, 3).map((item) => ({
+            courseName: item.course_name || '课堂记录',
+            attendanceText: ATTENDANCE_TEXT[item.attendance_status] || '未记录',
+            attendanceTag: ATTENDANCE_TAG_CLASS[item.attendance_status] || 'tag-plain',
+          })),
         },
       });
     } catch (e) {
@@ -81,46 +106,78 @@ Page({
     }
   },
 
-  /** 近 7 天考勤趋势（把状态映射为柱高，避免引入图表库） */
   async loadTrend() {
     try {
       const data = await api.weekly();
       const list = Array.isArray(data) ? data : [];
-      const heightMap = { on_time: 120, late: 90, early_leave: 70, leave: 50, absent: 30, unknown: 20 };
+      const heightMap = {
+        on_time: 120,
+        late: 88,
+        early_leave: 74,
+        leave: 58,
+        absent: 34,
+        unknown: 22,
+      };
       this.setData({
-        trend: list.map((item) => ({
-          date: item.date || '',
-          attendance: item.attendance || 'unknown',
-          height: heightMap[item.attendance] || 20,
-        })),
+        trend: list.map((item) => {
+          const status = item.attendance || 'unknown';
+          return {
+            date: item.date || '',
+            attendance: status,
+            attendanceText: ATTENDANCE_TEXT[status] || '未记录',
+            height: heightMap[status] || 22,
+          };
+        }),
       });
     } catch (e) {
       /* ignore */
     }
   },
 
-  /** 预警统计：读汇总快照 + 列表总数，避免逐条统计 */
   async loadWarnings() {
     try {
-      const data = await api.summaries({ weeks: 1, months: 1 });
-      const weekly = (data && data.weekly && data.weekly[0]) || {};
-      const monthly = (data && data.monthly && data.monthly[0]) || {};
+      const [summaryRes, warnRes] = await Promise.all([
+        api.summaries({ weeks: 1, months: 1 }).catch(() => null),
+        api.warnings({ page: 1, pageSize: 100 }).catch(() => null),
+      ]);
 
-      const listData = await api.warnings({ page: 1, pageSize: 100 });
-      const list = Array.isArray(listData) ? listData : (listData && listData.list) || [];
-      const total = (listData && listData.total) || list.length;
-      const unconfirmed = list.filter((w) => w.status === 'open').length;
-      const levels = list.map((w) => w.level).filter(Boolean);
+      const weekly = (summaryRes && summaryRes.weekly && summaryRes.weekly[0]) || {};
+      const monthly = (summaryRes && summaryRes.monthly && summaryRes.monthly[0]) || {};
+
+      const items = (warnRes && (warnRes.items || warnRes.list)) || [];
+      const stats = (warnRes && warnRes.stats) || {};
+      const activeLevels = items
+        .filter((w) => w.status !== 'closed')
+        .map((w) => w.level || w.warning_level)
+        .filter(Boolean);
       const order = ['severe', 'red', 'orange', 'yellow'];
-      const highest = order.find((lv) => levels.indexOf(lv) !== -1) || '';
+      const highest = order.find((lv) => activeLevels.indexOf(lv) !== -1) || '';
 
       this.setData({
         warnStats: {
-          today: 0,
+          total: Number(stats.total !== undefined ? stats.total : items.length || 0),
+          pending: Number(
+            stats.pending !== undefined
+              ? stats.pending
+              : items.filter((w) => w.status === 'open' || w.status === 'pending').length,
+          ),
+          processing: Number(
+            stats.processing !== undefined
+              ? stats.processing
+              : items.filter(
+                  (w) =>
+                    w.status === 'acknowledged' ||
+                    w.status === 'student_acknowledged' ||
+                    w.status === 'processing',
+                ).length,
+          ),
+          closed: Number(
+            stats.closed !== undefined
+              ? stats.closed
+              : items.filter((w) => w.status === 'closed').length,
+          ),
           week: (weekly.late_count || 0) + (weekly.absent_count || 0),
           month: (monthly.late_count || 0) + (monthly.absent_count || 0),
-          unconfirmed,
-          total,
           highestLevel: highest,
           highestLevelText: LEVEL_TEXT[highest] || '',
         },
@@ -130,42 +187,58 @@ Page({
     }
   },
 
-  /** 通知到达/确认状态（用通知日志统计） */
-  async loadNotifyStat() {
+  async loadMessages() {
     try {
-      const data = await api.notifications({ page: 1, pageSize: 50 });
-      const list = Array.isArray(data) ? data : (data && data.list) || [];
-      if (list.length === 0) {
-        this.setData({ notifyStat: null });
-        return;
-      }
-      const acknowledged = list.filter((n) => n.read_at).length;
+      const [inboxRes, classRes] = await Promise.all([
+        api.inboxUnreadCount().catch(() => ({ unread: 0 })),
+        api.notifications({ page: 1, pageSize: 50 }).catch(() => ({ list: [] })),
+      ]);
+
+      const inboxUnread = Number((inboxRes && inboxRes.unread) || 0);
+      const classList = Array.isArray(classRes) ? classRes : (classRes && classRes.list) || [];
+      const classUnread = classList.filter((item) => item && item.is_read === false).length;
+
       this.setData({
-        notifyStat: {
-          success: list.length,
-          acknowledged,
-          pending: list.length - acknowledged,
+        messageSummary: {
+          inboxUnread,
+          classUnread,
+          totalUnread: inboxUnread + classUnread,
         },
       });
     } catch (e) {
-      this.setData({ notifyStat: null });
+      /* ignore */
     }
   },
 
-  // ---- 跳转 ----
+  // ---- 页面跳转（严格学生端路径） ----
+  goBindClass() {
+    wx.navigateTo({ url: '/pages/bind-class/bind-class' });
+  },
   goWarnings() {
     wx.switchTab({ url: '/pages/warnings/warnings' });
+  },
+  goSchedules() {
+    wx.switchTab({ url: '/pages/schedules/schedules' });
   },
   goCheckin() {
     wx.navigateTo({ url: '/pages/checkin/checkin' });
   },
-  goLeave() {
-    wx.navigateTo({ url: '/pages/leave-form/leave-form' });
+  goLeaves() {
+    wx.navigateTo({ url: '/pages/leaves/leaves' });
+  },
+  goAppeals() {
+    wx.navigateTo({ url: '/pages/appeals/appeals' });
+  },
+  goNotifications() {
+    wx.navigateTo({ url: '/pages/notifications/notifications' });
+  },
+  goGrades() {
+    wx.navigateTo({ url: '/pages/grades/grades' });
   },
   goSummaries() {
     wx.navigateTo({ url: '/pages/summaries/summaries' });
   },
-  goNotifications() {
-    wx.navigateTo({ url: '/pages/notifications/notifications' });
+  goAttendance() {
+    wx.navigateTo({ url: '/pages/attendance/attendance' });
   },
 });

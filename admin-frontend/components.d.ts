@@ -62,6 +62,7 @@ declare module 'vue' {
     MultiImageUploadField: typeof import('./src/components/MultiImageUploadField.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SignInBoard: typeof import('./src/components/SignInBoard.vue')['default']
     TableSpacingControl: typeof import('./src/components/TableSpacingControl.vue')['default']
   }
   export interface ComponentCustomProperties {

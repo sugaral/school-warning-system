@@ -1,1 +1,10 @@
-/* 提交请假 */
+.dt-row {
+  display: flex;
+  gap: 14rpx;
+}
+.dt-picker {
+  flex: 1.4;
+}
+.dt-time {
+  flex: 1;
+}

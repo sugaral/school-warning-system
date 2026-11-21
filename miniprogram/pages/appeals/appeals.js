@@ -1,51 +1,55 @@
-const { api, toastError } = require('../../utils/request');
+const { api } = require('../../utils/request');
+const {
+  APPEAL_STATUS_TEXT,
+  APPEAL_STATUS_CLASS,
+  formatDateTime,
+  normalizeFileIds,
+} = require('../../utils/format');
 
 Page({
   data: {
     items: [],
     loading: true,
-    hasMore: false,
-    page: 1,
-    pageSize: 20,
   },
 
-  onLoad() {
-    this.fetchList(true);
+  onShow() {
+    this.fetchList();
   },
 
   onPullDownRefresh() {
-    this.fetchList(true).then(() => wx.stopPullDownRefresh());
+    this.fetchList().then(() => wx.stopPullDownRefresh());
   },
 
-  onReachBottom() {
-    if (this.data.hasMore) this.loadMore();
-  },
-
-  async fetchList(reset) {
-    if (reset) this.setData({ page: 1 });
+  async fetchList() {
     this.setData({ loading: true });
     try {
-      const data = await api.appeals({ page: this.data.page, pageSize: this.data.pageSize });
-      // 兼容后端两种返回形态：数组 或 { list, total }
-      const list = Array.isArray(data) ? data : (data && data.list) || [];
-      const total = (data && data.total) || list.length;
-      const merged = reset ? list : this.data.items.concat(list);
-      this.setData({
-        items: merged,
-        hasMore: merged.length < total,
-        loading: false,
+      const data = await api.appeals();
+      const rawList = Array.isArray(data) ? data : (data && data.list) || [];
+      const items = rawList.map((item) => {
+        const evidenceIds = normalizeFileIds(item.evidence_file_ids, item.evidence_file_id);
+        const status = item.status || item.appeal_result || 'submitted';
+        return {
+          ...item,
+          appeal_type: item.appeal_type || '申诉',
+          warning_course: item.warning_course || item.related_type || '',
+          content: item.content || item.appeal_reason || '',
+          status,
+          statusText: APPEAL_STATUS_TEXT[status] || status || '-',
+          statusClass: APPEAL_STATUS_CLASS[status] || 'tag-plain',
+          createdText: formatDateTime(item.created_at),
+          evidenceCount: evidenceIds.length,
+        };
       });
+      this.setData({ items, loading: false });
     } catch (err) {
       this.setData({ loading: false });
     }
   },
 
-  loadMore() {
-    this.setData({ page: this.data.page + 1 }, () => this.fetchList(false));
-  },
-
   goDetail(e) {
-    wx.navigateTo({ url: '/pages/appeal-detail/appeal-detail?id=' + e.currentTarget.dataset.id });
+    wx.navigateTo({
+      url: '/pages/appeal-detail/appeal-detail?id=' + e.currentTarget.dataset.id,
+    });
   },
 
   goCreate() {

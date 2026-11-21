@@ -376,6 +376,7 @@ export class HeadTeacherController {
     const leaveRequests = await this.prisma.leave_requests.findMany({
       where: { class_id: { in: classIds } },
       orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
+      take: 500,
     });
 
     const studentIds = Array.from(

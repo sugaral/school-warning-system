@@ -1,1 +1,42 @@
-/* 我的请假 —— 复用 app.wxss 的通用类，仅补充页内差异 */
+.leave-card {
+  padding: 28rpx;
+}
+.leave-head {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 14rpx;
+}
+.leave-time {
+  flex: 1;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #48404b;
+}
+.leave-reason {
+  font-size: 28rpx;
+  color: #383139;
+  line-height: 1.55;
+  margin-bottom: 14rpx;
+}
+.leave-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 22rpx;
+}
+.proof-chip {
+  color: #3f8a5d;
+  font-weight: 600;
+}
+.muted-meta {
+  color: #8f8896;
+}
+.reject-note {
+  margin-top: 14rpx;
+  padding: 14rpx 18rpx;
+  border-radius: 18rpx;
+  background: #fdecec;
+  color: #c04a52;
+  font-size: 24rpx;
+}

@@ -1,5 +1,38 @@
 <view class="page">
-  <!-- 筛选 -->
+  <!-- 预警概览瓷砖 -->
+  <view class="card">
+    <view class="stat-grid">
+      <view class="stat-tile" bindtap="onFilter" data-key="status" data-value="">
+        <view class="stat-value">{{stats.total}}</view>
+        <view class="stat-label">全部预警</view>
+      </view>
+      <view class="stat-tile stat-tile-warn" bindtap="onFilter" data-key="status" data-value="open">
+        <view class="stat-value" style="color:#b7791f">{{stats.pending}}</view>
+        <view class="stat-label">待确认</view>
+      </view>
+      <view class="stat-tile stat-tile-green" bindtap="onFilter" data-key="status" data-value="acknowledged">
+        <view class="stat-value" style="color:#3f8a5d">{{stats.processing}}</view>
+        <view class="stat-label">已确认</view>
+      </view>
+      <view class="stat-tile" bindtap="onFilter" data-key="status" data-value="closed">
+        <view class="stat-value" style="color:#6f6875">{{stats.closed}}</view>
+        <view class="stat-label">已关闭</view>
+      </view>
+    </view>
+
+    <!-- 课程筛选 -->
+    <view class="course-bar" wx:if="{{courses.length > 1}}">
+      <text class="course-label">课程筛选：</text>
+      <picker mode="selector" range="{{courses}}" range-key="course_name" value="{{courseIndex}}" bindchange="onCourseChange">
+        <view class="course-pill">
+          <text>{{courses[courseIndex] ? courses[courseIndex].course_name : '全部课程'}}</text>
+          <text class="row-arrow">▼</text>
+        </view>
+      </picker>
+    </view>
+  </view>
+
+  <!-- 等级 & 状态筛选 -->
   <view class="filters">
     <view class="filter-item {{level === '' ? 'active' : ''}}" bindtap="onFilter" data-key="level" data-value="">全部等级</view>
     <view class="filter-item {{level === 'yellow' ? 'active' : ''}}" bindtap="onFilter" data-key="level" data-value="yellow">黄色</view>
@@ -14,21 +47,44 @@
     <view class="filter-item {{status === 'closed' ? 'active' : ''}}" bindtap="onFilter" data-key="status" data-value="closed">已关闭</view>
   </view>
 
-  <!-- 列表 -->
-  <view class="warn-item card" wx:for="{{items}}" wx:key="index" bindtap="goDetail" data-id="{{item.id}}">
+  <!-- 预警卡片列表 -->
+  <view class="warn-item card" wx:for="{{items}}" wx:key="id" bindtap="goDetail" data-id="{{item.id}}">
     <view class="warn-head">
       <text class="badge badge-{{item.level}}">{{item.levelText}}</text>
       <text class="warn-metric">{{item.metricText}}</text>
       <text class="tag {{item.statusClass}}">{{item.statusText}}</text>
     </view>
-    <view class="warn-summary">{{item.trigger_summary || '—'}}</view>
+
+    <view class="warn-course" wx:if="{{item.course_name}}">课程：{{item.course_name}}</view>
+    <view class="warn-summary">{{item.trigger_summary || item.warning_reason || '—'}}</view>
+
     <view class="warn-meta">
-      <text>{{item.windowText}} · {{item.periodText}}</text>
+      <text>{{item.windowText ? item.windowText + ' · ' : ''}}{{item.periodText}}</text>
       <text>{{item.createdText}}</text>
+    </view>
+
+    <view class="warn-actions" wx:if="{{item.canConfirm || item.canAppeal}}">
+      <button
+        class="btn btn-sm"
+        wx:if="{{item.canConfirm}}"
+        catchtap="onQuickConfirm"
+        data-id="{{item.id}}"
+      >
+        确认收到
+      </button>
+      <button
+        class="btn btn-ghost btn-sm"
+        wx:if="{{item.canAppeal}}"
+        catchtap="onQuickAppeal"
+        data-id="{{item.id}}"
+        data-course="{{item.course_name}}"
+        data-reason="{{item.trigger_summary || item.warning_reason}}"
+      >
+        发起申诉
+      </button>
     </view>
   </view>
 
   <view class="empty" wx:if="{{!loading && items.length === 0}}">暂无预警记录</view>
-  <view class="load-more" wx:if="{{hasMore && items.length > 0}}" bindtap="loadMore">点击加载更多</view>
   <view class="load-more" wx:if="{{loading}}">加载中...</view>
 </view>

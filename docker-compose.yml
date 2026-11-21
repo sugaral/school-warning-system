@@ -126,10 +126,11 @@ services:
       WECHAT_MINIAPP_APP_SECRET: ${WECHAT_MINIAPP_APP_SECRET}
       WX_APP_ID: ${WX_APP_ID}
       WX_APP_SECRET: ${WX_APP_SECRET}
-    entrypoint: ["/bin/sh", "-lc"]
+    entrypoint: ["/bin/sh", "-ec"]
     command: >
+      set -e;
       npx prisma migrate deploy || npx prisma db push;
-      if [ "${SEED_ON_MIGRATE:-true}" = "true" ]; then npx ts-node prisma/seed.ts; fi
+      if [ "${SEED_ON_MIGRATE:-false}" = "true" ]; then npx ts-node prisma/seed.ts; fi
     restart: "no"
 
   backend:

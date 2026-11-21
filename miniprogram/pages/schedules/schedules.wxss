@@ -1,1 +1,48 @@
-/* 本班课表 —— 复用 app.wxss 的通用类，仅补充页内差异 */
+.picker-row {
+  display: flex;
+  gap: 14rpx;
+}
+.picker-box {
+  flex: 1;
+}
+.sched-item {
+  display: flex;
+  gap: 20rpx;
+  padding: 20rpx;
+  margin-bottom: 14rpx;
+  border-radius: 24rpx;
+  background: #f4f8f5;
+  box-shadow: inset 2rpx 2rpx 5rpx rgba(56, 49, 57, 0.05);
+}
+.sched-item:last-child {
+  margin-bottom: 0;
+}
+.sched-time-col {
+  width: 190rpx;
+  flex-shrink: 0;
+  border-right: 2rpx solid rgba(79, 158, 111, 0.22);
+  padding-right: 14rpx;
+}
+.sched-time {
+  font-size: 25rpx;
+  font-weight: 700;
+  color: #3f8a5d;
+}
+.sched-date {
+  font-size: 21rpx;
+  color: #6f6875;
+  margin-top: 6rpx;
+}
+.sched-info-col {
+  flex: 1;
+}
+.sched-name {
+  font-size: 29rpx;
+  font-weight: 700;
+  color: #383139;
+}
+.sched-meta {
+  font-size: 23rpx;
+  color: #6f6875;
+  margin-top: 6rpx;
+}

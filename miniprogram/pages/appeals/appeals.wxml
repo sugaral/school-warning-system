@@ -1,15 +1,33 @@
 <view class="page">
-  <view class="card" wx:if="{{items.length > 0}}">
-    <block wx:for="{{items}}" wx:key="index">
-      <view class="row" bindtap="goDetail" data-id="{{item.id}}">
-        <view style="flex:1">
-          <view>{{item.appeal_type || '申诉'}}</view>
-          <view class="row-label" style="margin-top:8rpx">{{item.content}}</view>
-        </view>
-        <text class="tag {{item.status === 'resolved' ? 'tag-success' : (item.status === 'rejected' ? 'tag-danger' : 'tag-warn')}}">{{item.status}}</text>
-      </view>
-    </block>
+  <view class="page-toolbar">
+    <view>
+      <view class="page-heading">申诉记录</view>
+      <view class="page-sub">查看处理结果或针对预警/考勤发起申诉</view>
+    </view>
+    <button class="btn btn-sm" bindtap="goCreate">+ 发起申诉</button>
   </view>
-  <view class="empty" wx:else>{{loading ? '加载中...' : '还没有申诉记录'}}</view>
-  <view class="load-more" wx:if="{{hasMore && items.length > 0}}" bindtap="loadMore">点击加载更多</view>
+
+  <block wx:if="{{items.length > 0}}">
+    <view class="card appeal-card" wx:for="{{items}}" wx:key="id" bindtap="goDetail" data-id="{{item.id}}">
+      <view class="appeal-head">
+        <text class="tag tag-info">{{item.appeal_type}}</text>
+        <text class="appeal-rel" wx:if="{{item.warning_course}}">{{item.warning_course}}</text>
+        <text style="flex:1" wx:else></text>
+        <text class="tag {{item.statusClass}}">{{item.statusText}}</text>
+      </view>
+      <view class="appeal-content">{{item.content || '-'}}</view>
+      <view class="appeal-foot">
+        <text wx:if="{{item.evidenceCount > 0}}" class="proof-chip">含 {{item.evidenceCount}} 张凭证图</text>
+        <text wx:else class="muted-meta">未附凭证图片</text>
+        <text class="muted-meta">{{item.createdText}}</text>
+      </view>
+      <view class="note-box" wx:if="{{item.result_note}}">
+        处理说明：{{item.result_note}}
+      </view>
+    </view>
+  </block>
+
+  <view class="card empty" wx:else>
+    {{loading ? '正在加载申诉记录...' : '暂无申诉记录，点击右上角可发起申诉'}}
+  </view>
 </view>

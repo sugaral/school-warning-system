@@ -1,53 +1,132 @@
-const { api, toastError } = require('../../utils/request');
+const { api } = require('../../utils/request');
+const { INBOX_TYPE_CLASS, formatDateTime } = require('../../utils/format');
 
 Page({
   data: {
-    items: [],
-    loading: true,
-    hasMore: false,
-    page: 1,
-    pageSize: 20,
+    activeTab: 'inbox', // 'inbox' | 'class'
+    inboxFilter: 'all', // 'all' | 'unread' | 'read'
+    inboxList: [],
+    unreadCount: 0,
+    inboxLoading: true,
+
+    classList: [],
+    classUnreadCount: 0,
+    classPage: 1,
+    classHasMore: false,
+    classLoading: false,
   },
 
-  onLoad() {
-    this.fetchList(true);
+  onShow() {
+    this.loadInbox();
+    this.loadClassNotices(true);
   },
 
   onPullDownRefresh() {
-    this.fetchList(true).then(() => wx.stopPullDownRefresh());
+    const task =
+      this.data.activeTab === 'inbox' ? this.loadInbox() : this.loadClassNotices(true);
+    task.then(() => wx.stopPullDownRefresh());
   },
 
   onReachBottom() {
-    if (this.data.hasMore) this.loadMore();
-  },
-
-  async fetchList(reset) {
-    if (reset) this.setData({ page: 1 });
-    this.setData({ loading: true });
-    try {
-      const data = await api.notifications({ page: this.data.page, pageSize: this.data.pageSize });
-      // 兼容后端两种返回形态：数组 或 { list, total }
-      const list = Array.isArray(data) ? data : (data && data.list) || [];
-      const total = (data && data.total) || list.length;
-      const merged = reset ? list : this.data.items.concat(list);
-      this.setData({
-        items: merged,
-        hasMore: merged.length < total,
-        loading: false,
-      });
-    } catch (err) {
-      this.setData({ loading: false });
+    if (this.data.activeTab === 'class' && this.data.classHasMore && !this.data.classLoading) {
+      this.setData({ classPage: this.data.classPage + 1 }, () => this.loadClassNotices(false));
     }
   },
 
-  loadMore() {
-    this.setData({ page: this.data.page + 1 }, () => this.fetchList(false));
+  switchTab(e) {
+    const tab = e.currentTarget.dataset.tab;
+    this.setData({ activeTab: tab });
   },
 
-  goDetail(e) {
-    const id = e.currentTarget.dataset.id;
-    // 进入详情即回执已读（写 student_notification_reads）
-    api.readNotification(id).catch(() => {});
-    wx.navigateTo({ url: '/pages/notification-detail/notification-detail?id=' + id });
+  setInboxFilter(e) {
+    const filter = e.currentTarget.dataset.filter;
+    this.setData({ inboxFilter: filter }, () => this.loadInbox());
+  },
+
+  async loadInbox() {
+    this.setData({ inboxLoading: true });
+    try {
+      const params = { page: 1, pageSize: 50 };
+      if (this.data.inboxFilter !== 'all') {
+        params.status = this.data.inboxFilter;
+      }
+      const data = await api.inbox(params);
+      const rawList = (data && data.list) || [];
+      const list = rawList.map((item) => ({
+        ...item,
+        typeClass: INBOX_TYPE_CLASS[item.type] || 'tag-plain',
+        createdText: formatDateTime(item.created_at),
+      }));
+      this.setData({
+        inboxList: list,
+        unreadCount: Number((data && data.unread) || 0),
+        inboxLoading: false,
+      });
+    } catch (e) {
+      this.setData({ inboxLoading: false });
+    }
+  },
+
+  async onMarkAllRead() {
+    if (this.data.unreadCount <= 0) return;
+    try {
+      await api.readAllInbox();
+      wx.showToast({ title: '已全部标为已读', icon: 'success' });
+      this.loadInbox();
+    } catch (e) {
+      /* request 层已提示 */
+    }
+  },
+
+  async loadClassNotices(reset) {
+    if (reset) this.setData({ classPage: 1 });
+    this.setData({ classLoading: true });
+    try {
+      const data = await api.notifications({ page: this.data.classPage, pageSize: 30 });
+      const rawList = Array.isArray(data) ? data : (data && data.list) || [];
+      const total = (data && data.total) || rawList.length;
+      const mapped = rawList.map((item) => ({
+        ...item,
+        is_read: Boolean(item.is_read),
+        createdText: formatDateTime(item.created_at),
+      }));
+      const merged = reset ? mapped : this.data.classList.concat(mapped);
+      this.setData({
+        classList: merged,
+        classUnreadCount: merged.filter((x) => !x.is_read).length,
+        classHasMore: merged.length < total,
+        classLoading: false,
+      });
+    } catch (e) {
+      this.setData({ classLoading: false });
+    }
+  },
+
+  goInboxDetail(e) {
+    const idx = Number(e.currentTarget.dataset.index);
+    const item = this.data.inboxList[idx];
+    if (!item) return;
+
+    if (!item.is_read) {
+      api.readInbox(item.id).catch(() => {});
+    }
+    const payload = encodeURIComponent(JSON.stringify(item));
+    wx.navigateTo({
+      url: '/pages/notification-detail/notification-detail?source=inbox&id=' + item.id + '&payload=' + payload,
+    });
+  },
+
+  goClassDetail(e) {
+    const idx = Number(e.currentTarget.dataset.index);
+    const item = this.data.classList[idx];
+    if (!item) return;
+
+    if (!item.is_read) {
+      api.readNotification(item.id).catch(() => {});
+    }
+    const payload = encodeURIComponent(JSON.stringify(item));
+    wx.navigateTo({
+      url: '/pages/notification-detail/notification-detail?source=class&id=' + item.id + '&payload=' + payload,
+    });
   },
 });

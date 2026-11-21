@@ -84,6 +84,8 @@ class ReviewTeacherCourseBindingRequestDto {
 export class TeachingAdminController {
   private readonly dictionaryCacheTtlSeconds = 300;
   private readonly statsCacheTtlSeconds = 60;
+  private readonly payloadCache = new Map<string, { data: any; expiresAt: number }>();
+  private static readonly MAX_CACHE_SIZE = 500;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -94,9 +96,27 @@ export class TeachingAdminController {
   }
 
   private async getCachedPayload<T>(cacheKey: string, loader: () => Promise<T>, ttlSeconds: number) {
-    void cacheKey;
-    void ttlSeconds;
-    return loader();
+    const now = Date.now();
+    const cached = this.payloadCache.get(cacheKey);
+    if (cached && cached.expiresAt > now) {
+      return cached.data as T;
+    }
+    const data = await loader();
+    if (this.payloadCache.size >= TeachingAdminController.MAX_CACHE_SIZE) {
+      for (const [key, entry] of this.payloadCache) {
+        if (entry.expiresAt <= now) {
+          this.payloadCache.delete(key);
+        }
+      }
+      if (this.payloadCache.size >= TeachingAdminController.MAX_CACHE_SIZE) {
+        const firstKey = this.payloadCache.keys().next().value;
+        if (firstKey !== undefined) {
+          this.payloadCache.delete(firstKey);
+        }
+      }
+    }
+    this.payloadCache.set(cacheKey, { data, expiresAt: now + ttlSeconds * 1000 });
+    return data;
   }
 
   private async getSemesterConfig() {
@@ -1577,22 +1597,66 @@ export class TeachingAdminController {
       };
     }
 
-    const scores = grades.map((g: any) => g.score ? Number(g.score) : 0).filter((s: number) => s > 0);
-    const totalCount = scores.length;
-    const avgScore = scores.reduce((a: number, b: number) => a + b, 0) / totalCount;
-    const maxScore = Math.max(...scores);
-    const minScore = Math.min(...scores);
-    const passCount = scores.filter((s: number) => s >= 60).length;
+    let totalCount = 0;
+    let sum = 0;
+    let maxScore = -Infinity;
+    let minScore = Infinity;
+    let passCount = 0;
+    let excellentCount = 0;
+    let bucket0_59 = 0;
+    let bucket60_69 = 0;
+    let bucket70_79 = 0;
+    let bucket80_89 = 0;
+    let bucket90_100 = 0;
+
+    for (const g of grades as Array<{ score: any }>) {
+      const score = g.score ? Number(g.score) : 0;
+      if (!Number.isFinite(score) || score <= 0) {
+        continue;
+      }
+      totalCount += 1;
+      sum += score;
+      if (score > maxScore) maxScore = score;
+      if (score < minScore) minScore = score;
+      if (score >= 60) passCount += 1;
+      if (score >= 90) excellentCount += 1;
+
+      if (score < 60) bucket0_59 += 1;
+      else if (score < 70) bucket60_69 += 1;
+      else if (score < 80) bucket70_79 += 1;
+      else if (score < 90) bucket80_89 += 1;
+      else bucket90_100 += 1;
+    }
+
+    if (totalCount === 0) {
+      return {
+        code: 0,
+        message: 'ok',
+        data: {
+          totalCount: 0,
+          avgScore: 0,
+          maxScore: 0,
+          minScore: 0,
+          passCount: 0,
+          passRate: '0%',
+          excellentCount: 0,
+          excellentRate: '0%',
+          scoreDistribution: [],
+        },
+        trace_id: req?.trace_id,
+      };
+    }
+
+    const avgScore = sum / totalCount;
     const passRate = `${((passCount / totalCount) * 100).toFixed(1)}%`;
-    const excellentCount = scores.filter((s: number) => s >= 90).length;
     const excellentRate = `${((excellentCount / totalCount) * 100).toFixed(1)}%`;
 
     const scoreDistribution = [
-      { range: '0-59', count: scores.filter((s: number) => s < 60).length },
-      { range: '60-69', count: scores.filter((s: number) => s >= 60 && s < 70).length },
-      { range: '70-79', count: scores.filter((s: number) => s >= 70 && s < 80).length },
-      { range: '80-89', count: scores.filter((s: number) => s >= 80 && s < 90).length },
-      { range: '90-100', count: scores.filter((s: number) => s >= 90).length },
+      { range: '0-59', count: bucket0_59 },
+      { range: '60-69', count: bucket60_69 },
+      { range: '70-79', count: bucket70_79 },
+      { range: '80-89', count: bucket80_89 },
+      { range: '90-100', count: bucket90_100 },
     ];
 
     return {

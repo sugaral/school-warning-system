@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
@@ -15,11 +16,11 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { createHash, randomBytes } from 'crypto';
 import { promises as fs } from 'fs';
-import { extname, join } from 'path';
+import { join } from 'path';
 import { PinoLogger } from 'nestjs-pino';
 import { AuthGuard } from './shared/auth.guard';
 import { PermissionGuard } from './rbac/permission.guard';
-import { Permissions } from './rbac/permission.decorator';
+import { PermissionService } from './rbac/permission.service';
 import { serializeFileRecord } from './shared/file.util';
 import { MinioService } from './shared/minio.service';
 import { PrismaService } from './shared/prisma.service';
@@ -54,8 +55,41 @@ export class FilesController {
     private readonly prisma: PrismaService,
     private readonly logger: PinoLogger,
     private readonly minioService: MinioService,
+    private readonly permissionService: PermissionService,
   ) {
     this.logger.setContext('FilesController');
+  }
+
+  private validateImageMagicBytes(buffer: Buffer, mimetype: string): boolean {
+    if (!buffer || buffer.length < 4) {
+      return false;
+    }
+    switch (mimetype) {
+      case 'image/jpeg':
+        return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+      case 'image/png':
+        return (
+          buffer.length >= 8 &&
+          buffer[0] === 0x89 &&
+          buffer[1] === 0x50 &&
+          buffer[2] === 0x4e &&
+          buffer[3] === 0x47 &&
+          buffer[4] === 0x0d &&
+          buffer[5] === 0x0a &&
+          buffer[6] === 0x1a &&
+          buffer[7] === 0x0a
+        );
+      case 'image/gif':
+        return buffer.length >= 6 && buffer.subarray(0, 4).toString('ascii') === 'GIF8';
+      case 'image/webp':
+        return (
+          buffer.length >= 12 &&
+          buffer.subarray(0, 4).toString('ascii') === 'RIFF' &&
+          buffer.subarray(8, 12).toString('ascii') === 'WEBP'
+        );
+      default:
+        return false;
+    }
   }
 
   private getUserId(req: any) {
@@ -132,10 +166,12 @@ export class FilesController {
     if (!fallbackExt) {
       throw new BadRequestException('仅支持 JPG、PNG、WEBP、GIF 图片');
     }
+    if (!this.validateImageMagicBytes(file.buffer, file.mimetype)) {
+      throw new BadRequestException('文件内容与图片格式不匹配');
+    }
 
     const source = this.normalizeSource(dto.source);
-    const originalExt = extname(file.originalname || '').toLowerCase();
-    const extension = originalExt || fallbackExt;
+    const extension = fallbackExt;
     const date = new Date();
     const relativeSegments = [
       'images',
@@ -185,7 +221,6 @@ export class FilesController {
   }
 
   @Get(['files/:id/download', 'admin/files/:id/download'])
-  @Permissions('file:download')
   async downloadFile(@Param('id') id: string, @Req() req: any, @Res() res: any) {
     const fileId = this.parseFileId(id);
     const record = await this.getFileRecord(fileId);
@@ -198,6 +233,24 @@ export class FilesController {
         data: null,
         trace_id: req.trace_id,
       });
+    }
+
+    const userId = this.getUserId(req);
+    if (record.uploader_user_id !== userId) {
+      const allowed = await this.permissionService.hasAnyPermission(userId, [
+        'file:download',
+        'leave:read',
+        'leave:approve',
+        'appeal:read',
+        'appeal:handle',
+        'student:read',
+        'warning:read',
+        'report:read',
+        'report:export',
+      ]);
+      if (!allowed) {
+        throw new ForbiddenException('权限不足');
+      }
     }
 
     let buffer: Buffer | null = null;
@@ -228,6 +281,7 @@ export class FilesController {
     }
 
     res.setHeader('Content-Type', record.mime_type || 'application/octet-stream');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Content-Length', String(buffer.length));
     res.setHeader('Cache-Control', 'private, max-age=300');
     res.end(buffer);

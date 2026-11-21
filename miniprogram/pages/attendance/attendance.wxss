@@ -1,1 +1,20 @@
-/* 我的考勤 */
+.att-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid rgba(56, 49, 57, 0.07);
+}
+.att-row:last-child {
+  border-bottom: none;
+}
+.att-date {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #383139;
+}
+.att-sub {
+  font-size: 23rpx;
+  color: #6f6875;
+  margin-top: 6rpx;
+}

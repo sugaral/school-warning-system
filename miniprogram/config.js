@@ -22,8 +22,19 @@ const ENV = {
   },
 };
 
-// 切换环境：开发时用 dev，提审/发布前改为 prod
-const CURRENT = ENV.dev;
+// 切换环境：优先按小程序运行时版本自动切换（体验版/正式版走 prod，开发版走 dev）
+let CURRENT = ENV.dev;
+try {
+  if (typeof wx !== 'undefined' && typeof wx.getAccountInfoSync === 'function') {
+    const accountInfo = wx.getAccountInfoSync();
+    const envVersion = accountInfo && accountInfo.miniProgram && accountInfo.miniProgram.envVersion;
+    if (envVersion === 'release' || envVersion === 'trial') {
+      CURRENT = ENV.prod;
+    }
+  }
+} catch (e) {
+  CURRENT = ENV.dev;
+}
 
 module.exports = {
   ...CURRENT,

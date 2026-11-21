@@ -635,8 +635,20 @@ export class WarningsController {
       this.logger.warn(`[warnings.list] ${label} +${Date.now() - reqStartedAt}ms`);
     };
     step('start');
-    const pageNumber = parseInt(page, 10) || 1;
-    const size = parseInt(pageSize, 10) || 20;
+    const pageNumber = Math.max(1, parseInt(String(page || '1'), 10) || 1);
+    const size = Math.min(100, Math.max(1, parseInt(String(pageSize || '20'), 10) || 20));
+    if (
+      (classId && !/^\d+$/.test(String(classId).trim())) ||
+      (orgId && !/^\d+$/.test(String(orgId).trim())) ||
+      (courseId && courseId !== 'all' && !/^\d+$/.test(String(courseId).trim()))
+    ) {
+      return {
+        code: 400,
+        message: '筛选参数格式无效',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
     const userId = this.getRequestUserId(req);
     const userRoles = await this.prisma.user_roles.findMany({
       where: { user_id: userId },
@@ -1144,6 +1156,14 @@ export class WarningsController {
   @Post(':id/ack')
   @Roles('sys_admin', 'student_admin', 'head_teacher', 'student')
   async ackWarning(@Param('id') id: string, @Req() req: any) {
+    if (!/^\d+$/.test(String(id || '').trim())) {
+      return {
+        code: 400,
+        message: '预警 ID 无效',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
     const userId = this.getRequestUserId(req);
     const warningId = BigInt(id);
     const warning = await (this.prisma as any).warning_current_states.findUnique({
@@ -1153,6 +1173,16 @@ export class WarningsController {
         student_id: true,
         class_id: true,
         org_id: true,
+        status: true,
+        metric: true,
+        level: true,
+        window: true,
+        period_start: true,
+        period_end: true,
+        rule_id: true,
+        rule_snapshot_json: true,
+        trigger_summary: true,
+        trigger_detail_json: true,
       },
     });
 
@@ -1199,41 +1229,66 @@ export class WarningsController {
       }
     }
 
-    const updatedWarning = await (this.prisma as any).warning_current_states.update({
-      where: { id: warningId },
-      data: {
-        status: 'acknowledged',
-        acknowledged_at: new Date(),
-        acknowledged_by: userId,
-      },
+    if (warning.status === 'acknowledged') {
+      return {
+        code: 0,
+        message: '预警已确认',
+        data: { id: warning.id.toString() },
+        trace_id: req.trace_id,
+      };
+    }
+
+    const ackedAt = new Date();
+    const ackResult = await this.prisma.$transaction(async (tx: any) => {
+      const updated = await tx.warning_current_states.updateMany({
+        where: { id: warningId, status: 'open' },
+        data: {
+          status: 'acknowledged',
+          acknowledged_at: ackedAt,
+          acknowledged_by: userId,
+        },
+      });
+      if (updated.count === 0) {
+        return false;
+      }
+
+      await tx.warnings.create({
+        data: {
+          student_id: warning.student_id,
+          class_id: warning.class_id,
+          org_id: warning.org_id,
+          metric: warning.metric,
+          level: warning.level,
+          window: warning.window,
+          period_start: warning.period_start,
+          period_end: warning.period_end,
+          rule_id: warning.rule_id,
+          rule_snapshot_json: warning.rule_snapshot_json,
+          trigger_summary: warning.trigger_summary,
+          trigger_detail_json: warning.trigger_detail_json,
+          status: 'acknowledged',
+          acknowledged_at: ackedAt,
+          acknowledged_by: userId,
+        },
+      });
+      return true;
     });
 
-    await this.prisma.warnings.create({
-      data: {
-        student_id: updatedWarning.student_id,
-        class_id: updatedWarning.class_id,
-        org_id: updatedWarning.org_id,
-        metric: updatedWarning.metric,
-        level: updatedWarning.level,
-        window: updatedWarning.window,
-        period_start: updatedWarning.period_start,
-        period_end: updatedWarning.period_end,
-        rule_id: updatedWarning.rule_id,
-        rule_snapshot_json: updatedWarning.rule_snapshot_json,
-        trigger_summary: updatedWarning.trigger_summary,
-        trigger_detail_json: updatedWarning.trigger_detail_json,
-        status: 'acknowledged',
-        acknowledged_at: updatedWarning.acknowledged_at,
-        acknowledged_by: updatedWarning.acknowledged_by,
-      },
-    });
+    if (!ackResult) {
+      return {
+        code: 0,
+        message: '预警已确认',
+        data: { id: warning.id.toString() },
+        trace_id: req.trace_id,
+      };
+    }
 
     await this.prisma.audit_logs.create({
       data: {
         actor_user_id: userId,
         action: 'warning.ack',
         entity_type: 'warning',
-        entity_id: updatedWarning.id,
+        entity_id: warning.id,
         after_json: { status: 'acknowledged' } as any,
         ip: req.ip,
         user_agent: req.headers['user-agent']
@@ -1250,7 +1305,7 @@ export class WarningsController {
     return {
       code: 0,
       message: 'ok',
-      data: { id: updatedWarning.id.toString() },
+      data: { id: warning.id.toString() },
       trace_id: req.trace_id,
     };
   }

@@ -253,6 +253,9 @@ export class AuditController {
       };
     }
 
+    const safePage = Math.max(1, Number(page) || 1);
+    const safePageSize = Math.min(100, Math.max(1, Number(pageSize) || 20));
+
     const [logs, total] = await Promise.all([
       this.prisma.audit_logs.findMany({
         where,
@@ -268,8 +271,8 @@ export class AuditController {
           after_json: true,
         },
         orderBy: { created_at: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: (safePage - 1) * safePageSize,
+        take: safePageSize,
       }),
       this.prisma.audit_logs.count({ where }),
     ]);

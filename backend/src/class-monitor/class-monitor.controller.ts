@@ -75,8 +75,9 @@ export class ClassMonitorController {
         trace_id: req.trace_id,
       };
     }
-    const skip = (parseInt(page) - 1) * parseInt(pageSize);
-    const take = parseInt(pageSize);
+    const safePage = Math.max(1, parseInt(String(page || '1'), 10) || 1);
+    const take = Math.min(100, Math.max(1, parseInt(String(pageSize || '20'), 10) || 20));
+    const skip = (safePage - 1) * take;
 
     const studentIds = (
       await this.prisma.student_profiles.findMany({
@@ -157,8 +158,9 @@ export class ClassMonitorController {
         trace_id: req.trace_id,
       };
     }
-    const skip = (parseInt(page) - 1) * parseInt(pageSize);
-    const take = parseInt(pageSize);
+    const safePage = Math.max(1, parseInt(String(page || '1'), 10) || 1);
+    const take = Math.min(100, Math.max(1, parseInt(String(pageSize || '20'), 10) || 20));
+    const skip = (safePage - 1) * take;
 
     const [members, total] = await Promise.all([
       this.prisma.student_profiles.findMany({
@@ -293,8 +295,9 @@ export class ClassMonitorController {
         trace_id: req.trace_id,
       };
     }
-    const skip = (parseInt(page) - 1) * parseInt(pageSize);
-    const take = parseInt(pageSize);
+    const safePage = Math.max(1, parseInt(String(page || '1'), 10) || 1);
+    const take = Math.min(100, Math.max(1, parseInt(String(pageSize || '20'), 10) || 20));
+    const skip = (safePage - 1) * take;
 
     const [notifications, total] = await Promise.all([
       this.prisma.class_notifications.findMany({

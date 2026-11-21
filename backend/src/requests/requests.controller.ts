@@ -340,6 +340,14 @@ export class RequestsController {
     const userId = this.getCurrentUserId(req);
     const roleScopes = await this.getCurrentRoleCodes(userId);
     const roleCodes = roleScopes.map((item: any) => item.role);
+    if (!/^\d+$/.test(String(dto.student_id || '').trim())) {
+      return {
+        code: 400,
+        message: 'student_id 格式无效',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
     if (roleCodes.includes('student') || roleCodes.includes('class_monitor')) {
       const selfProfile = await this.getSelfStudentProfile(userId);
       if (!selfProfile) {
@@ -361,6 +369,13 @@ export class RequestsController {
           trace_id: req.trace_id,
         };
       }
+    } else if (!(await this.canAccessStudentRequest(userId, BigInt(dto.student_id as any)))) {
+      return {
+        code: 403,
+        message: '权限不足，无法为该学生提交申请',
+        data: null,
+        trace_id: req.trace_id,
+      };
     }
 
     const proofFileIds = this.mergeParsedFileIds(
@@ -481,6 +496,7 @@ export class RequestsController {
     const leaveRequests = await this.prisma.leave_requests.findMany({
       where,
       orderBy: { created_at: 'desc' },
+      take: 500,
     });
 
     const studentIds = [...new Set(leaveRequests.map((item: any) => item.student_id))];
@@ -640,6 +656,14 @@ export class RequestsController {
     const userId = this.getCurrentUserId(req);
     const roleScopes = await this.getCurrentRoleCodes(userId);
     const roleCodes = roleScopes.map((item: any) => item.role);
+    if (!/^\d+$/.test(String(dto.student_id || '').trim())) {
+      return {
+        code: 400,
+        message: 'student_id 格式无效',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
     if (roleCodes.includes('student') || roleCodes.includes('class_monitor')) {
       const selfProfile = await this.getSelfStudentProfile(userId);
       if (!selfProfile || String(dto.student_id || '') !== selfProfile.id.toString()) {
@@ -650,6 +674,13 @@ export class RequestsController {
           trace_id: req.trace_id,
         };
       }
+    } else if (!(await this.canAccessStudentRequest(userId, BigInt(dto.student_id as any)))) {
+      return {
+        code: 403,
+        message: '权限不足，无法为该学生提交申请',
+        data: null,
+        trace_id: req.trace_id,
+      };
     }
 
     const makeupRequest = await this.prisma.makeup_requests.create({
@@ -722,8 +753,7 @@ export class RequestsController {
     } else {
       const accessibleClassIds = await this.getAccessibleClassIds(userId);
       if (accessibleClassIds !== null) {
-        const accessibleStudentIds = await this.getAccessibleStudentIds(accessibleClassIds);
-        if (accessibleStudentIds.length === 0) {
+        if (accessibleClassIds.length === 0) {
           return {
             code: 0,
             message: 'ok',
@@ -733,9 +763,15 @@ export class RequestsController {
         }
 
         if (where.student_id) {
-          const matched = accessibleStudentIds.some(
-            (item) => item.toString() === where.student_id.toString(),
-          );
+          const targetStudent = await this.prisma.student_profiles.findUnique({
+            where: { id: where.student_id },
+            select: { class_id: true },
+          });
+          const matched =
+            targetStudent &&
+            accessibleClassIds.some(
+              (item) => item.toString() === targetStudent.class_id.toString(),
+            );
           if (!matched) {
             return {
               code: 0,
@@ -745,7 +781,7 @@ export class RequestsController {
             };
           }
         } else {
-          where.student_id = { in: accessibleStudentIds };
+          where.student = { class_id: { in: accessibleClassIds } };
         }
       }
     }
@@ -753,6 +789,7 @@ export class RequestsController {
     const makeupRequests = await this.prisma.makeup_requests.findMany({
       where,
       orderBy: { created_at: 'desc' },
+      take: 500,
     });
 
     const studentIds = [...new Set(makeupRequests.map((item: any) => item.student_id))];
@@ -866,7 +903,45 @@ export class RequestsController {
       });
 
       if (makeupRequest) {
-        const changeData = makeupRequest.change_json as any;
+        const rawChangeData = (makeupRequest.change_json as any) || {};
+        const allowedAttendanceStatuses = new Set([
+          'on_time',
+          'late',
+          'absent',
+          'leave',
+          'early_leave',
+          'unknown',
+        ]);
+        const allowedHomeworkStatuses = new Set([
+          'submitted',
+          'not_submit',
+          'late_submit',
+          'unknown',
+        ]);
+        const allowedClassBehaviors = new Set(['normal', 'disruptive']);
+        const safeUpdateData: Record<string, any> = {};
+        if (
+          typeof rawChangeData.attendance_status === 'string' &&
+          allowedAttendanceStatuses.has(rawChangeData.attendance_status)
+        ) {
+          safeUpdateData.attendance_status = rawChangeData.attendance_status;
+        }
+        if (
+          typeof rawChangeData.homework_status === 'string' &&
+          allowedHomeworkStatuses.has(rawChangeData.homework_status)
+        ) {
+          safeUpdateData.homework_status = rawChangeData.homework_status;
+        }
+        if (
+          typeof rawChangeData.class_behavior === 'string' &&
+          allowedClassBehaviors.has(rawChangeData.class_behavior)
+        ) {
+          safeUpdateData.class_behavior = rawChangeData.class_behavior;
+        }
+        if (typeof rawChangeData.remarks === 'string') {
+          safeUpdateData.remarks = rawChangeData.remarks.slice(0, 500);
+        }
+
         await this.prisma.daily_records.updateMany({
           where: {
             student_id: makeupRequest.student_id,
@@ -874,7 +949,7 @@ export class RequestsController {
             course_id: makeupRequest.course_id,
           },
           data: {
-            ...changeData,
+            ...safeUpdateData,
             approved_status: 'approved',
             approved_by: userId,
             approved_at: new Date(),
@@ -892,6 +967,14 @@ export class RequestsController {
         if (updatedRecord) {
           updateData.applied_daily_record_id = updatedRecord.id;
         }
+
+        await this.warningService
+          .generateWarningForStudent(
+            makeupRequest.student_id,
+            makeupRequest.record_date,
+            makeupRequest.course_id || undefined,
+          )
+          .catch(() => undefined);
       }
     } else {
       updateData.rejected_at = new Date();
@@ -934,6 +1017,14 @@ export class RequestsController {
     const userId = this.getCurrentUserId(req);
     const roleScopes = await this.getCurrentRoleCodes(userId);
     const roleCodes = roleScopes.map((item: any) => item.role);
+    if (!/^\d+$/.test(String(dto.student_id || '').trim())) {
+      return {
+        code: 400,
+        message: 'student_id 格式无效',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
     if (roleCodes.includes('student') || roleCodes.includes('class_monitor')) {
       const selfProfile = await this.getSelfStudentProfile(userId);
       if (!selfProfile || String(dto.student_id || '') !== selfProfile.id.toString()) {
@@ -944,6 +1035,13 @@ export class RequestsController {
           trace_id: req.trace_id,
         };
       }
+    } else if (!(await this.canAccessStudentRequest(userId, BigInt(dto.student_id as any)))) {
+      return {
+        code: 403,
+        message: '权限不足，无法为该学生提交申请',
+        data: null,
+        trace_id: req.trace_id,
+      };
     }
 
     const evidenceFileIds = this.mergeParsedFileIds(
@@ -1022,8 +1120,7 @@ export class RequestsController {
     } else {
       const accessibleClassIds = await this.getAccessibleClassIds(userId);
       if (accessibleClassIds !== null) {
-        const accessibleStudentIds = await this.getAccessibleStudentIds(accessibleClassIds);
-        if (accessibleStudentIds.length === 0) {
+        if (accessibleClassIds.length === 0) {
           return {
             code: 0,
             message: 'ok',
@@ -1033,9 +1130,15 @@ export class RequestsController {
         }
 
         if (where.student_id) {
-          const matched = accessibleStudentIds.some(
-            (item) => item.toString() === where.student_id.toString(),
-          );
+          const targetStudent = await this.prisma.student_profiles.findUnique({
+            where: { id: where.student_id },
+            select: { class_id: true },
+          });
+          const matched =
+            targetStudent &&
+            accessibleClassIds.some(
+              (item) => item.toString() === targetStudent.class_id.toString(),
+            );
           if (!matched) {
             return {
               code: 0,
@@ -1045,7 +1148,7 @@ export class RequestsController {
             };
           }
         } else {
-          where.student_id = { in: accessibleStudentIds };
+          where.student = { class_id: { in: accessibleClassIds } };
         }
       }
     }
@@ -1053,6 +1156,7 @@ export class RequestsController {
     const appeals = await this.prisma.appeals.findMany({
       where,
       orderBy: { created_at: 'desc' },
+      take: 500,
     });
 
     const studentIds = [...new Set(appeals.map((item: any) => item.student_id))];
@@ -1114,6 +1218,15 @@ export class RequestsController {
     @Body() dto: HandleAppealDto,
     @Req() req: any,
   ) {
+    if (!['approved', 'rejected'].includes(String(dto.status || ''))) {
+      return {
+        code: 400,
+        message: '处理状态无效',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
     const resultNote = String(dto.result_note || '').trim();
     if (dto.status === 'rejected' && !resultNote) {
       return {
@@ -1127,7 +1240,13 @@ export class RequestsController {
     const userId = this.getCurrentUserId(req);
     const existingAppeal = await this.prisma.appeals.findUnique({
       where: { id: BigInt(id) },
-      select: { id: true, student_id: true, status: true },
+      select: {
+        id: true,
+        student_id: true,
+        status: true,
+        related_type: true,
+        related_id: true,
+      },
     });
     if (!existingAppeal) {
       return {
@@ -1158,12 +1277,37 @@ export class RequestsController {
 
     const appeal = await this.prisma.appeals.update({
       where: { id: BigInt(id) },
-        data: {
-          status: dto.status,
-          handler_user_id: userId,
-          result_note: resultNote || null,
-        },
-      });
+      data: {
+        status: dto.status,
+        handler_user_id: userId,
+        result_note: resultNote || null,
+      },
+    });
+
+    if (dto.status === 'approved') {
+      if (existingAppeal.related_type === 'warning' && existingAppeal.related_id) {
+        const closedAt = new Date();
+        await Promise.all([
+          (this.prisma as any).warning_current_states.updateMany({
+            where: { id: existingAppeal.related_id },
+            data: { status: 'closed' },
+          }),
+          this.prisma.warnings.updateMany({
+            where: { id: existingAppeal.related_id },
+            data: {
+              status: 'closed',
+              closed_at: closedAt,
+              closed_by: userId,
+              close_note: resultNote || '申诉通过自动关闭',
+            },
+          }),
+        ]);
+      }
+
+      await this.warningService
+        .generateWarningForStudent(existingAppeal.student_id, new Date())
+        .catch(() => undefined);
+    }
 
     await this.prisma.audit_logs.create({
       data: {

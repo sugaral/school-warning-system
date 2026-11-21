@@ -224,11 +224,11 @@ export class ExportProcessorService {
         return this.buildWarningList(job, params);
       case 'notify_success':
         return this.buildNotifySuccess(job, params);
+      // 'semester' 与 'term' 是同一语义（控制器用前者，规范用后者），都必须支持，
+      // 否则学期导出会以「不支持的 report_type」直接失败（实测踩到过）。
       case 'daily':
       case 'weekly':
       case 'monthly':
-      // 'semester' 与 'term' 是同一语义（控制器用前者，规范用后者），都必须支持，
-      // 否则学期导出会以「不支持的 report_type」直接失败（实测踩到过）。
       case 'semester':
       case 'term':
         return this.buildSummaryReport(type, job, params);

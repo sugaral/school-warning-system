@@ -1,11 +1,38 @@
 <view class="page">
-  <view class="card" wx:if="{{detail}}">
-    <view class="card-title">申诉详情</view>
-    <view class="row"><text class="row-label">状态</text><text class="row-value">{{detail.status || '-'}}</text></view>
-    <view class="row"><text class="row-label">申诉类型</text><text class="row-value">{{detail.appeal_type || '-'}}</text></view>
-    <view class="row"><text class="row-label">申诉内容</text><text class="row-value">{{detail.content || '-'}}</text></view>
-    <view class="row"><text class="row-label">处理结果</text><text class="row-value">{{detail.result_note || '-'}}</text></view>
-    <view class="row"><text class="row-label">提交时间</text><text class="row-value">{{detail.created_at || '-'}}</text></view>
-  </view>
-  <view class="empty" wx:else>{{loading ? '加载中...' : '记录不存在'}}</view>
+  <block wx:if="{{detail}}">
+    <view class="card">
+      <view class="card-title">
+        <text>申诉详情</text>
+        <text class="tag {{detail.statusClass}}">{{detail.statusText}}</text>
+      </view>
+      <view class="row"><text class="row-label">申诉类型</text><text class="row-value">{{detail.appeal_type || '-'}}</text></view>
+      <view class="row" wx:if="{{detail.warning_course}}">
+        <text class="row-label">关联信息</text>
+        <text class="row-value">{{detail.warning_course}}</text>
+      </view>
+      <view class="row"><text class="row-label">申诉内容</text><text class="row-value">{{detail.content || '-'}}</text></view>
+      <view class="row" wx:if="{{detail.result_note}}">
+        <text class="row-label">处理说明</text>
+        <text class="row-value" style="color:#3f8a5d">{{detail.result_note}}</text>
+      </view>
+      <view class="row"><text class="row-label">提交时间</text><text class="row-value">{{detail.createdText || '-'}}</text></view>
+    </view>
+
+    <view class="card" wx:if="{{evidenceImages.length > 0}}">
+      <view class="card-title">申诉凭证（点击预览）</view>
+      <view class="image-grid">
+        <image
+          wx:for="{{evidenceImages}}"
+          wx:key="index"
+          class="image-item"
+          src="{{item}}"
+          mode="aspectFill"
+          bindtap="onPreviewImage"
+          data-index="{{index}}"
+        />
+      </view>
+    </view>
+  </block>
+
+  <view class="empty" wx:else>{{loading ? '加载中...' : '申诉记录不存在'}}</view>
 </view>

@@ -71,6 +71,35 @@ export class NotificationDispatchService {
       }
 
       this.processing = true;
+      const staleBefore = new Date(Date.now() - 5 * 60 * 1000);
+      await Promise.all([
+        this.prisma.notification_jobs.updateMany({
+          where: {
+            status: 'running',
+            updated_at: { lt: staleBefore },
+            try_count: { lt: 3 },
+          },
+          data: {
+            status: 'queued',
+            schedule_at: new Date(),
+            updated_at: new Date(),
+            last_error: 'running_lease_recovered',
+          },
+        }),
+        this.prisma.notification_jobs.updateMany({
+          where: {
+            status: 'running',
+            updated_at: { lt: staleBefore },
+            try_count: { gte: 3 },
+          },
+          data: {
+            status: 'failed',
+            updated_at: new Date(),
+            last_error: 'running_lease_timeout',
+          },
+        }),
+      ]);
+
       const batchSize = Math.min(
         20,
         Math.max(1, Number(process.env.NOTIFICATION_JOB_BATCH_SIZE || 8)),
@@ -102,12 +131,42 @@ export class NotificationDispatchService {
     return String(raw).toLowerCase() !== 'false';
   }
 
+  private async markJobFailedOrRetry(job: any, errorMessage: string) {
+    const nextTryCount = Number(job?.try_count || 0) + 1;
+    const safeError = String(errorMessage || 'dispatch_failed').slice(0, 255);
+    if (nextTryCount < 3) {
+      const backoffMs = Math.pow(2, nextTryCount) * 30_000;
+      await this.prisma.notification_jobs.update({
+        where: { id: job.id },
+        data: {
+          status: 'queued',
+          try_count: { increment: 1 },
+          schedule_at: new Date(Date.now() + backoffMs),
+          updated_at: new Date(),
+          last_error: safeError,
+        },
+      });
+      return;
+    }
+
+    await this.prisma.notification_jobs.update({
+      where: { id: job.id },
+      data: {
+        status: 'failed',
+        try_count: { increment: 1 },
+        updated_at: new Date(),
+        last_error: safeError,
+      },
+    });
+  }
+
   private async processSingleJob(job: any) {
     try {
       const claimResult = await this.prisma.notification_jobs.updateMany({
         where: { id: job.id, status: 'queued' },
         data: {
           status: 'running',
+          updated_at: new Date(),
         },
       });
 
@@ -211,14 +270,7 @@ export class NotificationDispatchService {
         `[通知派发] 任务 ${job.id.toString()} 失败`,
         error?.stack || error?.message || String(error),
       );
-      await this.prisma.notification_jobs.update({
-        where: { id: job.id },
-        data: {
-          status: 'failed',
-          try_count: { increment: 1 },
-          last_error: error?.message || 'dispatch_failed',
-        },
-      });
+      await this.markJobFailedOrRetry(job, error?.message || 'dispatch_failed');
     }
   }
 
@@ -269,15 +321,8 @@ export class NotificationDispatchService {
     const sentAt = new Date();
 
     if (written === 0) {
-      // 一条都没写成功 —— 必须记 failed，不能记 success（P0-2 的核心约束）
-      await this.prisma.notification_jobs.update({
-        where: { id: job.id },
-        data: {
-          status: 'failed',
-          try_count: { increment: 1 },
-          last_error: 'app_write_failed',
-        },
-      });
+      // 一条都没写成功 —— 进入重试/失败通道，不能记 success（P0-2 的核心约束）
+      await this.markJobFailedOrRetry(job, 'app_write_failed');
       return;
     }
 

@@ -1,20 +1,56 @@
+.profile-hero {
+  padding: 34rpx 30rpx;
+}
 .profile-head {
   display: flex;
   align-items: center;
   gap: 24rpx;
 }
-.avatar {
-  width: 110rpx;
-  height: 110rpx;
+.avatar,
+.avatar-img {
+  width: 116rpx;
+  height: 116rpx;
   border-radius: 50%;
-  background: #1677ff;
-  color: #fff;
-  font-size: 44rpx;
+  flex-shrink: 0;
+  border: 4rpx solid rgba(255, 253, 247, 0.55);
+  box-shadow: 0 10rpx 20rpx rgba(20, 62, 38, 0.22);
+}
+.avatar {
+  background: rgba(255, 253, 247, 0.24);
+  color: #fffdf7;
+  font-size: 46rpx;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
-.name { font-size: 36rpx; font-weight: 600; }
-.sub { font-size: 25rpx; color: #8c8c8c; margin-top: 8rpx; }
-.version { text-align: center; color: #bfbfbf; font-size: 22rpx; padding: 30rpx 0 50rpx; }
+.info {
+  flex: 1;
+}
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.name {
+  font-size: 38rpx;
+  font-weight: 700;
+}
+.pos-pill {
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 253, 247, 0.24);
+  font-size: 20rpx;
+  font-weight: 600;
+}
+.sub {
+  font-size: 24rpx;
+  opacity: 0.9;
+  margin-top: 6rpx;
+}
+.version {
+  text-align: center;
+  color: #8f8896;
+  font-size: 22rpx;
+  padding: 32rpx 0 40rpx;
+}

@@ -1,11 +1,64 @@
 <view class="page">
-  <view class="card">
-    <view class="card-title">选择班级</view>
-    <view class="row" wx:for="{{classes}}" wx:key="index" bindtap="onPick" data-id="{{item.id}}">
-      <text class="row-label">{{item.class_name}}</text>
-      <text class="tag {{selectedId === item.id ? '' : 'tag-plain'}}">{{selectedId === item.id ? '已选' : '选择'}}</text>
+  <view class="card card-tint">
+    <view class="card-title" style="margin-bottom:8rpx">绑定所属学院与班级</view>
+    <view class="hint-text" style="margin-top:0">
+      请选择您当前就读的学院与行政班级，绑定后将同步获取本班课表、考勤、请假审批人与预警通知。
     </view>
-    <view class="empty" wx:if="{{classes.length === 0}}">暂无可绑定班级</view>
   </view>
-  <button class="btn" bindtap="onSubmit" disabled="{{!selectedId}}">提交绑定</button>
+
+  <view class="card">
+    <view class="form-item">
+      <text class="form-label">筛选学院</text>
+      <picker mode="selector" range="{{orgs}}" range-key="org_name" value="{{selectedOrgIndex >= 0 ? selectedOrgIndex : 0}}" bindchange="onOrgChange">
+        <view class="form-picker">
+          <text>{{orgs[selectedOrgIndex] ? orgs[selectedOrgIndex].org_name : '全部学院'}}</text>
+          <text class="row-arrow">▼</text>
+        </view>
+      </picker>
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">搜索班级或班主任</text>
+      <input
+        class="form-input"
+        placeholder="输入班级名称或班主任姓名搜索"
+        value="{{keyword}}"
+        bindinput="onKeywordInput"
+      />
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">
+      <text>选择班级</text>
+      <text class="hint-text" style="margin-top:0">{{filteredClasses.length}} 个可选</text>
+    </view>
+
+    <block wx:if="{{filteredClasses.length > 0}}">
+      <view
+        class="cls-item {{selectedId === item.id ? 'active' : ''}}"
+        wx:for="{{filteredClasses}}"
+        wx:key="id"
+        bindtap="onPick"
+        data-id="{{item.id}}"
+      >
+        <view style="flex:1">
+          <view class="cls-name">{{item.class_name}}</view>
+          <view class="cls-meta">
+            {{item.org_name || '未分配学院'}}{{item.head_teacher_name ? ' · 班主任：' + item.head_teacher_name : ''}}
+          </view>
+        </view>
+        <text class="tag {{selectedId === item.id ? 'tag-success' : 'tag-plain'}}">
+          {{selectedId === item.id ? '已选' : '选择'}}
+        </text>
+      </view>
+    </block>
+    <view class="empty" wx:else style="padding:60rpx 0">
+      {{loading ? '正在加载班级...' : '暂无符合条件的班级'}}
+    </view>
+  </view>
+
+  <button class="btn" bindtap="onSubmit" loading="{{submitting}}" disabled="{{!selectedId || submitting}}">
+    确认绑定班级
+  </button>
 </view>

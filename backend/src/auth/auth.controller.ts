@@ -12,7 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PinoLogger } from 'nestjs-pino';
 import * as https from 'https';
 import * as querystring from 'querystring';
-import { randomBytes, createHash } from 'crypto';
+import { randomBytes, createHash, randomInt } from 'crypto';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { ConfigService } from '../config/config.service';
 import { PrismaService } from '../shared/prisma.service';
@@ -518,14 +518,13 @@ export class AuthController {
       typeof rawOpenRegistration === 'string'
         ? rawOpenRegistration.trim().toLowerCase()
         : rawOpenRegistration;
-    const openRegistration = !(
-      rawOpenRegistration === false ||
-      rawOpenRegistration === 0 ||
-      normalizedOpenRegistration === '0' ||
-      normalizedOpenRegistration === 'false' ||
-      normalizedOpenRegistration === 'off' ||
-      normalizedOpenRegistration === 'no'
-    );
+    const openRegistration =
+      rawOpenRegistration === true ||
+      rawOpenRegistration === 1 ||
+      normalizedOpenRegistration === '1' ||
+      normalizedOpenRegistration === 'true' ||
+      normalizedOpenRegistration === 'on' ||
+      normalizedOpenRegistration === 'yes';
 
     return {
       openRegistration,
@@ -659,7 +658,7 @@ export class AuthController {
     let result = '';
     const safeLength = Math.max(1, Math.floor(length));
     for (let i = 0; i < safeLength; i += 1) {
-      result += charset[Math.floor(Math.random() * charset.length)];
+      result += charset[randomInt(0, charset.length)];
     }
     return result;
   }

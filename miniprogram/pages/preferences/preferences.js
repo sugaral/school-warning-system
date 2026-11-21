@@ -2,7 +2,14 @@ const { api, config } = require('../../utils/request');
 
 Page({
   data: {
-    prefs: { wechat: true, sms: true, email: false, quiet_start: '22:00', quiet_end: '08:00' },
+    prefs: {
+      warning_reminder: true,
+      wechat: true,
+      sms: true,
+      email: false,
+      quiet_start: '22:00',
+      quiet_end: '08:00',
+    },
     saving: false,
     hasTemplate: (config.SUBSCRIBE_TEMPLATE_IDS || []).length > 0,
   },
@@ -15,11 +22,28 @@ Page({
     try {
       const data = await api.preferences();
       const prefs = (data && data.notify_prefs_json) || data || {};
+      const channels = Array.isArray(prefs.notification_channels) ? prefs.notification_channels : null;
       this.setData({
         prefs: {
-          wechat: prefs.wechat !== false,
-          sms: prefs.sms !== false,
-          email: prefs.email === true,
+          warning_reminder: prefs.warning_reminder !== false,
+          wechat:
+            typeof prefs.wechat === 'boolean'
+              ? prefs.wechat
+              : channels
+                ? channels.indexOf('wechat') !== -1
+                : true,
+          sms:
+            typeof prefs.sms === 'boolean'
+              ? prefs.sms
+              : channels
+                ? channels.indexOf('sms') !== -1
+                : true,
+          email:
+            typeof prefs.email === 'boolean'
+              ? prefs.email
+              : channels
+                ? channels.indexOf('email') !== -1
+                : false,
           quiet_start: (prefs.quiet_hours && prefs.quiet_hours.start) || '22:00',
           quiet_end: (prefs.quiet_hours && prefs.quiet_hours.end) || '08:00',
         },
@@ -34,22 +58,29 @@ Page({
     this.setData({ ['prefs.' + key]: e.detail.value });
   },
 
-  onInput(e) {
+  onTimeChange(e) {
     const key = e.currentTarget.dataset.key;
     this.setData({ ['prefs.' + key]: e.detail.value });
   },
 
   async onSave() {
     const p = this.data.prefs;
+    const channels = [];
+    if (p.wechat) channels.push('wechat');
+    if (p.sms) channels.push('sms');
+    if (p.email) channels.push('email');
+
     this.setData({ saving: true });
     try {
       await api.updatePreferences({
+        warning_reminder: p.warning_reminder,
         wechat: p.wechat,
         sms: p.sms,
         email: p.email,
+        notification_channels: channels,
         quiet_hours: { start: p.quiet_start, end: p.quiet_end },
       });
-      wx.showToast({ title: '已保存', icon: 'success' });
+      wx.showToast({ title: '偏好已保存', icon: 'success' });
     } catch (e) {
       /* request 层已提示 */
     } finally {
