@@ -127,18 +127,19 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   student: [
     'student:read', 'student:preference', 'warning:read', 'warning:acknowledge',
     'leave:read', 'appeal:read', 'attendance:checkin', 'schedule:read', 'grade:read',
+    'file:download',
   ],
   class_monitor: [
     'student:read', 'student:preference', 'warning:read', 'warning:acknowledge',
     'leave:read', 'appeal:read', 'attendance:checkin', 'schedule:read', 'grade:read',
-    'class:read', 'notification:send',
+    'class:read', 'notification:send', 'file:download',
   ],
   head_teacher: [
     'student:read', 'student:update', 'class:read', 'class:manage_students',
     'warning:read', 'warning:close', 'warning:manage',
     'leave:read', 'leave:approve', 'appeal:read', 'appeal:handle',
     'attendance:read', 'attendance:manage', 'schedule:read',
-    'report:read', 'report:export', 'stats:view',
+    'report:read', 'report:export', 'stats:view', 'file:download',
   ],
   student_admin: [
     'student:read', 'student:create', 'student:update', 'student:import', 'student:export',
@@ -146,18 +147,19 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'leave:read', 'leave:approve', 'appeal:read', 'appeal:handle',
     'rule:read', 'rule:create', 'rule:update', 'rule:delete',
     'notification:read', 'notification:config',
-    'report:read', 'report:export', 'stats:view',
+    'report:read', 'report:export', 'stats:view', 'file:download',
   ],
   teaching_admin: [
     'student:read', 'student:export',
     'class:read', 'course:read', 'course:create', 'course:update', 'course:delete',
     'schedule:read', 'schedule:create', 'schedule:update', 'schedule:delete', 'schedule:import',
     'grade:read', 'grade:update', 'grade:import',
-    'report:read', 'report:export', 'stats:view',
+    'report:read', 'report:export', 'stats:view', 'file:download',
   ],
   vice_dean: [
     'student:read', 'class:read', 'warning:read', 'leave:read',
     'appeal:read', 'appeal:handle', 'rule:read', 'report:read', 'report:export', 'stats:view',
+    'file:download',
   ],
   sys_admin: [
     'student:read', 'student:create', 'student:update', 'student:delete', 'student:import', 'student:export', 'student:preference',
@@ -174,7 +176,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'notification:read', 'notification:send', 'notification:config',
     'report:read', 'report:export', 'stats:view',
     'audit:view', 'audit:export',
-    'config:view', 'config:update',
+    'config:view', 'config:update', 'file:download',
   ],
 };
 

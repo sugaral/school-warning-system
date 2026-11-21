@@ -1051,7 +1051,30 @@ export class TeacherController {
     await this.prisma.ensureConnected();
 
     const userId = BigInt(req.user.sub);
-    const orgId = BigInt(dto.org_id);
+    const rawOrgId = String(dto.org_id || '').trim();
+    if (!/^\d+$/.test(rawOrgId)) {
+      return {
+        code: 400,
+        message: '学院 ID 无效',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+    const orgId = BigInt(rawOrgId);
+
+    const existingUser = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: { org_id: true },
+    });
+    if (existingUser?.org_id && existingUser.org_id !== orgId) {
+      return {
+        code: 403,
+        message: '已绑定学院，请通过学院变更申请流程提交审批',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
     const allowedOrgIds = await this.getTeacherAssignableOrgIds(userId);
     if (!allowedOrgIds.some((item: bigint) => item.toString() === orgId.toString())) {
       return {

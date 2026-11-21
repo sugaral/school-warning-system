@@ -1,18 +1,51 @@
 const { api } = require('../../utils/request');
+const {
+  ATTENDANCE_TEXT,
+  ATTENDANCE_TAG_CLASS,
+  HOMEWORK_TEXT,
+  BEHAVIOR_TEXT,
+} = require('../../utils/format');
 
 Page({
-  data: { trend: [] },
+  data: {
+    trend: [],
+    loading: true,
+  },
 
-  onLoad() {
+  onShow() {
     this.fetchTrend();
   },
 
+  onPullDownRefresh() {
+    this.fetchTrend().then(() => wx.stopPullDownRefresh());
+  },
+
   async fetchTrend() {
+    this.setData({ loading: true });
     try {
       const data = await api.weekly();
-      this.setData({ trend: Array.isArray(data) ? data : [] });
+      const rows = Array.isArray(data) ? data : [];
+      const trend = rows
+        .slice()
+        .reverse()
+        .map((item) => ({
+          ...item,
+          attendanceText: ATTENDANCE_TEXT[item.attendance] || '未记录',
+          attendanceClass: ATTENDANCE_TAG_CLASS[item.attendance] || 'tag-plain',
+          homeworkText: HOMEWORK_TEXT[item.homework_status] || '未录入',
+          behaviorText: BEHAVIOR_TEXT[item.class_behavior] || '正常',
+        }));
+      this.setData({ trend, loading: false });
     } catch (e) {
-      /* ignore */
+      this.setData({ loading: false });
     }
+  },
+
+  goCheckin() {
+    wx.navigateTo({ url: '/pages/checkin/checkin' });
+  },
+
+  goLeaveForm() {
+    wx.navigateTo({ url: '/pages/leave-form/leave-form' });
   },
 });

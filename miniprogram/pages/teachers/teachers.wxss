@@ -1,1 +1,5 @@
-/* 我的老师 —— 复用 app.wxss 的通用类，仅补充页内差异 */
+.teacher-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #383139;
+}

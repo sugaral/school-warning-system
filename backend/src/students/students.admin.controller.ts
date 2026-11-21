@@ -290,9 +290,10 @@ export class StudentsAdminController {
     @Req() req?: any,
   ) {
     await this.prisma.ensureConnected();
-    
-    const skip = (parseInt(page) - 1) * parseInt(pageSize);
-    const take = parseInt(pageSize);
+
+    const parsedPage = Math.max(1, parseInt(String(page || '1'), 10) || 1);
+    const take = Math.min(100, Math.max(1, parseInt(String(pageSize || '20'), 10) || 20));
+    const skip = (parsedPage - 1) * take;
 
     const where: any = {};
     
@@ -316,7 +317,29 @@ export class StudentsAdminController {
       ];
     }
     if (class_id) {
-      where.class_id = BigInt(class_id);
+      const normalizedClassId = String(class_id).trim();
+      if (!/^\d+$/.test(normalizedClassId)) {
+        return {
+          code: 400,
+          message: 'class_id 参数格式无效',
+          data: null,
+          trace_id: req?.trace_id,
+        };
+      }
+      const targetClassId = BigInt(normalizedClassId);
+      if (
+        dataScope?.type === 'class' &&
+        Array.isArray(dataScope.classIds) &&
+        !dataScope.classIds.some((id: bigint) => id.toString() === targetClassId.toString())
+      ) {
+        return {
+          code: 0,
+          message: 'ok',
+          data: { list: [], total: 0, page: parsedPage, pageSize: take },
+          trace_id: req?.trace_id,
+        };
+      }
+      where.class_id = targetClassId;
     }
 
     const roleCatalog = await loadRoleCatalog(this.prisma);
@@ -324,34 +347,47 @@ export class StudentsAdminController {
     const defaultClassMonitorPosition =
       classMonitorPositionOptions[0] || '班干';
     const canIncludeRegisteredOnlyUsers = !class_id && (!dataScope || dataScope.type === 'all');
+    const registeredOnlyWhere: any = {
+      user_type: 'student',
+      student_profile: {
+        is: null,
+      },
+      ...(keyword
+        ? {
+            OR: [
+              { name: { contains: keyword } },
+              { email: { contains: keyword } },
+              { mobile: { contains: keyword } },
+            ],
+          }
+        : {}),
+    };
+
+    const [studentTotal, registeredOnlyTotal] = await Promise.all([
+      this.prisma.student_profiles.count({ where }),
+      canIncludeRegisteredOnlyUsers
+        ? this.prisma.users.count({ where: registeredOnlyWhere })
+        : Promise.resolve(0),
+    ]);
+
+    const useDirectDbPagination = registeredOnlyTotal === 0;
+    const boundedFetchLimit = Math.min(skip + take, 1000);
 
     const [students, registeredOnlyUsers] = await Promise.all([
       this.prisma.student_profiles.findMany({
         where,
         orderBy: { created_at: 'desc' },
+        ...(useDirectDbPagination ? { skip, take } : { take: boundedFetchLimit }),
         include: {
           users: true,
           classes: true,
         },
       }),
-      canIncludeRegisteredOnlyUsers
+      !useDirectDbPagination
         ? this.prisma.users.findMany({
-            where: {
-              user_type: 'student',
-              student_profile: {
-                is: null,
-              },
-              ...(keyword
-                ? {
-                    OR: [
-                      { name: { contains: keyword } },
-                      { email: { contains: keyword } },
-                      { mobile: { contains: keyword } },
-                    ],
-                  }
-                : {}),
-            },
+            where: registeredOnlyWhere,
             orderBy: { created_at: 'desc' },
+            take: boundedFetchLimit,
           })
         : Promise.resolve([]),
     ]);
@@ -446,8 +482,10 @@ export class StudentsAdminController {
           new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime(),
       );
 
-    const total = mergedList.length;
-    const pagedList = mergedList.slice(skip, skip + take);
+    const total = studentTotal + registeredOnlyTotal;
+    const pagedList = useDirectDbPagination
+      ? mergedList
+      : mergedList.slice(skip, skip + take);
 
     return {
       code: 0,
@@ -455,7 +493,7 @@ export class StudentsAdminController {
       data: {
         list: pagedList,
         total,
-        page: parseInt(page),
+        page: parsedPage,
         pageSize: take,
       },
       trace_id: req.trace_id,

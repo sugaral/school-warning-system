@@ -1,47 +1,81 @@
-const { api, toastError } = require('../../utils/request');
+const { api } = require('../../utils/request');
+const { PASS_STATUS_TEXT, PASS_STATUS_CLASS } = require('../../utils/format');
 
 Page({
   data: {
+    allItems: [],
     items: [],
+    stats: { total: 0, passed: 0, failed: 0, earned_credits: 0 },
+    terms: ['全部学期'],
+    termIndex: 0,
     loading: true,
-    hasMore: false,
-    page: 1,
-    pageSize: 20,
   },
 
   onLoad() {
-    this.fetchList(true);
+    this.fetchGrades();
   },
 
   onPullDownRefresh() {
-    this.fetchList(true).then(() => wx.stopPullDownRefresh());
+    this.fetchGrades().then(() => wx.stopPullDownRefresh());
   },
 
-  onReachBottom() {
-    if (this.data.hasMore) this.loadMore();
-  },
-
-  async fetchList(reset) {
-    if (reset) this.setData({ page: 1 });
+  async fetchGrades() {
     this.setData({ loading: true });
     try {
-      const data = await api.courses({ page: this.data.page, pageSize: this.data.pageSize });
-      // 兼容后端两种返回形态：数组 或 { list, total }
-      const list = Array.isArray(data) ? data : (data && data.list) || [];
-      const total = (data && data.total) || list.length;
-      const merged = reset ? list : this.data.items.concat(list);
+      const data = await api.grades();
+      const rawList = (data && data.list) || [];
+      const mapped = rawList.map((item) => ({
+        ...item,
+        passText: PASS_STATUS_TEXT[item.pass_status] || item.pass_status || '待定',
+        passClass: PASS_STATUS_CLASS[item.pass_status] || 'tag-plain',
+      }));
+
+      const termSet = {};
+      const terms = ['全部学期'];
+      mapped.forEach((item) => {
+        if (item.term_code && !termSet[item.term_code]) {
+          termSet[item.term_code] = true;
+          terms.push(item.term_code);
+        }
+      });
+
       this.setData({
-        items: merged,
-        hasMore: merged.length < total,
+        allItems: mapped,
+        terms,
         loading: false,
       });
+      this.applyTermFilter();
     } catch (err) {
       this.setData({ loading: false });
     }
   },
 
-  loadMore() {
-    this.setData({ page: this.data.page + 1 }, () => this.fetchList(false));
+  onTermChange(e) {
+    this.setData({ termIndex: Number(e.detail.value) || 0 }, () => this.applyTermFilter());
   },
 
+  applyTermFilter() {
+    const { allItems, terms, termIndex } = this.data;
+    const pickedTerm = terms[termIndex] || '全部学期';
+    const items =
+      termIndex === 0 || pickedTerm === '全部学期'
+        ? allItems
+        : allItems.filter((item) => item.term_code === pickedTerm);
+
+    const passed = items.filter((item) => item.pass_status === 'pass').length;
+    const failed = items.filter((item) => item.pass_status === 'fail').length;
+    const earnedCredits = items
+      .filter((item) => item.pass_status === 'pass')
+      .reduce((sum, item) => sum + (Number(item.credit) || 0), 0);
+
+    this.setData({
+      items,
+      stats: {
+        total: items.length,
+        passed,
+        failed,
+        earned_credits: Number(earnedCredits.toFixed(1)),
+      },
+    });
+  },
 });

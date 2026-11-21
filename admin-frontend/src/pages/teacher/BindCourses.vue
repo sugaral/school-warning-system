@@ -442,15 +442,19 @@ const loadMyBindings = async () => {
       id: String(item.id),
     }));
     currentBindingClassMap.value = Object.fromEntries(
-      currentBindingCourses.value.map((course: any) => [
-        course.id,
-        Array.isArray(classesByCourse?.[course.id] || classesByCourse?.[Number(course.id)])
-          ? (classesByCourse?.[course.id] || classesByCourse?.[Number(course.id)]).map((cls: any) => ({
-              id: String(cls.id),
-              class_name: cls.class_name || '',
-            }))
-          : [],
-      ]),
+      currentBindingCourses.value.map((course: any) => {
+        const courseClasses =
+          classesByCourse?.[course.id] || classesByCourse?.[Number(course.id)];
+        return [
+          course.id,
+          Array.isArray(courseClasses)
+            ? courseClasses.map((cls: any) => ({
+                id: String(cls.id),
+                class_name: cls.class_name || '',
+              }))
+            : [],
+        ];
+      }),
     );
 
     hasExistingBindings.value = true;

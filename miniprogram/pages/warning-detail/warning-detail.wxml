@@ -1,42 +1,70 @@
 <view class="page" wx:if="{{detail}}">
-  <!-- 触发摘要 -->
   <view class="card">
     <view class="warn-head">
       <text class="badge badge-{{detail.level}}">{{detail.levelText}}</text>
       <text class="warn-metric">{{detail.metricText}}</text>
       <text class="tag {{detail.statusClass}}">{{detail.statusText}}</text>
     </view>
-    <view class="summary">{{detail.trigger_summary || '—'}}</view>
-    <view class="row"><text class="row-label">周期</text><text class="row-value">{{detail.periodText}}</text></view>
-    <view class="row"><text class="row-label">触发时间</text><text class="row-value">{{detail.createdText}}</text></view>
+    <view class="summary">{{detail.trigger_summary || detail.warning_reason || '—'}}</view>
+
+    <view class="row" wx:if="{{detail.course_name}}">
+      <text class="row-label">关联课程</text>
+      <text class="row-value">{{detail.course_name}}</text>
+    </view>
+    <view class="row" wx:if="{{detail.class_name}}">
+      <text class="row-label">所在班级</text>
+      <text class="row-value">{{detail.org_name ? detail.org_name + ' · ' : ''}}{{detail.class_name}}</text>
+    </view>
+    <view class="row">
+      <text class="row-label">统计周期</text>
+      <text class="row-value">{{detail.windowText ? detail.windowText + ' · ' : ''}}{{detail.periodText || '-'}}</text>
+    </view>
+    <view class="row">
+      <text class="row-label">触发时间</text>
+      <text class="row-value">{{detail.createdText || '-'}}</text>
+    </view>
     <view class="row" wx:if="{{detail.acknowledgedText}}">
-      <text class="row-label">确认时间</text><text class="row-value">{{detail.acknowledgedText}}</text>
+      <text class="row-label">确认时间</text>
+      <text class="row-value">{{detail.acknowledgedText}}</text>
     </view>
     <view class="row" wx:if="{{detail.close_note}}">
-      <text class="row-label">关闭说明</text><text class="row-value">{{detail.close_note}}</text>
+      <text class="row-label">处置说明</text>
+      <text class="row-value">{{detail.close_note}}</text>
     </view>
   </view>
 
-  <!-- 触发明细（可解释性） -->
-  <view class="card" wx:if="{{detailDetails.length > 0}}">
+  <view class="card" wx:if="{{detailRows.length > 0}}">
     <view class="card-title">触发明细</view>
-    <view class="row" wx:for="{{detailDetails}}" wx:key="index">
+    <view class="row" wx:for="{{detailRows}}" wx:key="index">
       <text class="row-label">{{item.label}}</text>
       <text class="row-value">{{item.value}}</text>
     </view>
   </view>
 
-  <!-- 规则快照（人类可读） -->
-  <view class="card" wx:if="{{ruleExplain}}">
-    <view class="card-title">规则说明</view>
+  <view class="card card-tint" wx:if="{{ruleExplain}}">
+    <view class="card-title">规则解释快照</view>
     <view class="rule-text">{{ruleExplain}}</view>
   </view>
 
-  <!-- 确认动作 -->
-  <button class="btn" wx:if="{{detail.status === 'open'}}" bindtap="onConfirm" loading="{{confirming}}">
-    确认收到
-  </button>
-  <view class="confirmed-tip" wx:else>该预警已处理（{{detail.statusText}}）</view>
+  <view class="btn-group" wx:if="{{detail.canConfirm || detail.canAppeal}}">
+    <button
+      class="btn"
+      wx:if="{{detail.canConfirm}}"
+      bindtap="onConfirm"
+      loading="{{confirming}}"
+      disabled="{{confirming}}"
+    >
+      确认收到
+    </button>
+    <button
+      class="btn btn-ghost"
+      wx:if="{{detail.canAppeal}}"
+      bindtap="goAppeal"
+    >
+      发起申诉
+    </button>
+  </view>
+  <view class="confirmed-tip" wx:else>该预警已完成处理（{{detail.statusText}}）</view>
 </view>
 
-<view class="empty" wx:else>{{loading ? '加载中...' : '预警不存在'}}</view>
+<view class="empty" wx:else>{{loading ? '加载中...' : '预警不存在或已删除'}}</view>

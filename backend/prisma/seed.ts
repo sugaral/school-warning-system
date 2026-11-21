@@ -19,7 +19,27 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('开始初始化数据...');
 
-  // 清理现有数据（可选，开发阶段使用）
+  const isProd = String(process.env.NODE_ENV || '').toLowerCase() === 'production';
+  const allowDestructive =
+    process.env.ALLOW_DESTRUCTIVE_SEED === '1' ||
+    String(process.env.ALLOW_DESTRUCTIVE_SEED || '').toLowerCase() === 'true';
+  const existingUsersCount = await prisma.users.count().catch(() => 0);
+
+  if (existingUsersCount > 0 && !allowDestructive) {
+    console.log(
+      `[seed] 检测到数据库已有 ${existingUsersCount} 个用户且未设置 ALLOW_DESTRUCTIVE_SEED=true，跳过破坏性清库与初始化。`,
+    );
+    return;
+  }
+
+  if (isProd && !allowDestructive) {
+    console.log(
+      '[seed] 生产环境禁止未显式授权(ALLOW_DESTRUCTIVE_SEED=true)执行破坏性 seed，已跳过。',
+    );
+    return;
+  }
+
+  // 清理现有数据（仅在确认允许破坏性重置且库为空或显式授权时执行）
   console.log('清理现有数据...');
   await prisma.audit_logs.deleteMany().catch(() => {});
   await prisma.notification_logs.deleteMany().catch(() => {});

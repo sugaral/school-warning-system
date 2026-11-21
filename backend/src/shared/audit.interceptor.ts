@@ -27,6 +27,7 @@ export class AuditInterceptor implements NestInterceptor {
   private readonly sensitiveFields = new Set([
     'password_hash', 'code_hash', 'salt', 'wx_openid',
     'password', 'token', 'secret', 'access_token',
+    'initial_password', 'mobile', 'email', 'emergency_contact_mobile',
   ]);
 
   private readonly entityTypeMap: Record<string, string> = {
@@ -276,10 +277,10 @@ export class AuditInterceptor implements NestInterceptor {
   }
 
   /**
-   * 敏感字段脱敏
+   * 敏感字段脱敏（递归，最多 4 层）
    */
-  private redactSensitiveFields(record: any): any {
-    if (!record || typeof record !== 'object') return record;
+  private redactSensitiveFields(record: any, depth = 0): any {
+    if (!record || typeof record !== 'object' || depth >= 4) return record;
     const result: any = Array.isArray(record) ? [] : {};
     for (const [key, value] of Object.entries(record)) {
       if (this.sensitiveFields.has(key)) {
@@ -288,6 +289,8 @@ export class AuditInterceptor implements NestInterceptor {
         result[key] = value.toString();
       } else if (value instanceof Date) {
         result[key] = value.toISOString();
+      } else if (value && typeof value === 'object') {
+        result[key] = this.redactSensitiveFields(value, depth + 1);
       } else {
         result[key] = value;
       }
@@ -311,6 +314,15 @@ export class AuditInterceptor implements NestInterceptor {
     }
 
     if (this.shouldSkip(path)) {
+      return next.handle();
+    }
+
+    const isReadMethod = ['GET', 'HEAD', 'OPTIONS'].includes(String(method || '').toUpperCase());
+    if (
+      isReadMethod &&
+      process.env.AUDIT_LOG_GET_ENABLED !== 'true' &&
+      !String(path || '').includes('/export')
+    ) {
       return next.handle();
     }
 

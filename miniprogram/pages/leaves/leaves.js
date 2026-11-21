@@ -1,51 +1,53 @@
-const { api, toastError } = require('../../utils/request');
+const { api } = require('../../utils/request');
+const {
+  LEAVE_STATUS_TEXT,
+  LEAVE_STATUS_CLASS,
+  formatDateTime,
+  normalizeFileIds,
+} = require('../../utils/format');
 
 Page({
   data: {
     items: [],
     loading: true,
-    hasMore: false,
-    page: 1,
-    pageSize: 20,
   },
 
-  onLoad() {
-    this.fetchList(true);
+  onShow() {
+    this.fetchList();
   },
 
   onPullDownRefresh() {
-    this.fetchList(true).then(() => wx.stopPullDownRefresh());
+    this.fetchList().then(() => wx.stopPullDownRefresh());
   },
 
-  onReachBottom() {
-    if (this.data.hasMore) this.loadMore();
-  },
-
-  async fetchList(reset) {
-    if (reset) this.setData({ page: 1 });
+  async fetchList() {
     this.setData({ loading: true });
     try {
-      const data = await api.leaveRequests({ page: this.data.page, pageSize: this.data.pageSize });
-      // 兼容后端两种返回形态：数组 或 { list, total }
-      const list = Array.isArray(data) ? data : (data && data.list) || [];
-      const total = (data && data.total) || list.length;
-      const merged = reset ? list : this.data.items.concat(list);
-      this.setData({
-        items: merged,
-        hasMore: merged.length < total,
-        loading: false,
+      const data = await api.leaveRequests();
+      const rawList = Array.isArray(data) ? data : (data && data.list) || [];
+      const items = rawList.map((item) => {
+        const proofIds = normalizeFileIds(item.proof_file_ids, item.proof_file_id);
+        return {
+          ...item,
+          leave_type: item.leave_type || '请假',
+          startText: formatDateTime(item.start_date || item.from_date),
+          endText: formatDateTime(item.end_date || item.to_date),
+          createdText: formatDateTime(item.created_at),
+          statusText: LEAVE_STATUS_TEXT[item.status] || item.status || '-',
+          statusClass: LEAVE_STATUS_CLASS[item.status] || 'tag-plain',
+          proofCount: proofIds.length,
+        };
       });
+      this.setData({ items, loading: false });
     } catch (err) {
       this.setData({ loading: false });
     }
   },
 
-  loadMore() {
-    this.setData({ page: this.data.page + 1 }, () => this.fetchList(false));
-  },
-
   goDetail(e) {
-    wx.navigateTo({ url: '/pages/leave-detail/leave-detail?id=' + e.currentTarget.dataset.id });
+    wx.navigateTo({
+      url: '/pages/leave-detail/leave-detail?id=' + e.currentTarget.dataset.id,
+    });
   },
 
   goCreate() {

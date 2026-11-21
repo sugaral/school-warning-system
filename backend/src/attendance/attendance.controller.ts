@@ -2349,6 +2349,76 @@ export class AttendanceController {
       };
     }
 
+    const currentUserId = this.getRequestUserId(req);
+    const dataScope =
+      req.dataScope ||
+      (currentUserId ? await this.resolveDataScopeByUserId(currentUserId) : { type: 'none' });
+
+    if (!dataScope || dataScope.type === 'none') {
+      return {
+        code: 0,
+        message: 'ok',
+        data: [],
+        trace_id: req.trace_id,
+      };
+    }
+
+    let allowedClassIdSet = new Set<string>();
+    if (dataScope.type === 'college') {
+      const collegeIds = Array.isArray(dataScope.collegeIds) ? dataScope.collegeIds : [];
+      if (collegeIds.length === 0) {
+        return { code: 0, message: 'ok', data: [], trace_id: req.trace_id };
+      }
+      const collegeFilter = { classes: { org_id: { in: collegeIds } } };
+      where = where ? { AND: [where, collegeFilter] } : collegeFilter;
+    } else if (dataScope.type === 'class' || dataScope.type === 'self') {
+      const scopedClassIds = ((await this.resolveScopedClassIds(dataScope)) || []) as bigint[];
+      const mergedClassIds = new Map<string, bigint>(
+        scopedClassIds.map((item) => [item.toString(), item]),
+      );
+
+      if (currentUserId && dataScope.type === 'class') {
+        const [courseClasses, schedules, teacherBindings] = await Promise.all([
+          this.prisma.course_classes.findMany({
+            where: { teacher_user_id: currentUserId },
+            select: { class_id: true },
+          }),
+          this.prisma.schedules.findMany({
+            where: { teacher_user_id: currentUserId, status: 'active' },
+            select: { class_id: true },
+          }),
+          this.prisma.teacher_course_bindings.findMany({
+            where: { teacher_id: currentUserId },
+            select: { class_id: true },
+          }),
+        ]);
+        for (const item of [...courseClasses, ...schedules, ...teacherBindings]) {
+          if (item.class_id) {
+            mergedClassIds.set(item.class_id.toString(), item.class_id);
+          }
+        }
+      }
+
+      const allowedClassIds = Array.from(mergedClassIds.values());
+      allowedClassIdSet = new Set(allowedClassIds.map((item) => item.toString()));
+
+      const scopeConditions: any[] = [];
+      if (allowedClassIds.length > 0) {
+        scopeConditions.push({ class_id: { in: allowedClassIds } });
+      }
+      if (currentUserId && dataScope.type === 'class') {
+        scopeConditions.push({ teacher_user_id: currentUserId });
+      }
+
+      if (scopeConditions.length === 0) {
+        return { code: 0, message: 'ok', data: [], trace_id: req.trace_id };
+      }
+
+      const scopeFilter =
+        scopeConditions.length === 1 ? scopeConditions[0] : { OR: scopeConditions };
+      where = where ? { AND: [where, scopeFilter] } : scopeFilter;
+    }
+
     const sessions = await this.prisma.class_sessions.findMany({
       where,
       orderBy: { session_start: 'desc' },
@@ -2387,6 +2457,12 @@ export class AttendanceController {
           refreshSeconds,
           now,
         });
+        const canExposeScanToken =
+          dataScope.type !== 'self' &&
+          (dataScope.type === 'all' ||
+            dataScope.type === 'college' ||
+            (currentUserId !== null && s.teacher_user_id === currentUserId) ||
+            allowedClassIdSet.has(s.class_id.toString()));
 
         return {
           id: s.id.toString(),
@@ -2411,7 +2487,7 @@ export class AttendanceController {
           ),
           status: s.status,
           created_at: s.created_at,
-          scan_token: qrState.currentToken,
+          scan_token: canExposeScanToken ? qrState.currentToken : '',
           stats: {
             total: totalStudents,
             checkedIn: checkedInCount,
@@ -2873,6 +2949,8 @@ export class AttendanceController {
    *  - 未传的字段保持原值（先查原行再决定 update 内容）。
    */
   private async saveDailyRecords(records: DailyRecordDto[], req: any) {
+    const currentUserId = this.getRequestUserId(req);
+    const classAccessCache = new Map<string, string | null>();
     const results: Array<{
       student_id: string;
       course_id: string;
@@ -2896,6 +2974,11 @@ export class AttendanceController {
       if (!courseIdRaw) {
         failed++;
         results.push({ student_id: studentIdRaw, course_id: '', record_date: dateRaw, action: 'created', error: 'course_id 必填（唯一键含 NULL 会失效）' });
+        continue;
+      }
+      if (!/^\d+$/.test(studentIdRaw) || !/^\d+$/.test(courseIdRaw)) {
+        failed++;
+        results.push({ student_id: studentIdRaw, course_id: courseIdRaw, record_date: dateRaw, action: 'created', error: 'student_id 或 course_id 格式无效' });
         continue;
       }
       const recordDate = new Date(`${dateRaw}T00:00:00Z`);
@@ -2936,6 +3019,30 @@ export class AttendanceController {
           continue;
         }
 
+        if (!currentUserId) {
+          failed++;
+          results.push({ student_id: studentIdRaw, course_id: courseIdRaw, record_date: dateRaw, action: 'created', error: '未登录或无权操作该学生日记录' });
+          continue;
+        }
+
+        const classKey = `${student.class_id.toString()}:${orgId.toString()}`;
+        let accessError = classAccessCache.get(classKey);
+        if (accessError === undefined) {
+          const denial = await this.assertCanManageClass(
+            student.class_id,
+            orgId,
+            currentUserId,
+            req,
+          );
+          accessError = denial ? denial.message : null;
+          classAccessCache.set(classKey, accessError);
+        }
+        if (accessError) {
+          failed++;
+          results.push({ student_id: studentIdRaw, course_id: courseIdRaw, record_date: dateRaw, action: 'created', error: accessError });
+          continue;
+        }
+
         const course = await this.prisma.courses.findUnique({
           where: { id: courseId },
           select: { id: true },
@@ -2956,6 +3063,28 @@ export class AttendanceController {
           },
           select: { id: true, homework_status: true },
         });
+
+        let derivedAttendanceStatus = 'unknown';
+        if (!existing) {
+          const nextDay = new Date(recordDate.getTime() + 24 * 60 * 60 * 1000);
+          const matchingAttendance = await this.prisma.attendance_records.findFirst({
+            where: {
+              student_id: studentId,
+              sessions: {
+                course_id: courseId,
+                session_start: {
+                  gte: recordDate,
+                  lt: nextDay,
+                },
+              },
+            },
+            orderBy: { checkin_time: 'desc' },
+            select: { attendance_status: true },
+          });
+          if (matchingAttendance?.attendance_status) {
+            derivedAttendanceStatus = matchingAttendance.attendance_status;
+          }
+        }
 
         const homeworkStatus =
           item.homework_status ?? existing?.homework_status ?? 'unknown';
@@ -2983,8 +3112,7 @@ export class AttendanceController {
             class_id: student.class_id,
             org_id: orgId,
             course_id: courseId,
-            // 新建行时考勤状态未知，标记为 on_time 之外的占位；由考勤流程后续覆盖
-            attendance_status: 'on_time',
+            attendance_status: derivedAttendanceStatus,
             homework_status: homeworkStatus,
             class_behavior: behavior,
             remarks,
@@ -3047,19 +3175,24 @@ export class AttendanceController {
       const now = new Date();
       const studentIdRaw = String(req.user?.student_id || '').trim();
       if (!studentIdRaw) {
-        return { code: 4010, message: '操作失败', data: null, trace_id: req.trace_id };
+        return { code: 4010, message: '请先绑定学生身份后再签到', data: null, trace_id: req.trace_id };
+      }
+
+      const rawSessionId = String(dto.session_id ?? '').trim();
+      if (!/^\d+$/.test(rawSessionId)) {
+        return { code: 4001, message: '签到课次 ID 格式无效', data: null, trace_id: req.trace_id };
       }
 
       // 阶段1: 并行获取 session 和二维码配置
       const [session, refreshSeconds] = await Promise.all([
         this.prisma.class_sessions.findUnique({
-          where: { id: BigInt(dto.session_id as any) },
+          where: { id: BigInt(rawSessionId) },
         }),
         this.getQrRefreshSeconds(),
       ]);
 
       if (!session) {
-        return { code: 4040, message: '操作失败', data: null, trace_id: req.trace_id };
+        return { code: 4040, message: '签到课次不存在', data: null, trace_id: req.trace_id };
       }
 
       // 验证扫码令牌
@@ -3075,18 +3208,18 @@ export class AttendanceController {
           })
         : false;
       if (!providedScanToken || !isValidScanToken) {
-        return { code: 4008, message: '操作失败', data: null, trace_id: req.trace_id };
+        return { code: 4008, message: '签到口令无效或二维码已过期，请刷新后重试', data: null, trace_id: req.trace_id };
       }
 
       const sessionDeadline = this.getSessionDeadline(session);
       const lateThreshold = this.getLateThreshold(session);
 
       if (now.getTime() > sessionDeadline.getTime()) {
-        return { code: 4007, message: '操作失败', data: null, trace_id: req.trace_id };
+        return { code: 4007, message: '已超过本节课签到截止时间', data: null, trace_id: req.trace_id };
       }
 
       if (session.status !== 'active') {
-        return { code: 4004, message: '操作失败', data: null, trace_id: req.trace_id };
+        return { code: 4004, message: '该课次签到已结束', data: null, trace_id: req.trace_id };
       }
 
       const attendanceStatus =
@@ -3129,9 +3262,9 @@ export class AttendanceController {
         return { code: 4006, message: '操作失败', data: null, trace_id: req.trace_id };
       }
 
-      // 阶段3: 并行写入 attendance + daily，快照异步刷新
+      // 阶段3: 事务内写入 attendance + daily，快照异步刷新
       const recordDate = computeRecordDate(session.session_start);
-      const [record] = await Promise.all([
+      const [record] = await this.prisma.$transaction([
         this.prisma.attendance_records.upsert({
           where: {
             session_id_student_id: {
@@ -3189,6 +3322,7 @@ export class AttendanceController {
           student_no: student.student_no || '',
           attendance_status: attendanceStatus,
           is_late: isLate,
+          checkin_time: record.checkin_time,
         },
         trace_id: req.trace_id,
       };
@@ -3249,14 +3383,57 @@ export class AttendanceController {
     };
   }
 
+  private async assertCanReadSession(
+    session: { class_id: bigint; teacher_user_id: bigint; classes?: { org_id: bigint } | null },
+    req: any,
+    options?: { allowStudentSelf?: boolean },
+  ) {
+    const currentUserId = this.getRequestUserId(req);
+    if (!currentUserId) {
+      return { code: 403, message: '无权访问该课次', data: null, trace_id: req.trace_id };
+    }
+    if (session.teacher_user_id === currentUserId) {
+      return null;
+    }
+
+    const dataScope = req.dataScope || (await this.resolveDataScopeByUserId(currentUserId));
+    if (dataScope?.type === 'self' && options?.allowStudentSelf === false) {
+      return { code: 403, message: '无权读取签到二维码状态', data: null, trace_id: req.trace_id };
+    }
+
+    const classOrgId =
+      session.classes?.org_id ??
+      (
+        await this.prisma.classes.findUnique({
+          where: { id: session.class_id },
+          select: { org_id: true },
+        })
+      )?.org_id;
+
+    if (classOrgId === undefined || classOrgId === null) {
+      return { code: 403, message: '无法校验课次所属学院', data: null, trace_id: req.trace_id };
+    }
+
+    return this.assertCanManageClass(session.class_id, classOrgId, currentUserId, req);
+  }
+
   @Get('sessions/:id/attendance')
   @Permissions('attendance:read')
+  @DataScope({ entity: 'session', field: 'id' })
   async getSessionAttendance(@Param('id') id: string, @Req() req: any) {
+    if (!/^\d+$/.test(String(id || '').trim())) {
+      return { code: 400, message: '课次 ID 无效', data: null, trace_id: req.trace_id };
+    }
     const session = await this.prisma.class_sessions.findUnique({
       where: { id: BigInt(id) },
+      include: { classes: { select: { org_id: true } } },
     });
     if (!session) {
       return { code: 404, message: '操作失败', data: null, trace_id: req.trace_id };
+    }
+    const denial = await this.assertCanReadSession(session, req, { allowStudentSelf: true });
+    if (denial) {
+      return denial;
     }
 
     // 获取班级所有学生
@@ -3403,12 +3580,21 @@ export class AttendanceController {
 
   @Get('sessions/:id/qr-state')
   @Permissions('attendance:read')
+  @DataScope({ entity: 'session', field: 'id' })
   async getSessionQrState(@Param('id') id: string, @Req() req: any) {
+    if (!/^\d+$/.test(String(id || '').trim())) {
+      return { code: 400, message: '课次 ID 无效', data: null, trace_id: req.trace_id };
+    }
     const session = await this.prisma.class_sessions.findUnique({
       where: { id: BigInt(id) },
+      include: { classes: { select: { org_id: true } } },
     });
     if (!session) {
       return { code: 404, message: '操作失败', data: null, trace_id: req.trace_id };
+    }
+    const denial = await this.assertCanReadSession(session, req, { allowStudentSelf: false });
+    if (denial) {
+      return denial;
     }
 
     const qrState = await this.buildQrStateForSession(session);
@@ -3501,12 +3687,21 @@ export class AttendanceController {
 
   @Get('sessions/:id/records')
   @Permissions('attendance:read')
+  @DataScope({ entity: 'session', field: 'id' })
   async getSessionRecords(@Param('id') id: string, @Req() req: any) {
+    if (!/^\d+$/.test(String(id || '').trim())) {
+      return { code: 400, message: '课次 ID 无效', data: null, trace_id: req.trace_id };
+    }
     const session = await this.prisma.class_sessions.findUnique({
       where: { id: BigInt(id) },
+      include: { classes: { select: { org_id: true } } },
     });
     if (!session) {
       return { code: 404, message: '操作失败', data: null, trace_id: req.trace_id };
+    }
+    const denial = await this.assertCanReadSession(session, req, { allowStudentSelf: true });
+    if (denial) {
+      return denial;
     }
 
     // 获取该课次的签到记录，包含学生信息，仅显示已签到名单

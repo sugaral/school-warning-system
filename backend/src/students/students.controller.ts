@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Optional,
   Param,
   Post,
   Put,
@@ -36,6 +37,7 @@ import {
   parseOptionalFileIds,
 } from '../shared/file.util';
 import { PrismaService } from '../shared/prisma.service';
+import { RedisService } from '../shared/redis.service';
 import { SummaryService } from '../warning/summary.service';
 import { Idempotent } from '../shared/idempotency.decorator';
 
@@ -81,8 +83,48 @@ export class StudentsController {
     private readonly jwtService: JwtService,
     private readonly logger: PinoLogger,
     private readonly summaryService: SummaryService,
+    @Optional() private readonly redis?: RedisService,
   ) {
     this.logger.setContext('StudentsController');
+  }
+
+  private async checkStudentLoginRateLimit(ip: string, studentNo: string) {
+    if (!this.redis) {
+      return false;
+    }
+    try {
+      const key = `student:login:fail:${ip || 'unknown'}:${studentNo}`;
+      const count = Number((await this.redis.get(key)) || 0);
+      return count >= 10;
+    } catch {
+      return false;
+    }
+  }
+
+  private async recordStudentLoginFailure(ip: string, studentNo: string) {
+    if (!this.redis) {
+      return;
+    }
+    try {
+      const key = `student:login:fail:${ip || 'unknown'}:${studentNo}`;
+      const next = await this.redis.incr(key);
+      if (next === 1) {
+        await this.redis.expire(key, 300);
+      }
+    } catch {
+      // ignore redis errors
+    }
+  }
+
+  private async clearStudentLoginFailure(ip: string, studentNo: string) {
+    if (!this.redis) {
+      return;
+    }
+    try {
+      await this.redis.del(`student:login:fail:${ip || 'unknown'}:${studentNo}`);
+    } catch {
+      // ignore redis errors
+    }
   }
 
   private getAuthenticatedUserId(req: any) {
@@ -713,12 +755,33 @@ export class StudentsController {
       };
     }
 
-    const student = await this.findStudentProfileForLogin(String(dto.student_no).trim());
+    const normalizedStudentNo = String(dto.student_no).trim();
+    const clientIp = String(req.ip || req.headers?.['x-forwarded-for'] || 'unknown').split(',')[0].trim();
+    if (await this.checkStudentLoginRateLimit(clientIp, normalizedStudentNo)) {
+      return {
+        code: 429,
+        message: '登录失败次数过多，请 5 分钟后再试',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    if (!dto.password) {
+      return {
+        code: 400,
+        message: '请输入密码',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const student = await this.findStudentProfileForLogin(normalizedStudentNo);
 
     if (!student) {
+      await this.recordStudentLoginFailure(clientIp, normalizedStudentNo);
       return {
-        code: 404,
-        message: '学生不存在或账号未绑定班级',
+        code: 401,
+        message: '学号、姓名或密码错误',
         data: null,
         trace_id: req.trace_id,
       };
@@ -734,18 +797,10 @@ export class StudentsController {
     }
 
     if ((student.users?.name || '').trim() !== String(dto.name || '').trim()) {
+      await this.recordStudentLoginFailure(clientIp, normalizedStudentNo);
       return {
         code: 401,
-        message: '姓名不匹配',
-        data: null,
-        trace_id: req.trace_id,
-      };
-    }
-
-    if (!dto.password) {
-      return {
-        code: 400,
-        message: '请输入密码',
+        message: '学号、姓名或密码错误',
         data: null,
         trace_id: req.trace_id,
       };
@@ -758,13 +813,16 @@ export class StudentsController {
       );
 
       if (!passwordOk) {
+        await this.recordStudentLoginFailure(clientIp, normalizedStudentNo);
         return {
           code: 401,
-          message: '密码错误',
+          message: '学号、姓名或密码错误',
           data: null,
           trace_id: req.trace_id,
         };
       }
+
+      await this.clearStudentLoginFailure(clientIp, normalizedStudentNo);
 
       const postLoginUpdates: any[] = [];
       // 登录轨迹：users.last_login_at 此前**从未被写入**（仓库级 0 引用），
@@ -798,13 +856,16 @@ export class StudentsController {
       }
     } else if (student.initial_password) {
       if (dto.password !== student.initial_password) {
+        await this.recordStudentLoginFailure(clientIp, normalizedStudentNo);
         return {
           code: 401,
-          message: '密码错误',
+          message: '学号、姓名或密码错误',
           data: null,
           trace_id: req.trace_id,
         };
       }
+
+      await this.clearStudentLoginFailure(clientIp, normalizedStudentNo);
 
       await this.prisma.$transaction([
         this.prisma.users.update({
@@ -1162,21 +1223,97 @@ export class StudentsController {
       };
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const todayUtc = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const dayStartLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const dayEndLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-    const record = await this.prisma.daily_records.findFirst({
-      where: {
-        student_id: BigInt(studentId),
-        record_date: today,
-      },
+    const student = await this.prisma.student_profiles.findUnique({
+      where: { id: BigInt(studentId) },
+      select: { class_id: true },
     });
+
+    const [records, todaySchedulesCount] = await Promise.all([
+      this.prisma.daily_records.findMany({
+        where: {
+          student_id: BigInt(studentId),
+          record_date: todayUtc,
+        },
+        orderBy: [{ updated_at: 'desc' }, { id: 'desc' }],
+      }),
+      student?.class_id
+        ? this.prisma.schedules.count({
+            where: {
+              class_id: student.class_id,
+              status: 'active',
+              session_start: {
+                gte: dayStartLocal,
+                lte: dayEndLocal,
+              },
+            },
+          })
+        : Promise.resolve(0),
+    ]);
+
+    const courseIds = Array.from(
+      new Set(records.map((item) => item.course_id).filter((id): id is bigint => Boolean(id))),
+    );
+    const courses = courseIds.length
+      ? await this.prisma.courses.findMany({
+          where: { id: { in: courseIds } },
+          select: { id: true, course_name: true },
+        })
+      : [];
+    const courseNameMap = new Map(courses.map((c) => [c.id.toString(), c.course_name]));
+
+    const serializedRecords = records.map((item) => ({
+      id: item.id.toString(),
+      course_id: item.course_id?.toString() || '',
+      course_name: item.course_id ? courseNameMap.get(item.course_id.toString()) || '' : '',
+      record_date: dateKey,
+      attendance_status: item.attendance_status || 'unknown',
+      homework_status: item.homework_status || 'unknown',
+      class_behavior: item.class_behavior || 'normal',
+      remarks: item.remarks || '',
+    }));
+
+    const pickAttendance = () => {
+      if (records.some((r) => r.attendance_status === 'absent')) return 'absent';
+      if (records.some((r) => r.attendance_status === 'late')) return 'late';
+      if (records.some((r) => r.attendance_status === 'early_leave')) return 'early_leave';
+      if (records.some((r) => r.attendance_status === 'leave')) return 'leave';
+      if (records.some((r) => r.attendance_status === 'on_time')) return 'on_time';
+      return records[0]?.attendance_status || 'unknown';
+    };
+
+    const pickHomework = () => {
+      if (records.some((r) => r.homework_status === 'not_submit')) return 'not_submit';
+      if (records.some((r) => r.homework_status === 'late_submit')) return 'late_submit';
+      if (records.some((r) => r.homework_status === 'submitted')) return 'submitted';
+      return records[0]?.homework_status || 'unknown';
+    };
+
+    const attendanceStatus = pickAttendance();
+    const homeworkStatus = pickHomework();
+    const classBehavior = records.some((r) => r.class_behavior === 'disruptive')
+      ? 'disruptive'
+      : records[0]?.class_behavior || 'normal';
+    const distinctCourses = new Set(
+      records.map((r) => r.course_id?.toString()).filter(Boolean),
+    ).size;
 
     return {
       code: 0,
       message: 'ok',
       data: {
-        attendance: record?.attendance_status || 'unknown',
+        record_date: dateKey,
+        attendance: attendanceStatus,
+        attendance_status: attendanceStatus,
+        homework_status: homeworkStatus,
+        class_behavior: classBehavior,
+        course_count: Math.max(todaySchedulesCount, distinctCourses),
+        records: serializedRecords,
       },
       trace_id: req.trace_id,
     };
@@ -1194,17 +1331,17 @@ export class StudentsController {
       };
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    const now = new Date();
+    const todayUtc = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const sevenDaysAgo = new Date(todayUtc);
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 6);
 
     const records = await this.prisma.daily_records.findMany({
       where: {
         student_id: BigInt(studentId),
         record_date: {
           gte: sevenDaysAgo,
-          lte: today,
+          lte: todayUtc,
         },
       },
       orderBy: { record_date: 'asc' },
@@ -1212,18 +1349,38 @@ export class StudentsController {
 
     const trend = [];
     for (let i = 6; i >= 0; i -= 1) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
+      const date = new Date(todayUtc);
+      date.setUTCDate(date.getUTCDate() - i);
+      const isoDay = date.toISOString().slice(0, 10);
 
-      const current = records.find(
-        (item) =>
-          item.record_date.toISOString().slice(0, 10) ===
-          date.toISOString().slice(0, 10),
+      const dayRecords = records.filter(
+        (item) => item.record_date.toISOString().slice(0, 10) === isoDay,
       );
 
+      let attendance = 'unknown';
+      if (dayRecords.some((r) => r.attendance_status === 'absent')) attendance = 'absent';
+      else if (dayRecords.some((r) => r.attendance_status === 'late')) attendance = 'late';
+      else if (dayRecords.some((r) => r.attendance_status === 'early_leave')) attendance = 'early_leave';
+      else if (dayRecords.some((r) => r.attendance_status === 'leave')) attendance = 'leave';
+      else if (dayRecords.some((r) => r.attendance_status === 'on_time')) attendance = 'on_time';
+      else if (dayRecords[0]?.attendance_status) attendance = dayRecords[0].attendance_status;
+
+      let homeworkStatus = 'unknown';
+      if (dayRecords.some((r) => r.homework_status === 'not_submit')) homeworkStatus = 'not_submit';
+      else if (dayRecords.some((r) => r.homework_status === 'late_submit')) homeworkStatus = 'late_submit';
+      else if (dayRecords.some((r) => r.homework_status === 'submitted')) homeworkStatus = 'submitted';
+
+      const classBehavior = dayRecords.some((r) => r.class_behavior === 'disruptive')
+        ? 'disruptive'
+        : dayRecords[0]?.class_behavior || 'normal';
+
       trend.push({
-        date: `${date.getMonth() + 1}/${date.getDate()}`,
-        attendance: current?.attendance_status || 'unknown',
+        date: `${date.getUTCMonth() + 1}/${date.getUTCDate()}`,
+        full_date: isoDay,
+        attendance,
+        homework_status: homeworkStatus,
+        class_behavior: classBehavior,
+        record_count: dayRecords.length,
       });
     }
 
@@ -1231,6 +1388,88 @@ export class StudentsController {
       code: 0,
       message: 'ok',
       data: trend,
+      trace_id: req.trace_id,
+    };
+  }
+
+  @Get('grades')
+  async getStudentGrades(@Query('term_code') termCode: string, @Req() req: any) {
+    const studentId = await this.getAuthenticatedStudentProfileId(req);
+    if (!studentId) {
+      return {
+        code: 401,
+        message: '未登录',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
+    const where: any = {
+      student_id: BigInt(studentId),
+    };
+    const normalizedTerm = String(termCode || '').trim().toUpperCase();
+    if (normalizedTerm) {
+      where.term_code = normalizedTerm;
+    }
+
+    const gradeRows = await this.prisma.grades.findMany({
+      where,
+      orderBy: [{ term_code: 'desc' }, { id: 'desc' }],
+    });
+
+    const courseIds = Array.from(new Set(gradeRows.map((g) => g.course_id)));
+    const courses = courseIds.length
+      ? await this.prisma.courses.findMany({
+          where: { id: { in: courseIds } },
+          select: {
+            id: true,
+            course_code: true,
+            course_name: true,
+            credit: true,
+          },
+        })
+      : [];
+    const courseMap = new Map(courses.map((c) => [c.id.toString(), c]));
+
+    const list = gradeRows.map((row) => {
+      const course = courseMap.get(row.course_id.toString());
+      return {
+        id: row.id.toString(),
+        course_id: row.course_id.toString(),
+        course_code: course?.course_code || '',
+        course_name: course?.course_name || '未命名课程',
+        credit: course?.credit ? course.credit.toString() : '0.0',
+        term_code: row.term_code || '',
+        score: row.score !== null && row.score !== undefined ? row.score.toString() : '',
+        grade_point:
+          row.grade_point !== null && row.grade_point !== undefined
+            ? row.grade_point.toString()
+            : '',
+        pass_status: row.pass_status || 'unknown',
+        source: row.source || 'import',
+        updated_at: row.updated_at,
+      };
+    });
+
+    const passedCount = list.filter((item) => item.pass_status === 'pass').length;
+    const failedCount = list.filter((item) => item.pass_status === 'fail').length;
+    const earnedCredits = list
+      .filter((item) => item.pass_status === 'pass')
+      .reduce((sum, item) => sum + (Number(item.credit) || 0), 0);
+
+    return {
+      code: 0,
+      message: 'ok',
+      data: {
+        list,
+        total: list.length,
+        stats: {
+          total: list.length,
+          passed: passedCount,
+          failed: failedCount,
+          earned_credits: Number(earnedCredits.toFixed(1)),
+        },
+      },
       trace_id: req.trace_id,
     };
   }
@@ -1329,6 +1568,7 @@ export class StudentsController {
     @Query('course_id') courseId: string,
     @Query('level') level: string,
     @Query('status') status: string,
+    @Query('id') id: string,
     @Req() req: any,
   ) {
     const studentId = await this.getAuthenticatedStudentProfileId(req);
@@ -1345,13 +1585,23 @@ export class StudentsController {
       student_id: BigInt(studentId),
     };
 
+    const normalizedId = String(id || '').trim();
+    if (normalizedId && /^\d+$/.test(normalizedId)) {
+      whereCondition.id = BigInt(normalizedId);
+    }
+
     if (level) {
       whereCondition.level = String(level).trim();
     }
 
     const normalizedStatus = String(status || '').trim();
 
-    if (normalizedStatus && normalizedStatus !== 'open') {
+    if (
+      normalizedStatus &&
+      normalizedStatus !== 'open' &&
+      normalizedStatus !== 'student_acknowledged' &&
+      normalizedStatus !== 'acknowledged'
+    ) {
       whereCondition.status = normalizedStatus;
     } else {
       whereCondition.status = {
@@ -1359,7 +1609,7 @@ export class StudentsController {
       };
     }
 
-    const [warnings, student, totalCount] =
+    const [warnings, student] =
       await Promise.all([
         this.prisma.warnings.findMany({
           where: whereCondition,
@@ -1376,17 +1626,13 @@ export class StudentsController {
             },
           },
         }),
-        this.prisma.warnings.count({
-          where: {
-            student_id: BigInt(studentId),
-          },
-        }),
       ]);
 
     const items = warnings.map((warning: any) => {
       const detail = (warning.trigger_detail_json as Record<string, any>) || {};
       const createdAt = this.formatDateTime(warning.created_at);
       const periodStart = this.formatDateTime(warning.period_start);
+      const periodEnd = this.formatDateTime(warning.period_end);
       const studentSelfAcknowledged = this.isStudentSelfAcknowledged(
         warning,
         student?.user_id || null,
@@ -1404,6 +1650,7 @@ export class StudentsController {
 
       return {
         id: warning.id.toString(),
+        metric: warning.metric || 'absent',
         level: warning.level,
         level_text: this.getLevelText(warning.level),
         warning_level: warning.level,
@@ -1412,6 +1659,8 @@ export class StudentsController {
         window_text: this.getWindowText(warning.window),
         trigger_summary: warning.trigger_summary,
         warning_reason: warning.trigger_summary,
+        trigger_detail_json: warning.trigger_detail_json || null,
+        rule_snapshot_json: warning.rule_snapshot_json || null,
         course_name: detail.course_name || '',
         violation_type: detail.violation_type || '',
         violation_time: detail.violation_time || periodStart,
@@ -1421,13 +1670,17 @@ export class StudentsController {
         legacy_status: legacyStatus,
         org_name: student?.classes?.orgs?.name || '',
         class_name: student?.classes?.class_name || '',
-        course_id: String(detail.course_id || '').trim(),
+        course_id: String(warning.course_id || detail.course_id || '').trim(),
         created_at: createdAt,
         created_at_raw: warning.created_at,
         period_start: periodStart,
+        period_end: periodEnd,
         period_start_raw: warning.period_start,
+        period_end_raw: warning.period_end,
         updated_at_raw: warning.updated_at,
+        acknowledged_at: warning.acknowledged_at ? this.formatDateTime(warning.acknowledged_at) : '',
         acknowledged_at_raw: warning.acknowledged_at,
+        close_note: warning.close_note || '',
         displayText: `${this.getLevelText(warning.level)} - ${
           detail.course_name || '未命名课程'
         } - ${periodStart}`,
@@ -1440,10 +1693,17 @@ export class StudentsController {
         : items;
 
     const filteredItems = normalizedStatus
-      ? courseFilteredItems.filter((item) => item.status === normalizedStatus)
+      ? courseFilteredItems.filter((item) => {
+          if (normalizedStatus === 'acknowledged') {
+            return item.status === 'acknowledged' || item.status === 'student_acknowledged';
+          }
+          return item.status === normalizedStatus;
+        })
       : courseFilteredItems;
     const openCount = courseFilteredItems.filter((item) => item.status === 'open').length;
-    const acknowledgedCount = courseFilteredItems.filter((item) => item.status === 'acknowledged').length;
+    const acknowledgedCount = courseFilteredItems.filter(
+      (item) => item.status === 'acknowledged' || item.status === 'student_acknowledged',
+    ).length;
     const closedCount = courseFilteredItems.filter((item) => item.status === 'closed').length;
 
     return {
@@ -1453,14 +1713,8 @@ export class StudentsController {
         items: filteredItems,
         total_count: courseFilteredItems.length,
         open_count: openCount,
-        list: filteredItems.map((item) => ({
-          id: item.id,
-          warning_level: item.warning_level,
-          course_name: item.course_name,
-          warning_reason: item.warning_reason,
-          status: item.legacy_status,
-          created_at: item.created_at,
-        })),
+        list: filteredItems,
+        total: filteredItems.length,
         stats: {
           total: courseFilteredItems.length,
           pending: openCount,
@@ -1980,6 +2234,7 @@ export class StudentsController {
         emergency_contact_name: student.emergency_contact_name,
         emergency_contact_mobile: student.emergency_contact_mobile,
         student_position: student.student_position,
+        photo_file_id: student.photo_file_id ? student.photo_file_id.toString() : '',
         head_teacher_user_id: currentHeadTeacher?.id?.toString() || null,
         head_teacher_name: currentHeadTeacher?.name || '',
         is_bound: Boolean(student.class_id && resolvedOrgId),
@@ -2521,7 +2776,6 @@ export class StudentsController {
     };
   }
 
-  @Public()
   @Get('available-classes')
   async getAvailableClasses(@Req() req: any) {
     const classes = await this.prisma.classes.findMany({
@@ -2832,14 +3086,53 @@ export class StudentsController {
     }
 
     const notifyPrefs = (student.notify_prefs_json as Record<string, any>) || {};
+    const channels = Array.isArray(notifyPrefs.notification_channels)
+      ? notifyPrefs.notification_channels
+      : [
+          ...(notifyPrefs.wechat !== false ? ['wechat'] : []),
+          ...(notifyPrefs.sms !== false ? ['sms'] : []),
+          ...(notifyPrefs.email === true ? ['email'] : []),
+        ];
+    const quietHours =
+      notifyPrefs.quiet_hours && typeof notifyPrefs.quiet_hours === 'object'
+        ? {
+            start: String(notifyPrefs.quiet_hours.start || '22:00'),
+            end: String(notifyPrefs.quiet_hours.end || '08:00'),
+          }
+        : { start: '22:00', end: '08:00' };
+
+    const wechatEnabled =
+      typeof notifyPrefs.wechat === 'boolean'
+        ? notifyPrefs.wechat
+        : channels.includes('wechat');
+    const smsEnabled =
+      typeof notifyPrefs.sms === 'boolean'
+        ? notifyPrefs.sms
+        : channels.includes('sms');
+    const emailEnabled =
+      typeof notifyPrefs.email === 'boolean'
+        ? notifyPrefs.email
+        : channels.includes('email');
 
     return {
       code: 0,
       message: 'ok',
       data: {
-        notification_channels:
-          notifyPrefs.notification_channels || ['sms', 'email'],
+        notification_channels: channels,
         warning_reminder: notifyPrefs.warning_reminder !== false,
+        wechat: wechatEnabled,
+        sms: smsEnabled,
+        email: emailEnabled,
+        quiet_hours: quietHours,
+        notify_prefs_json: {
+          ...notifyPrefs,
+          wechat: wechatEnabled,
+          sms: smsEnabled,
+          email: emailEnabled,
+          quiet_hours: quietHours,
+          warning_reminder: notifyPrefs.warning_reminder !== false,
+          notification_channels: channels,
+        },
       },
       trace_id: req.trace_id,
     };
@@ -2871,12 +3164,59 @@ export class StudentsController {
     }
 
     const currentPrefs = (student.notify_prefs_json as Record<string, any>) || {};
+    const currentChannels: string[] = Array.isArray(currentPrefs.notification_channels)
+      ? currentPrefs.notification_channels
+      : ['wechat', 'sms', 'email'];
+
+    const wechat =
+      dto.wechat !== undefined
+        ? Boolean(dto.wechat)
+        : Array.isArray(dto.notification_channels)
+          ? dto.notification_channels.includes('wechat')
+          : typeof currentPrefs.wechat === 'boolean'
+            ? currentPrefs.wechat
+            : currentChannels.includes('wechat');
+    const sms =
+      dto.sms !== undefined
+        ? Boolean(dto.sms)
+        : Array.isArray(dto.notification_channels)
+          ? dto.notification_channels.includes('sms')
+          : typeof currentPrefs.sms === 'boolean'
+            ? currentPrefs.sms
+            : currentChannels.includes('sms');
+    const email =
+      dto.email !== undefined
+        ? Boolean(dto.email)
+        : Array.isArray(dto.notification_channels)
+          ? dto.notification_channels.includes('email')
+          : typeof currentPrefs.email === 'boolean'
+            ? currentPrefs.email
+            : currentChannels.includes('email');
+
+    const channels = Array.isArray(dto.notification_channels)
+      ? dto.notification_channels
+      : [
+          ...(wechat ? ['wechat'] : []),
+          ...(sms ? ['sms'] : []),
+          ...(email ? ['email'] : []),
+        ];
+
+    const rawQuietHours = dto.quiet_hours;
+    const quietHours =
+      rawQuietHours && typeof rawQuietHours === 'object'
+        ? {
+            start: String(rawQuietHours.start || currentPrefs.quiet_hours?.start || '22:00').trim(),
+            end: String(rawQuietHours.end || currentPrefs.quiet_hours?.end || '08:00').trim(),
+          }
+        : currentPrefs.quiet_hours || { start: '22:00', end: '08:00' };
+
     const newPrefs = {
       ...currentPrefs,
-      notification_channels:
-        dto.notification_channels ||
-        currentPrefs.notification_channels ||
-        ['sms', 'email'],
+      wechat,
+      sms,
+      email,
+      quiet_hours: quietHours,
+      notification_channels: channels,
       warning_reminder:
         dto.warning_reminder !== undefined
           ? Boolean(dto.warning_reminder)
@@ -2893,7 +3233,7 @@ export class StudentsController {
     return {
       code: 0,
       message: '保存成功',
-      data: null,
+      data: newPrefs,
       trace_id: req.trace_id,
     };
   }
@@ -2939,7 +3279,7 @@ export class StudentsController {
     }
 
     const currentPage = Math.max(1, Number(page) || 1);
-    const currentPageSize = Math.max(1, Number(pageSize) || 20);
+    const currentPageSize = Math.min(100, Math.max(1, Number(pageSize) || 20));
     const skip = (currentPage - 1) * currentPageSize;
 
     const [notifications, total] = await Promise.all([

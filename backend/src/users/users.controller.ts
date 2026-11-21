@@ -586,7 +586,9 @@ export class UsersController {
     }
 
     // 计算偏移量
-    const skip = (page - 1) * pageSize;
+    const safePage = Math.max(1, Number(page) || 1);
+    const safePageSize = Math.min(100, Math.max(1, Number(pageSize) || 10));
+    const skip = (safePage - 1) * safePageSize;
 
     let users: any[];
     let total: number;
@@ -611,7 +613,7 @@ export class UsersController {
       users = await this.prisma.users.findMany({
         where,
         skip,
-        take: pageSize,
+        take: safePageSize,
         orderBy: { created_at: 'desc' },
         include: {
           student_profile: true,
@@ -626,7 +628,7 @@ export class UsersController {
       users = await this.prisma.users.findMany({
         where,
         skip,
-        take: pageSize,
+        take: safePageSize,
         orderBy: { created_at: 'desc' },
         include: {
           student_profile: true,

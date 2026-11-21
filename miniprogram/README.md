@@ -1,121 +1,55 @@
-# 学业预警系统 · 微信小程序
+# 学业预警系统 · 微信小程序（仅限学生使用）
 
-微信**原生小程序**（非 uni-app / Taro），与现有 NestJS 后端契约对齐。
+微信**原生小程序**（非 uni-app / Taro），专为**在校学生**打造，UI 视觉与 Web 端 `clay-theme.css`（Claymorphism 绿系软陶主题 `#f1f2fa` / `#fffdf7` / `#4f9e6f`）保持完全一致，所有接口与现有 NestJS 后端契约对齐。
 
 ## 一、快速开始
 
 1. 用**微信开发者工具**导入本目录（`miniprogram/`）
-2. `project.config.json` 中的 `appid` 目前为 `touristappid`（测试号）。
-   正式联调请替换为你自己的小程序 AppID。
-3. **本地联调必做**：
-   - 详情 → 本地设置 → 勾选
-     「不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书」
-   - 编辑 `config.js`，把 `CURRENT` 指向 `ENV.dev`，并按需修改 `baseUrl`：
-     - 模拟器：`http://localhost:3000`
-     - **真机预览**：`http://<电脑局域网IP>:3000`（手机与电脑需同一网段，
-       并在 Windows 防火墙放行 3000 端口）
-4. 后端 CORS（若用 web-view 场景需配置）：
-   ```
-   CORS_ALLOWED_ORIGINS=http://localhost:8080,http://<你的IP>:8080
-   ```
+2. `project.config.json` 中的 `appid` 目前为 `touristappid`（测试号），正式发布前请替换为真实小程序 AppID。
+3. **本地联调**：
+   - 详情 → 本地设置 → 勾选「不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书」
+   - `config.js` 默认根据运行时 `envVersion` 自动识别环境（开发版走 `http://localhost:3000`，体验版/正式版走 `https://www.xueyeyujing.asia`）。真机预览开发版时请改为电脑局域网 IP。
 
-## 二、登录时序
+## 二、登录与安全校验（仅限学生身份）
 
-小程序**不臆造** `token` 头，与后端 `AuthGuard` 一致使用 `Authorization: Bearer <token>`。
+小程序请求统一使用 `Authorization: Bearer <token>` 请求头，且所有 `POST/PUT/PATCH/DELETE` 请求自动附带 `Idempotency-Key` 幂等键。
 
-```
-[启动]
-  wx.login() → code
-      ↓
-POST /student/login { wx_code }
-      ├─ 该 openid 已绑定学生 → 直接返回 { token, student }   ← 一键登录
-      └─ 未绑定 → 失败
-                    ↓
-           用户填写「学号 + 姓名」（可选密码）
-                    ↓
-POST /student/login { student_no, name, password?, wx_code }
-      ├─ 姓名与学籍不一致 → code 401「姓名不匹配」
-      ├─ 密码错误        → code 401 + 剩余尝试次数
-      └─ 成功            → { token, student }，同时绑定 openid
-                    ↓
-      写入 Storage(token) → reLaunch 到 /pages/index/index
-```
+- **账号密码登录**：`POST /student/login` `{ student_no, name, password, wx_code? }`，要求学号、姓名与密码校验通过（登录成功自动绑定当前微信 openid，后续支持微信一键登录）。
+- **微信一键登录**：`POST /student/login` `{ wx_code }`。
+- **忘记密码 / 找回**：`POST /auth/recovery/options` → `send-email-code` / `send-sms-code` → `verify_code` → `reset-password`。
+- **邮箱与手机号核验绑定**：绑定/更换邮箱走 `/auth/send_code (bind_email)` + `/auth/verify_code` + `POST /student/bind-email`；更换已绑手机号走 `student_change_mobile` 邮箱校验票据 + `POST /student/bind-phone`。
+- **邮箱校验修改密码**：`POST /auth/send_code (student_change_password)` → `/auth/verify_code` → `POST /student/change-password { ticket, new_password }`。
 
-> 关键点：后端 `/student/login` 要求**学号与姓名双匹配**（见
-> `students.controller.ts` 的 `findStudentProfileForLogin`），
-> 这是防止冒用学号的设计，小程序侧未做任何绕过。
-
-## 三、页面清单（24 页）
+## 三、页面清单（24 页，严格学生端）
 
 | # | 路径 | 说明 | 主要接口 |
 |---|---|---|---|
-| 1 | `pages/login/login` | 登录 / 绑定学号 | `POST /student/login` |
-| 2 | `pages/index/index` | 首页仪表盘（今日考勤作业、7 天趋势、预警数、通知状态） | `/student/today`、`/student/weekly`、`/student/summaries`、`/student/warnings` |
-| 3 | `pages/warnings/warnings` | 我的预警（等级/状态筛选 + 分页） | `GET /student/warnings` |
-| 4 | `pages/warning-detail/warning-detail` | 预警详情（触发明细 + 规则快照）+ 确认收到 | `POST /student/warnings/:id/confirm` |
-| 5 | `pages/leaves/leaves` | 请假列表 | `GET /student/leave_requests` |
-| 6 | `pages/leave-detail/leave-detail` | 请假详情 | 同上 |
-| 7 | `pages/leave-form/leave-form` | 提交请假（多图证明） | `POST /student/leave_requests` + `/files/images` |
-| 8 | `pages/appeals/appeals` | 申诉列表 | `GET /student/appeals` |
-| 9 | `pages/appeal-detail/appeal-detail` | 申诉详情 | 同上 |
-| 10 | `pages/appeal-form/appeal-form` | 提交申诉（多图证据） | `POST /student/appeals` + `/files/images` |
-| 11 | `pages/notifications/notifications` | 班级通知 | `GET /student/notifications` |
-| 12 | `pages/notification-detail/notification-detail` | 通知详情（进入即回执已读） | `POST /student/notifications/:id/read` |
-| 13 | `pages/schedules/schedules` | 本班课表 | `GET /student/courses` |
-| 14 | `pages/attendance/attendance` | 我的考勤（近 7 天） | `GET /student/weekly` |
-| 15 | `pages/checkin/checkin` | 扫码签到（含手动兜底 + 二维码多格式解析） | `POST /attendance/checkin` |
-| 16 | `pages/grades/grades` | 我的成绩 | `GET /student/courses` |
-| 17 | `pages/summaries/summaries` | 周/月/学期汇总（含学分、GPA、挂科数） | `GET /student/summaries` |
-| 18 | `pages/profile/profile` | 个人中心 | `GET /student/profile` |
-| 19 | `pages/profile-edit/profile-edit` | 编辑资料（含紧急联系人） | `PUT /student/profile` |
-| 20 | `pages/preferences/preferences` | 通知偏好（渠道 + 免打扰时段 + 订阅授权） | `GET/PUT /student/preferences` |
-| 21 | `pages/change-password/change-password` | 修改密码 | `POST /student/change-password` |
-| 22 | `pages/bind-class/bind-class` | 绑定班级 | `GET /student/available-classes`、`POST /student/bind-class` |
-| 23 | `pages/teachers/teachers` | 我的老师 | `GET /student/teachers` |
-| 24 | `pages/about/about` | 关于 | — |
+| 1 | `pages/login/login` | 学生登录、微信一键登录与验证码找回密码 | `POST /student/login`、`/auth/recovery/*` |
+| 2 | `pages/index/index` | 学生首页（未读站内信+公告、今日考勤作业课程、预警统计、7天趋势、8项服务入口） | `/student/today`、`/student/weekly`、`/student/warnings`、`/student/inbox/unread-count`、`/student/notifications` |
+| 3 | `pages/warnings/warnings` | 我的预警（四格统计、课程/等级/状态筛选、确认收到、直接转申诉） | `GET /student/warnings`、`GET /student/courses`、`POST /student/warnings/:id/confirm` |
+| 4 | `pages/warning-detail/warning-detail` | 预警详情（触发明细、规则解释快照、确认收到、发起申诉） | `GET /student/warnings?id=...`、`POST /student/warnings/:id/confirm` |
+| 5 | `pages/leaves/leaves` | 我的请假列表（含发起入口与证明图片标记） | `GET /student/leave_requests` |
+| 6 | `pages/leave-detail/leave-detail` | 请假详情（带鉴权多图证明下载与大图预览） | `GET /student/leave_requests`、`/files/:id/download` |
+| 7 | `pages/leave-form/leave-form` | 发起请假（类型、审批老师选择、起止日期时间、多图上传） | `GET /student/teachers`、`POST /student/leave_requests`、`/files/images` |
+| 8 | `pages/appeals/appeals` | 我的申诉列表 | `GET /student/appeals` |
+| 9 | `pages/appeal-detail/appeal-detail` | 申诉详情（带鉴权多图凭证预览） | `GET /student/appeals`、`/files/:id/download` |
+| 10 | `pages/appeal-form/appeal-form` | 发起申诉（支持从预警页预填 `warning_id`/课程/原因，多图上传） | `POST /student/appeals`、`/files/images` |
+| 11 | `pages/notifications/notifications` | 双通道消息中心（个人站内消息 `/student/inbox` + 班级公告 `/student/notifications`） | `/student/inbox*`、`/student/notifications*` |
+| 12 | `pages/notification-detail/notification-detail` | 消息/公告详情（区分站内信与班级公告） | 同上 |
+| 13 | `pages/schedules/schedules` | 本班课表（支持学期切换、校历周次与星期分组筛选） | `GET /schedules/semester-config`、`GET /schedules/view?scope=class` |
+| 14 | `pages/attendance/attendance` | 近 7 天考勤与作业记录 | `GET /student/weekly` |
+| 15 | `pages/checkin/checkin` | 课堂滚动二维码扫码签到与口令兜底 | `POST /attendance/checkin` |
+| 16 | `pages/grades/grades` | 我的课程成绩（学期筛选、通过/挂科/获修学分统计） | `GET /student/grades` |
+| 17 | `pages/summaries/summaries` | 周 / 月 / 学期汇总（含学分、GPA、挂科门数） | `GET /student/summaries` |
+| 18 | `pages/profile/profile` | 学生个人中心（证件照头像、微信绑定与全部学生功能入口） | `GET /student/profile`、`POST /student/bind-wechat` |
+| 19 | `pages/profile-edit/profile-edit` | 资料维护（证件照、联系方式）、手机邮箱核验绑定、换班申请与佐证图预览 | `PUT /student/profile`、`POST /student/bind-email|bind-phone`、`GET/POST /student/class-change-requests` |
+| 20 | `pages/preferences/preferences` | 通知渠道偏好与夜间免打扰（静默时段）设置 | `GET/PUT /student/preferences` |
+| 21 | `pages/change-password/change-password` | 绑定邮箱验证码核验改密 | `POST /auth/send_code`、`/auth/verify_code`、`POST /student/change-password` |
+| 22 | `pages/bind-class/bind-class` | 学院与班级二级联动绑定（同步更新登录 token） | `GET /student/available-classes`、`POST /student/bind-class` |
+| 23 | `pages/teachers/teachers` | 本班班主任与各科授课老师 | `GET /student/teachers` |
+| 24 | `pages/about/about` | 关于学生端 | — |
 
 ## 四、请求与响应约定
 
-统一封装在 `utils/request.js`：
-
-```json
-{ "code": 0, "message": "ok", "data": {...}, "trace_id": "..." }
-```
-
-- **成功码是 `0`，不是 200**
-- `code !== 0` 时统一 toast 提示；`401 / 4010` 自动清登录态并跳登录页
-- HTTP 401/403 同样跳登录页
-
-**序列化注意**：后端将 `bigint` 序列化为**字符串**、`Decimal` 为字符串、`Date` 为 ISO 字符串。
-因此页面中**不要把 id 当 number 运算或比较**，一律用 `String(a) === String(b)`。
-
-## 五、扫码签到
-
-- 二维码滚动令牌由后端 `shared/qr-session.util.ts` 生成：
-  `token = sha256(qr_token_hash + ':' + bucketIndex).slice(0,16)`
-- 刷新间隔来自配置 `warning.qrRefreshMinutes`（默认 **15 分钟**）
-- 小程序侧支持三种二维码载荷：JSON、URL 查询串、`id|token`
-- 接口挂了**幂等**（`@Idempotent()`），重复提交不会产生重复考勤记录
-
-## 六、订阅消息（**平台限制，必须知悉**）
-
-微信「**一次性订阅消息**」的硬限制：**用户每授权一次，只能推送 1 条**。
-这不是后端缺陷，无法通过代码绕过。
-
-可落地的产品方案（本小程序已按此实现）：
-
-1. **随用随授权**：在用户查看预警详情等"高意愿"时刻顺带调用
-   `wx.requestSubscribeMessage`，而不是只在设置页请求一次
-2. **模板 ID 配置化**：填入 `config.js` 的 `SUBSCRIBE_TEMPLATE_IDS`，
-   未配置时设置页的授权按钮自动隐藏（避免无效操作）
-3. **多通道兜底**：严重预警同时走短信/邮件/站内信，
-   不依赖微信推送的到达率
-4. 若需长期订阅，需申请**长期订阅消息**类目（对高校场景需资质审核）
-
-## 七、上线前检查
-
-- [ ] `config.js` 的 `CURRENT` 改为 `ENV.prod`，`baseUrl` 为 **HTTPS** 域名
-- [ ] 微信公众平台 → 开发 → 开发设置 → **服务器域名** 添加后端域名为 request 合法域名
-- [ ] `project.config.json` 填入正式 `appid`
-- [ ] `sitemap.json` 当前为 `disallow *`（后台系统不建议被搜索索引），按需调整
-- [ ] `SUBSCRIBE_TEMPLATE_IDS` 填入已申请的模板 ID
+- **成功码是 `0`**（`{ code: 0, message: 'ok', data: ... }`），`401 / 403` 自动清理登录态并跳转登录页。
+- **受保护图片下载预览**：后端 `/files/:id/download` 校验登录身份，小程序端通过 `utils/request.js` 的 `downloadAuthImage(fileId)` / `loadAuthImageUrls(fileIds)` 携带 `Authorization` 下载为本地临时文件路径渲染和预览。

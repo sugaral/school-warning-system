@@ -1,47 +1,37 @@
-const { api, toastError } = require('../../utils/request');
+const { api } = require('../../utils/request');
 
 Page({
   data: {
     items: [],
     loading: true,
-    hasMore: false,
-    page: 1,
-    pageSize: 20,
+    unbound: false,
   },
 
-  onLoad() {
-    this.fetchList(true);
+  onShow() {
+    this.fetchTeachers();
   },
 
   onPullDownRefresh() {
-    this.fetchList(true).then(() => wx.stopPullDownRefresh());
+    this.fetchTeachers().then(() => wx.stopPullDownRefresh());
   },
 
-  onReachBottom() {
-    if (this.data.hasMore) this.loadMore();
-  },
-
-  async fetchList(reset) {
-    if (reset) this.setData({ page: 1 });
-    this.setData({ loading: true });
+  async fetchTeachers() {
+    this.setData({ loading: true, unbound: false });
     try {
-      const data = await api.getTeachers({ page: this.data.page, pageSize: this.data.pageSize });
-      // 兼容后端两种返回形态：数组 或 { list, total }
+      const data = await api.getTeachers();
       const list = Array.isArray(data) ? data : (data && data.list) || [];
-      const total = (data && data.total) || list.length;
-      const merged = reset ? list : this.data.items.concat(list);
+      this.setData({ items: list, loading: false });
+    } catch (err) {
+      const msg = (err && err.message) || '';
       this.setData({
-        items: merged,
-        hasMore: merged.length < total,
+        items: [],
+        unbound: msg.indexOf('未绑定') !== -1,
         loading: false,
       });
-    } catch (err) {
-      this.setData({ loading: false });
     }
   },
 
-  loadMore() {
-    this.setData({ page: this.data.page + 1 }, () => this.fetchList(false));
+  goBindClass() {
+    wx.navigateTo({ url: '/pages/bind-class/bind-class' });
   },
-
 });

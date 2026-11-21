@@ -1,14 +1,72 @@
 <view class="page">
-  <view class="card" wx:if="{{items.length > 0}}">
-    <block wx:for="{{items}}" wx:key="index">
-      <view class="row">
-        <view style="flex:1">
-          <view>{{item.course_name || item.course_code}}</view>
-          <view class="row-label" style="margin-top:8rpx">{{item.teacher_name || ''}} · {{item.term_code || ''}}</view>
+  <view class="card card-amber" wx:if="{{unboundError}}" bindtap="goBindClass">
+    <view class="card-title" style="margin-bottom:6rpx">
+      <text style="color:#a16207">您尚未绑定班级，暂无法加载本班课表</text>
+      <text class="tag tag-warn">去绑定</text>
+    </view>
+    <view class="hint-text" style="margin-top:0">点击立即选择学院与班级</view>
+  </view>
+
+  <block wx:else>
+    <!-- 学期与周次筛选 -->
+    <view class="card">
+      <view class="card-title" style="margin-bottom:14rpx">
+        <text>{{contextLabel || '本班课表'}}</text>
+        <text class="tag tag-info">{{selectedTerm}}</text>
+      </view>
+      <view class="picker-row">
+        <picker mode="selector" range="{{termOptions}}" value="{{termIndex}}" bindchange="onTermChange" class="picker-box">
+          <view class="form-picker">
+            <text>{{selectedTerm}}</text>
+            <text class="row-arrow">▼</text>
+          </view>
+        </picker>
+        <picker mode="selector" range="{{weekOptions}}" range-key="label" value="{{weekIndex}}" bindchange="onWeekChange" class="picker-box">
+          <view class="form-picker">
+            <text>{{weekOptions[weekIndex] ? weekOptions[weekIndex].label : '全部周次'}}</text>
+            <text class="row-arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+    </view>
+
+    <!-- 星期筛选胶囊 -->
+    <view class="filters">
+      <view
+        wx:for="{{weekdays}}"
+        wx:key="key"
+        class="filter-item {{activeWeekday === item.key ? 'active' : ''}}"
+        bindtap="onWeekdaySelect"
+        data-key="{{item.key}}"
+      >
+        {{item.label}}
+      </view>
+    </view>
+
+    <!-- 按星期分组展示课程 -->
+    <block wx:if="{{groupedDays.length > 0}}">
+      <view class="card" wx:for="{{groupedDays}}" wx:key="weekdayKey">
+        <view class="card-title">
+          <text>{{item.weekdayLabel}}</text>
+          <text class="hint-text" style="margin-top:0">共 {{item.items.length}} 节</text>
+        </view>
+        <view class="sched-item" wx:for="{{item.items}}" wx:for-item="course" wx:key="id">
+          <view class="sched-time-col">
+            <view class="sched-time">{{course.timeRange}}</view>
+            <view class="sched-date">{{course.weekLabel}} · {{course.dateLabel}}</view>
+          </view>
+          <view class="sched-info-col">
+            <view class="sched-name">{{course.course_name}}</view>
+            <view class="sched-meta">
+              教师：{{course.teacher_name || '未分配'}} · 班级：{{course.class_name || contextLabel}}
+            </view>
+          </view>
         </view>
       </view>
     </block>
-  </view>
-  <view class="empty" wx:else>{{loading ? '加载中...' : '暂无课表数据'}}</view>
-  <view class="load-more" wx:if="{{hasMore && items.length > 0}}" bindtap="loadMore">点击加载更多</view>
+
+    <view class="card empty" wx:else>
+      {{loading ? '正在加载课表...' : '当前学期/周次下暂无排课数据'}}
+    </view>
+  </block>
 </view>

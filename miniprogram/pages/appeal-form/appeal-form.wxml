@@ -1,17 +1,85 @@
 <view class="page">
+  <view class="card card-tint" wx:if="{{form.warning_id}}">
+    <view class="card-title" style="margin-bottom:6rpx">已关联预警 #{{form.warning_id}}</view>
+    <view class="hint-text" style="margin-top:0">
+      申诉通过后系统将自动核销对应预警并重新评估风险状态。
+    </view>
+  </view>
+
   <view class="card">
     <view class="form-item">
       <text class="form-label form-required">申诉类型</text>
-      <input class="form-input"  placeholder="如：预警申诉" value="{{form.appeal_type}}" bindinput="onInput" data-key="appeal_type" />
+      <view class="filters" style="margin-bottom:0">
+        <view
+          wx:for="{{appealTypes}}"
+          wx:key="*this"
+          class="filter-item {{form.appeal_type === item ? 'active' : ''}}"
+          bindtap="selectAppealType"
+          data-type="{{item}}"
+        >
+          {{item}}
+        </view>
+      </view>
     </view>
+
     <view class="form-item">
-      <text class="form-label">关联记录 ID</text>
-      <input class="form-input"  placeholder="可选" value="{{form.related_id}}" bindinput="onInput" data-key="related_id" />
+      <text class="form-label">关联信息（课程 / 预警来源）</text>
+      <input
+        class="form-input"
+        placeholder="例如：高等数学、考勤异常等"
+        value="{{form.related_type}}"
+        bindinput="onInput"
+        data-key="related_type"
+        maxlength="32"
+      />
     </view>
+
+    <view class="form-item" wx:if="{{!form.warning_id}}">
+      <text class="form-label">关联预警编号（选填）</text>
+      <input
+        class="form-input"
+        type="number"
+        placeholder="如需关联指定预警请填数字 ID"
+        value="{{form.warning_id}}"
+        bindinput="onInput"
+        data-key="warning_id"
+      />
+    </view>
+
     <view class="form-item">
-      <text class="form-label form-required">申诉内容</text>
-      <textarea class="form-textarea" placeholder="请说明申诉理由" value="{{form.content}}" bindinput="onInput" data-key="content" maxlength="500" />
+      <text class="form-label form-required">申诉说明</text>
+      <textarea
+        class="form-textarea"
+        placeholder="请详细填写申诉理由与情况说明"
+        value="{{form.content}}"
+        bindinput="onInput"
+        data-key="content"
+        maxlength="1000"
+      />
     </view>
-    <button class="btn" bindtap="onSubmit" loading="{{submitting}}" disabled="{{submitting}}">提交</button>
+
+    <view class="form-item">
+      <text class="form-label">凭证图片（选填，最多 6 张，如假条/系统截图）</text>
+      <view class="image-grid">
+        <view class="image-wrap" wx:for="{{images}}" wx:key="id">
+          <image
+            class="image-item"
+            src="{{item.tempPath}}"
+            mode="aspectFill"
+            bindtap="onPreviewUpload"
+            data-index="{{index}}"
+          />
+          <view class="image-del" catchtap="onRemoveImage" data-index="{{index}}">×</view>
+        </view>
+        <view class="image-add" wx:if="{{images.length < 6}}" bindtap="onChooseImages">
+          <text>+</text>
+          <text class="image-add-tip">{{images.length}}/6</text>
+        </view>
+      </view>
+    </view>
+
+    <button class="btn" bindtap="onSubmit" loading="{{submitting}}" disabled="{{submitting}}">
+      提交申诉
+    </button>
   </view>
 </view>

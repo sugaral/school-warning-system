@@ -1,31 +1,62 @@
 <view class="page">
-  <view class="card profile-head">
-    <view class="avatar">{{student.name ? student.name[0] : '学'}}</view>
-    <view class="info">
-      <view class="name">{{student.name || '未登录'}}</view>
-      <view class="sub">{{student.student_no || ''}} {{student.class_name ? '· ' + student.class_name : ''}}</view>
+  <!-- 学生档案头部软陶卡 -->
+  <view class="hero-clay profile-hero">
+    <view class="profile-head">
+      <image wx:if="{{avatarUrl}}" class="avatar-img" src="{{avatarUrl}}" mode="aspectFill" />
+      <view wx:else class="avatar">{{student.name ? student.name[0] : '学'}}</view>
+      <view class="info">
+        <view class="name-row">
+          <text class="name">{{student.name || '同学'}}</text>
+          <text class="pos-pill" wx:if="{{student.student_position}}">{{student.student_position}}</text>
+        </view>
+        <view class="sub">学号：{{student.student_no || '-'}}</view>
+        <view class="sub">
+          {{student.org_name && student.org_name !== '未绑定' ? student.org_name + ' · ' : ''}}{{student.class_name || '未绑定班级'}}
+        </view>
+      </view>
     </view>
   </view>
 
+  <!-- 学籍概览 -->
   <view class="card">
-    <view class="row" bindtap="goEdit"><text class="row-label">编辑资料</text><text class="row-value">></text></view>
-    <view class="row" bindtap="goPreferences"><text class="row-label">通知偏好</text><text class="row-value">></text></view>
-    <view class="row" bindtap="goBindClass"><text class="row-label">绑定班级</text><text class="row-value">></text></view>
-    <view class="row" bindtap="goPassword"><text class="row-label">修改密码</text><text class="row-value">></text></view>
-  </view>
-
-  <view class="card">
-    <view class="row" bindtap="goSummaries"><text class="row-label">我的汇总</text><text class="row-value">></text></view>
-    <view class="row" bindtap="goAttendance"><text class="row-label">我的考勤</text><text class="row-value">></text></view>
-    <view class="row" bindtap="goGrades"><text class="row-label">我的成绩</text><text class="row-value">></text></view>
-    <view class="row" bindtap="goTeachers"><text class="row-label">我的老师</text><text class="row-value">></text></view>
-  </view>
-
-  <view class="card">
-    <view class="row"><text class="row-label">微信绑定</text><text class="row-value">{{student.wx_openid ? '已绑定' : '未绑定'}}</text></view>
+    <view class="card-title">
+      <text>基本档案</text>
+      <text class="card-link" bindtap="goEdit">编辑资料 ></text>
+    </view>
+    <view class="row"><text class="row-label">班主任</text><text class="row-value">{{student.head_teacher_name || '未绑定'}}</text></view>
+    <view class="row"><text class="row-label">手机号</text><text class="row-value">{{student.mobile || '未绑定'}}</text></view>
+    <view class="row"><text class="row-label">邮箱</text><text class="row-value">{{student.email || '未绑定'}}</text></view>
     <view class="row"><text class="row-label">紧急联系人</text><text class="row-value">{{student.emergency_contact_name || '未填写'}}</text></view>
+    <view class="row">
+      <text class="row-label">微信绑定</text>
+      <text wx:if="{{student.wx_openid}}" class="tag tag-success">已绑定</text>
+      <button wx:else class="btn btn-sm" bindtap="onBindWechat" loading="{{bindingWechat}}">绑定当前微信</button>
+    </view>
+  </view>
+
+  <!-- 事务办理 -->
+  <view class="card">
+    <view class="card-title">学业与事务</view>
+    <view class="row" bindtap="goLeaves"><text class="row-label">请假申请与记录</text><text class="row-arrow">></text></view>
+    <view class="row" bindtap="goAppeals"><text class="row-label">申诉发起与进度</text><text class="row-arrow">></text></view>
+    <view class="row" bindtap="goNotifications"><text class="row-label">站内消息与公告</text><text class="row-arrow">></text></view>
+    <view class="row" bindtap="goGrades"><text class="row-label">我的课程成绩</text><text class="row-arrow">></text></view>
+    <view class="row" bindtap="goSummaries"><text class="row-label">周 / 月 / 学期汇总</text><text class="row-arrow">></text></view>
+    <view class="row" bindtap="goAttendance"><text class="row-label">近 7 天考勤记录</text><text class="row-arrow">></text></view>
+    <view class="row" bindtap="goTeachers"><text class="row-label">本班班主任与任课老师</text><text class="row-arrow">></text></view>
+  </view>
+
+  <!-- 账号与设置 -->
+  <view class="card">
+    <view class="card-title">账号安全与设置</view>
+    <view class="row" bindtap="goEdit"><text class="row-label">资料维护 / 绑定手机邮箱</text><text class="row-arrow">></text></view>
+    <view class="row" bindtap="goClassChange"><text class="row-label">换班申请与记录</text><text class="row-arrow">></text></view>
+    <view class="row" bindtap="goBindClass"><text class="row-label">首次/重新绑定班级</text><text class="row-arrow">></text></view>
+    <view class="row" bindtap="goPreferences"><text class="row-label">通知渠道与免打扰时段</text><text class="row-arrow">></text></view>
+    <view class="row" bindtap="goPassword"><text class="row-label">邮箱验证修改密码</text><text class="row-arrow">></text></view>
+    <view class="row" bindtap="goAbout"><text class="row-label">关于学生端</text><text class="row-arrow">></text></view>
   </view>
 
   <button class="btn btn-danger" bindtap="onLogout">退出登录</button>
-  <view class="version">学业预警系统 v3.0.0</view>
+  <view class="version">学业预警系统 · 学生端 v3.1.0</view>
 </view>

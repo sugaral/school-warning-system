@@ -1,44 +1,50 @@
 <view class="page">
   <view class="card">
-    <view class="card-title">接收渠道</view>
+    <view class="card-title">通知接收渠道</view>
     <view class="row">
-      <text class="row-label">微信通知</text>
-      <switch checked="{{prefs.wechat}}" bindchange="onSwitch" data-key="wechat" />
+      <text class="row-label">预警总提醒</text>
+      <switch color="#4f9e6f" checked="{{prefs.warning_reminder}}" bindchange="onSwitch" data-key="warning_reminder" />
     </view>
     <view class="row">
-      <text class="row-label">短信通知</text>
-      <switch checked="{{prefs.sms}}" bindchange="onSwitch" data-key="sms" />
+      <text class="row-label">微信推送</text>
+      <switch color="#4f9e6f" checked="{{prefs.wechat}}" bindchange="onSwitch" data-key="wechat" />
+    </view>
+    <view class="row">
+      <text class="row-label">短信提醒</text>
+      <switch color="#4f9e6f" checked="{{prefs.sms}}" bindchange="onSwitch" data-key="sms" />
     </view>
     <view class="row">
       <text class="row-label">邮件通知</text>
-      <switch checked="{{prefs.email}}" bindchange="onSwitch" data-key="email" />
+      <switch color="#4f9e6f" checked="{{prefs.email}}" bindchange="onSwitch" data-key="email" />
     </view>
   </view>
 
   <view class="card">
-    <view class="card-title">免打扰时段</view>
+    <view class="card-title">夜间免打扰（静默时段）</view>
     <view class="row">
-      <text class="row-label">开始</text>
-      <input class="form-input" style="width:220rpx" value="{{prefs.quiet_start}}" bindinput="onInput" data-key="quiet_start" placeholder="22:00" />
+      <text class="row-label">开始时间</text>
+      <picker mode="time" value="{{prefs.quiet_start}}" bindchange="onTimeChange" data-key="quiet_start">
+        <view class="time-pill">{{prefs.quiet_start}} ▼</view>
+      </picker>
     </view>
     <view class="row">
-      <text class="row-label">结束</text>
-      <input class="form-input" style="width:220rpx" value="{{prefs.quiet_end}}" bindinput="onInput" data-key="quiet_end" placeholder="08:00" />
+      <text class="row-label">结束时间</text>
+      <picker mode="time" value="{{prefs.quiet_end}}" bindchange="onTimeChange" data-key="quiet_end">
+        <view class="time-pill">{{prefs.quiet_end}} ▼</view>
+      </picker>
     </view>
-    <view class="hint" style="padding:20rpx 0;color:#8c8c8c;font-size:24rpx;line-height:1.7">
-      免打扰时段内的短信/微信通知会推迟到时段结束后发送；
-      红色与严重级别预警为保障安全会强制送达，不受免打扰限制。
+    <view class="hint-text">
+      免打扰时段内的短信/微信打扰型通知会自动推迟至时段结束后发送；红色与严重预警将突破静默确保及时触达；站内信随时可查。
     </view>
   </view>
 
-  <view class="card">
-    <view class="card-title">订阅消息说明</view>
-    <view style="color:#8c8c8c;font-size:24rpx;line-height:1.8">
-      微信「一次性订阅消息」每次授权仅能推送 1 条，属平台限制。
-      建议在每次查看预警时顺带请求一次授权，以持续获得推送。
+  <view class="card card-tint">
+    <view class="card-title">微信订阅消息说明</view>
+    <view class="hint-text" style="margin-top:0">
+      微信一次性订阅消息每次授权可推送 1 条；站内「消息中心」不受订阅限制，所有预警都会同步入箱。
     </view>
-    <button class="btn btn-ghost" bindtap="requestSubscribe" wx:if="{{hasTemplate}}">授权订阅消息</button>
+    <button class="btn btn-ghost" bindtap="requestSubscribe" wx:if="{{hasTemplate}}">授权微信订阅消息</button>
   </view>
 
-  <button class="btn" bindtap="onSave" loading="{{saving}}">保存</button>
+  <button class="btn" bindtap="onSave" loading="{{saving}}" disabled="{{saving}}">保存偏好设置</button>
 </view>

@@ -31,6 +31,7 @@ export class WarningQueueService implements OnModuleInit, OnModuleDestroy {
   private readonly consumerName = `${hostname() || 'backend'}-${process.pid}`;
   private running = false;
   private consumerLoop: Promise<void> | null = null;
+  private consumerRedis: any = null;
 
   constructor(
     private readonly redis: RedisService,
@@ -38,6 +39,16 @@ export class WarningQueueService implements OnModuleInit, OnModuleDestroy {
     private readonly warningService: WarningService,
     private readonly config: ConfigService,
   ) {}
+
+  private getConsumerRedis() {
+    if (!this.consumerRedis) {
+      this.consumerRedis =
+        typeof (this.redis as any).duplicate === 'function'
+          ? (this.redis as any).duplicate()
+          : this.redis;
+    }
+    return this.consumerRedis;
+  }
 
   onModuleInit() {
     if (!this.isConsumerEnabled()) {
@@ -52,6 +63,10 @@ export class WarningQueueService implements OnModuleInit, OnModuleDestroy {
   async onModuleDestroy() {
     this.running = false;
     await this.consumerLoop?.catch(() => undefined);
+    if (this.consumerRedis && this.consumerRedis !== this.redis) {
+      await this.consumerRedis.quit?.().catch(() => undefined);
+      this.consumerRedis = null;
+    }
   }
 
   async scheduleAffectedRecords(
@@ -88,13 +103,14 @@ export class WarningQueueService implements OnModuleInit, OnModuleDestroy {
         error?.stack,
       );
 
-      const fallbackResult = await this.warningService.generateWarningsForAffectedRecords(
+      const fallbackResult = await this.warningService.generateWarningsForAffectedRecordsWithOptions(
         mergedItems.map((item) => ({
           studentId: BigInt(item.studentId),
           recordDate: this.parseRecordDate(item.recordDate),
           courseId: this.parseOptionalBigInt(item.courseId),
           sessionId: this.parseOptionalBigInt(item.sessionId),
         })),
+        { failOnError: true },
       );
 
       return {
@@ -498,23 +514,7 @@ export class WarningQueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async readNewEntries() {
-    if (this.getReadBlockMs() <= 0) {
-      const raw = await this.redis.call(
-        'XREADGROUP',
-        'GROUP',
-        this.getConsumerGroup(),
-        this.consumerName,
-        'COUNT',
-        String(this.getReadCount()),
-        'STREAMS',
-        this.getStreamKey(),
-        '>',
-      );
-
-      return this.parseReadEntries(raw);
-    }
-
-    const raw = await this.redis.call(
+    const raw = await this.getConsumerRedis().call(
       'XREADGROUP',
       'GROUP',
       this.getConsumerGroup(),
@@ -736,15 +736,11 @@ export class WarningQueueService implements OnModuleInit, OnModuleDestroy {
 
   private getReadBlockMs() {
     const raw = Number(this.config.get<string>('WARNING_QUEUE_READ_BLOCK_MS') || 5000);
-    if (!Number.isFinite(raw)) {
-      return 5000;
+    if (!Number.isFinite(raw) || raw <= 0) {
+      return 1000;
     }
 
-    if (raw <= 0) {
-      return 0;
-    }
-
-    return Math.min(60000, Math.max(100, Math.round(raw)));
+    return Math.min(60000, Math.max(1000, Math.round(raw)));
   }
 
   private getVisibilityTimeoutMs() {

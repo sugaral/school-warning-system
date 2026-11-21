@@ -1,17 +1,109 @@
 <view class="page">
   <view class="card">
     <view class="form-item">
-      <text class="form-label form-required">开始日期</text>
-      <input class="form-input"  placeholder="YYYY-MM-DD" value="{{form.from_date}}" bindinput="onInput" data-key="from_date" />
+      <text class="form-label form-required">请假类型</text>
+      <view class="filters" style="margin-bottom:0">
+        <view
+          wx:for="{{leaveTypes}}"
+          wx:key="*this"
+          class="filter-item {{leaveType === item ? 'active' : ''}}"
+          bindtap="selectLeaveType"
+          data-type="{{item}}"
+        >
+          {{item}}
+        </view>
+      </view>
     </view>
+
     <view class="form-item">
-      <text class="form-label form-required">结束日期</text>
-      <input class="form-input"  placeholder="YYYY-MM-DD" value="{{form.to_date}}" bindinput="onInput" data-key="to_date" />
+      <text class="form-label form-required">审批老师</text>
+      <picker
+        wx:if="{{teachers.length > 0}}"
+        mode="selector"
+        range="{{teachers}}"
+        range-key="displayLabel"
+        value="{{teacherIndex >= 0 ? teacherIndex : 0}}"
+        bindchange="onTeacherChange"
+      >
+        <view class="form-picker">
+          <text>{{teachers[teacherIndex] ? teachers[teacherIndex].displayLabel : '请选择审批老师'}}</text>
+          <text class="row-arrow">▼</text>
+        </view>
+      </picker>
+      <view class="hint-text" style="color:#c04a52" wx:else>
+        暂未获取到所属班级的班主任或授课老师，请先绑定班级。
+      </view>
     </view>
+
+    <view class="form-item">
+      <text class="form-label form-required">开始时间</text>
+      <view class="dt-row">
+        <picker mode="date" value="{{startDate}}" bindchange="onDateTimeChange" data-field="startDate" class="dt-picker">
+          <view class="form-picker">
+            <text>{{startDate}}</text>
+            <text class="row-arrow">▼</text>
+          </view>
+        </picker>
+        <picker mode="time" value="{{startTime}}" bindchange="onDateTimeChange" data-field="startTime" class="dt-time">
+          <view class="form-picker">
+            <text>{{startTime}}</text>
+            <text class="row-arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+    </view>
+
+    <view class="form-item">
+      <text class="form-label form-required">结束时间</text>
+      <view class="dt-row">
+        <picker mode="date" value="{{endDate}}" bindchange="onDateTimeChange" data-field="endDate" class="dt-picker">
+          <view class="form-picker">
+            <text>{{endDate}}</text>
+            <text class="row-arrow">▼</text>
+          </view>
+        </picker>
+        <picker mode="time" value="{{endTime}}" bindchange="onDateTimeChange" data-field="endTime" class="dt-time">
+          <view class="form-picker">
+            <text>{{endTime}}</text>
+            <text class="row-arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+    </view>
+
     <view class="form-item">
       <text class="form-label form-required">请假原因</text>
-      <textarea class="form-textarea" placeholder="请说明请假原因" value="{{form.reason}}" bindinput="onInput" data-key="reason" maxlength="500" />
+      <textarea
+        class="form-textarea"
+        placeholder="请详细说明请假事由"
+        value="{{reason}}"
+        bindinput="onReasonInput"
+        maxlength="255"
+      />
     </view>
-    <button class="btn" bindtap="onSubmit" loading="{{submitting}}" disabled="{{submitting}}">提交</button>
+
+    <view class="form-item">
+      <text class="form-label">证明图片（选填，最多 6 张，支持病历/审批单）</text>
+      <view class="image-grid">
+        <view class="image-wrap" wx:for="{{images}}" wx:key="id">
+          <image
+            class="image-item"
+            src="{{item.tempPath}}"
+            mode="aspectFill"
+            bindtap="onPreviewUpload"
+            data-index="{{index}}"
+          />
+          <view class="image-del" catchtap="onRemoveImage" data-index="{{index}}">×</view>
+        </view>
+        <view class="image-add" wx:if="{{images.length < 6}}" bindtap="onChooseImages">
+          <text>+</text>
+          <text class="image-add-tip">{{images.length}}/6</text>
+        </view>
+      </view>
+    </view>
+
+    <button class="btn" bindtap="onSubmit" loading="{{submitting}}" disabled="{{submitting}}">
+      提交请假申请
+    </button>
   </view>
 </view>

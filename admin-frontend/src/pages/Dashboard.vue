@@ -95,6 +95,7 @@ import { useRoute, useRouter } from 'vue-router';
 import MultiImageUploadField from '../components/MultiImageUploadField.vue';
 import TableSpacingControl from '../components/TableSpacingControl.vue';
 import { submitUserFeedback } from '../api';
+import { api } from '../api/http';
 import { roleMenuConfig } from '../config/menus';
 import {
   clearBindingStateCache,
@@ -204,16 +205,33 @@ const currentPageName = computed(() => {
   return findMenuName(currentMenus.value) || String(route.name || route.path);
 });
 
-const logout = () => {
-  localStorage.removeItem('admin_token');
-  localStorage.removeItem('admin_user');
-  localStorage.removeItem('admin_roles');
-  localStorage.removeItem('admin_role_names');
-  localStorage.removeItem('admin_roles_full');
-  localStorage.removeItem('student_id');
-  sessionStorage.removeItem(LOGIN_PROMPT_SESSION_KEY);
-  clearBindingStateCache();
-  router.push('/login');
+const logout = async () => {
+  const token = localStorage.getItem('admin_token');
+  try {
+    if (token) {
+      await api.post(
+        '/auth/logout',
+        {},
+        {
+          skipAuthRedirect: true,
+          timeout: 2000,
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+    }
+  } catch {
+    // 忽略登出请求异常，确保本地态一定清理
+  } finally {
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
+    localStorage.removeItem('admin_roles');
+    localStorage.removeItem('admin_role_names');
+    localStorage.removeItem('admin_roles_full');
+    localStorage.removeItem('student_id');
+    sessionStorage.removeItem(LOGIN_PROMPT_SESSION_KEY);
+    clearBindingStateCache();
+    router.push('/login');
+  }
 };
 
 const showPendingLoginPrompt = async () => {

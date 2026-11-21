@@ -96,7 +96,7 @@ export const DEFAULT_ROLE_CATALOG: RoleCatalogItem[] = [
     default_scope: 'class',
     user_type: 'teacher',
     register_scope: 'class',
-    registerable: true,
+    registerable: false,
   },
   {
     code: 'student_admin',
@@ -105,7 +105,7 @@ export const DEFAULT_ROLE_CATALOG: RoleCatalogItem[] = [
     default_scope: 'org',
     user_type: 'staff',
     register_scope: 'college',
-    registerable: true,
+    registerable: false,
   },
   {
     code: 'teaching_admin',
@@ -114,7 +114,7 @@ export const DEFAULT_ROLE_CATALOG: RoleCatalogItem[] = [
     default_scope: 'school',
     user_type: 'teacher',
     register_scope: 'school',
-    registerable: true,
+    registerable: false,
   },
   {
     code: 'vice_dean',
@@ -123,7 +123,7 @@ export const DEFAULT_ROLE_CATALOG: RoleCatalogItem[] = [
     default_scope: 'org',
     user_type: 'teacher',
     register_scope: 'college',
-    registerable: true,
+    registerable: false,
   },
   {
     code: 'sys_admin',
@@ -132,7 +132,7 @@ export const DEFAULT_ROLE_CATALOG: RoleCatalogItem[] = [
     default_scope: 'school',
     user_type: 'admin',
     register_scope: 'system',
-    registerable: true,
+    registerable: false,
   },
   {
     code: 'teacher',
@@ -141,7 +141,7 @@ export const DEFAULT_ROLE_CATALOG: RoleCatalogItem[] = [
     default_scope: 'class',
     user_type: 'teacher',
     register_scope: 'self',
-    registerable: true,
+    registerable: false,
   },
 ];
 

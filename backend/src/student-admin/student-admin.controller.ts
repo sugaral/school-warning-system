@@ -148,7 +148,7 @@ export class StudentAdminController {
   @Roles('sys_admin', 'student_admin')
   async bindOrg(@Body() dto: BindOrgDto, @Req() req: any) {
     await this.prisma.ensureConnected();
-    
+
     const userId = BigInt(req.user.userId);
     const orgIdRaw = String(dto.org_id ?? '').trim();
     if (!/^\d+$/.test(orgIdRaw)) {
@@ -160,13 +160,13 @@ export class StudentAdminController {
       };
     }
     const orgId = BigInt(orgIdRaw);
-    
+
     const userRoles = await this.prisma.user_roles.findMany({
       where: { user_id: userId }
     });
-    
+
     const studentAdminRole = userRoles.find((ur: any) => ur.role === 'student_admin');
-    
+
     const isSysAdmin = userRoles.some((ur: any) => ur.role === 'sys_admin');
 
     if (!studentAdminRole && !isSysAdmin) {
@@ -207,23 +207,23 @@ export class StudentAdminController {
         };
       }
     }
-    
+
     if (studentAdminRole) {
       await this.prisma.user_roles.update({
         where: { id: studentAdminRole.id },
         data: { scope_id: orgId },
       });
     }
-    
+
     await this.prisma.users.update({
       where: { id: userId },
       data: { org_id: orgId }
     });
-    
+
     const updatedRoles = await this.prisma.user_roles.findMany({
       where: { user_id: userId }
     });
-    
+
     return {
       code: 0,
       message: '绑定成功',

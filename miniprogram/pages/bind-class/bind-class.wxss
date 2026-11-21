@@ -1,1 +1,28 @@
-/* 绑定班级 */
+.cls-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 22rpx 20rpx;
+  margin-bottom: 16rpx;
+  border-radius: 24rpx;
+  background: #f5f8f6;
+  border: 2rpx solid transparent;
+}
+.cls-item:last-child {
+  margin-bottom: 0;
+}
+.cls-item.active {
+  background: #e4f4ea;
+  border-color: rgba(79, 158, 111, 0.45);
+}
+.cls-name {
+  font-size: 29rpx;
+  font-weight: 600;
+  color: #383139;
+}
+.cls-meta {
+  font-size: 23rpx;
+  color: #6f6875;
+  margin-top: 6rpx;
+}

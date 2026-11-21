@@ -93,8 +93,66 @@ async function loadSystemConfig(key: string, defaultValue: any = null) {
 }
 
 
+async function markWorkerJobFailedOrRetry(job: any, errorMessage: string) {
+  const nextTryCount = Number(job?.try_count || 0) + 1;
+  const safeError = String(errorMessage || 'dispatch_failed').slice(0, 255);
+  if (nextTryCount < 3) {
+    const backoffMs = Math.pow(2, nextTryCount) * 30_000;
+    await prisma.notification_jobs.update({
+      where: { id: job.id },
+      data: {
+        status: 'queued',
+        try_count: { increment: 1 },
+        schedule_at: new Date(Date.now() + backoffMs),
+        updated_at: new Date(),
+        last_error: safeError,
+      },
+    });
+    return;
+  }
+
+  await prisma.notification_jobs.update({
+    where: { id: job.id },
+    data: {
+      status: 'failed',
+      try_count: { increment: 1 },
+      updated_at: new Date(),
+      last_error: safeError,
+    },
+  });
+}
+
 async function processNotificationJobs() {
   logger.info('[通知任务Worker] 开始处理通知任务');
+
+  const staleBefore = new Date(Date.now() - 5 * 60 * 1000);
+  await Promise.all([
+    prisma.notification_jobs.updateMany({
+      where: {
+        status: 'running',
+        updated_at: { lt: staleBefore },
+        try_count: { lt: 3 },
+      },
+      data: {
+        status: 'queued',
+        schedule_at: new Date(),
+        updated_at: new Date(),
+        last_error: 'running_lease_recovered',
+      },
+    }),
+    prisma.notification_jobs.updateMany({
+      where: {
+        status: 'running',
+        updated_at: { lt: staleBefore },
+        try_count: { gte: 3 },
+      },
+      data: {
+        status: 'failed',
+        updated_at: new Date(),
+        last_error: 'running_lease_timeout',
+      },
+    }),
+  ]);
 
   const jobs = await prisma.notification_jobs.findMany({
     where: {
@@ -116,7 +174,7 @@ async function processNotificationJobs() {
     try {
       const claimResult = await prisma.notification_jobs.updateMany({
         where: { id: job.id, status: 'queued' },
-        data: { status: 'running' },
+        data: { status: 'running', updated_at: new Date() },
       });
 
       if (claimResult.count === 0) {
@@ -249,33 +307,27 @@ async function processNotificationJobs() {
         await markCooldown(job);
       }
 
-      await prisma.notification_jobs.update({
-        where: { id: job.id },
-        data: {
-          status: sendResult.success ? 'completed' : 'failed',
-          schedule_at: sendResult.success ? null : job.schedule_at,
-          try_count: { increment: 1 },
-          last_error: sendResult.error,
-        },
-      });
-
       if (sendResult.success) {
+        await prisma.notification_jobs.update({
+          where: { id: job.id },
+          data: {
+            status: 'completed',
+            schedule_at: null,
+            try_count: { increment: 1 },
+            updated_at: new Date(),
+            last_error: sendResult.error,
+          },
+        });
         successCount++;
       } else {
+        await markWorkerJobFailedOrRetry(job, sendResult.error || 'send_failed');
         failedCount++;
       }
     } catch (error: any) {
       logger.error({ err: error, jobId: job.id.toString() }, `[通知任务Worker] 任务处理失败`);
       failedCount++;
 
-      await prisma.notification_jobs.update({
-        where: { id: job.id },
-        data: {
-          status: 'failed',
-          try_count: { increment: 1 },
-          last_error: error.message,
-        },
-      });
+      await markWorkerJobFailedOrRetry(job, error?.message || 'worker_exception');
     }
   }
 

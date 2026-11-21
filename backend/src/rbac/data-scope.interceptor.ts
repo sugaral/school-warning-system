@@ -31,6 +31,8 @@ type ScopedResourceCheck = {
 export class DataScopeInterceptor implements NestInterceptor {
   private readonly dataScopeCacheTtlSeconds = 30;
   private readonly localCache = new Map<string, { value: unknown; expiresAt: number }>();
+  private static readonly MAX_CACHE_SIZE = 5000;
+  private lastSweepAt = 0;
 
   constructor(
     private readonly reflector: Reflector,
@@ -64,9 +66,27 @@ export class DataScopeInterceptor implements NestInterceptor {
   }
 
   private primeCache(key: string, value: unknown) {
+    const now = Date.now();
+    if (now - this.lastSweepAt > 60_000 || this.localCache.size >= DataScopeInterceptor.MAX_CACHE_SIZE) {
+      this.lastSweepAt = now;
+      for (const [k, entry] of this.localCache) {
+        if (entry.expiresAt <= now) {
+          this.localCache.delete(k);
+        }
+      }
+      if (this.localCache.size >= DataScopeInterceptor.MAX_CACHE_SIZE) {
+        const entries = [...this.localCache.entries()].sort(
+          (a, b) => a[1].expiresAt - b[1].expiresAt,
+        );
+        const toEvict = entries.slice(0, Math.floor(DataScopeInterceptor.MAX_CACHE_SIZE * 0.2));
+        for (const [evictKey] of toEvict) {
+          this.localCache.delete(evictKey);
+        }
+      }
+    }
     this.localCache.set(key, {
       value,
-      expiresAt: Date.now() + this.dataScopeCacheTtlSeconds * 1000,
+      expiresAt: now + this.dataScopeCacheTtlSeconds * 1000,
     });
   }
 
