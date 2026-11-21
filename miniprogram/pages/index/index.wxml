@@ -1,4 +1,4 @@
-<view class="page">
+<view class="page page-has-tabbar">
   <!-- 学生信息软陶英雄卡片 -->
   <view class="hero-clay">
     <view class="hero-top">
@@ -32,9 +32,7 @@
   <view class="card card-tint" bindtap="goNotifications">
     <view class="card-title" style="margin-bottom:14rpx">
       <text>消息中心</text>
-      <text class="tag {{messageSummary.totalUnread > 0 ? 'tag-danger' : 'tag-success'}}">
-        {{messageSummary.totalUnread > 0 ? messageSummary.totalUnread + ' 条未读' : '全部已读'}}
-      </text>
+      <view class="tag {{messageSummary.totalUnread > 0 ? 'tag-danger' : 'tag-success'}}">{{messageSummary.totalUnread > 0 ? messageSummary.totalUnread + ' 条未读' : '全部已读'}}</view>
     </view>
     <view class="msg-bar">
       <view class="msg-chip">
@@ -44,34 +42,6 @@
       <view class="msg-chip">
         <text class="msg-chip-label">班级公告未读</text>
         <text class="msg-chip-num">{{messageSummary.classUnread}}</text>
-      </view>
-    </view>
-  </view>
-
-  <!-- 今日概览 -->
-  <view class="card">
-    <view class="card-title">
-      <text>今日概览</text>
-      <text style="font-size:23rpx;color:#6f6875;font-weight:500">{{today.date || '今天'}}</text>
-    </view>
-    <view class="stat-grid">
-      <view class="stat-tile stat-tile-green">
-        <view class="stat-value" style="font-size:32rpx">{{today.attendanceText}}</view>
-        <view class="stat-label">今日考勤</view>
-      </view>
-      <view class="stat-tile">
-        <view class="stat-value" style="font-size:32rpx">{{today.homeworkText}}</view>
-        <view class="stat-label">今日作业</view>
-      </view>
-      <view class="stat-tile">
-        <view class="stat-value" style="color:#3f8a5d">{{today.courseCount}}</view>
-        <view class="stat-label">今日课程</view>
-      </view>
-    </view>
-    <view class="today-chips" wx:if="{{today.records.length > 0}}">
-      <view class="today-chip-item" wx:for="{{today.records}}" wx:key="index">
-        <text class="today-course">{{item.courseName}}</text>
-        <text class="tag {{item.attendanceTag}}">{{item.attendanceText}}</text>
       </view>
     </view>
   </view>
@@ -95,53 +65,10 @@
         <view class="stat-value" style="color:#3f8a5d">{{warnStats.processing}}</view>
         <view class="stat-label">已确认</view>
       </view>
-      <view class="stat-tile">
-        <view class="stat-value" style="color:#6f6875">{{warnStats.closed}}</view>
-        <view class="stat-label">已关闭</view>
-      </view>
     </view>
     <view class="warn-footer">
       <text class="hint-text" style="margin-top:0">本周异常 {{warnStats.week}} 次 · 本月异常 {{warnStats.month}} 次</text>
       <text class="badge badge-{{warnStats.highestLevel}}" wx:if="{{warnStats.highestLevel}}">{{warnStats.highestLevelText}}</text>
-    </view>
-  </view>
-
-  <!-- 快捷操作矩阵（学生端全功能入口） -->
-  <view class="card">
-    <view class="card-title">学生服务入口</view>
-    <view class="quick-grid">
-      <view class="quick-tile" bindtap="goCheckin">
-        <view class="quick-dot dot-green">签</view>
-        <text class="quick-name">扫码签到</text>
-      </view>
-      <view class="quick-tile" bindtap="goLeaves">
-        <view class="quick-dot dot-mint">假</view>
-        <text class="quick-name">请假申请</text>
-      </view>
-      <view class="quick-tile" bindtap="goAppeals">
-        <view class="quick-dot dot-amber">诉</view>
-        <text class="quick-name">申诉记录</text>
-      </view>
-      <view class="quick-tile" bindtap="goNotifications">
-        <view class="quick-dot dot-teal">信</view>
-        <text class="quick-name">消息公告</text>
-      </view>
-      <view class="quick-tile" bindtap="goSchedules">
-        <view class="quick-dot dot-green">课</view>
-        <text class="quick-name">本班课表</text>
-      </view>
-      <view class="quick-tile" bindtap="goGrades">
-        <view class="quick-dot dot-mint">绩</view>
-        <text class="quick-name">我的成绩</text>
-      </view>
-      <view class="quick-tile" bindtap="goSummaries">
-        <view class="quick-dot dot-amber">汇</view>
-        <text class="quick-name">学业汇总</text>
-      </view>
-      <view class="quick-tile" bindtap="goAttendance">
-        <view class="quick-dot dot-teal">勤</view>
-        <text class="quick-name">近7天考勤</text>
-      </view>
     </view>
   </view>
 

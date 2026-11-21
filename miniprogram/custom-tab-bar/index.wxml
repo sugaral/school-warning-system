@@ -1,0 +1,23 @@
+<view class="glass-tabbar-wrap">
+  <view class="glass-tabbar">
+    <view
+      class="glass-tabbar-bubble"
+      style="width: calc((100% - 16rpx) / {{list.length}}); transform: translateX({{selected * 100}}%);"
+    ></view>
+    <view
+      wx:for="{{list}}"
+      wx:key="pagePath"
+      class="glass-tabbar-item {{selected === index ? 'active' : ''}}"
+      bindtap="switchTab"
+      data-index="{{index}}"
+      data-path="{{item.pagePath}}"
+    >
+      <image
+        class="glass-tabbar-icon"
+        src="{{selected === index ? item.selectedIcon : item.icon}}"
+        mode="aspectFit"
+      />
+      <text class="glass-tabbar-text">{{item.text}}</text>
+    </view>
+  </view>
+</view>

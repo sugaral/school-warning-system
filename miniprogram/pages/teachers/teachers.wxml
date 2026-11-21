@@ -13,9 +13,7 @@
       <view style="flex:1">
         <view class="teacher-name">{{item.name}}</view>
       </view>
-      <text class="tag {{item.type === '班主任' ? 'tag-success' : 'tag-info'}}">
-        {{item.type || '授课老师'}}
-      </text>
+      <view class="tag {{item.type === '班主任' ? 'tag-success' : 'tag-info'}}">{{item.type || '授课老师'}}</view>
     </view>
   </view>
 

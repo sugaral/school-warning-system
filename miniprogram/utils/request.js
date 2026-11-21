@@ -5,7 +5,7 @@
  *   成功: { code: 0, message: 'ok', data: {...}, trace_id: '...' }
  *   失败: { code: <非0>, message: '...', data: ..., trace_id: '...' }
  */
-const config = require('./config');
+const config = require('../config');
 
 // 内存缓存：fileId -> 本地 tempFilePath，避免重复下载受保护图片
 const authImageCache = {};

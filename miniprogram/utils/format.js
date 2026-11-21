@@ -282,6 +282,44 @@ function getAcademicWeekNumber(dateInput, semesterStartDate) {
   return Math.floor(diffDays / 7) + 1;
 }
 
+function parseCheckinQrPayload(text) {
+  const raw = String(text || '').trim();
+  if (!raw) return null;
+
+  if (raw.startsWith('{')) {
+    try {
+      const obj = JSON.parse(raw);
+      const sid = obj.session_id || obj.sessionId || obj.id;
+      const tok = obj.scan_token || obj.scanToken || obj.token;
+      if (sid && tok) return { sessionId: String(sid), scanToken: String(tok) };
+    } catch (e) {
+      /* continue */
+    }
+  }
+
+  const qsIndex = raw.indexOf('?');
+  const queryPart = qsIndex >= 0 ? raw.slice(qsIndex + 1) : raw;
+  const params = {};
+  queryPart.split('&').forEach((pair) => {
+    const idx = pair.indexOf('=');
+    if (idx > 0) {
+      params[pair.slice(0, idx)] = decodeURIComponent(pair.slice(idx + 1));
+    }
+  });
+  const sid = params.session_id || params.sessionId;
+  const tok = params.scan_token || params.scanToken || params.token;
+  if (sid && tok) return { sessionId: String(sid), scanToken: String(tok) };
+
+  if (raw.indexOf('|') > 0) {
+    const parts = raw.split('|');
+    if (parts.length >= 2 && parts[0] && parts[1]) {
+      return { sessionId: String(parts[0]), scanToken: String(parts[1]) };
+    }
+  }
+
+  return null;
+}
+
 module.exports = {
   ATTENDANCE_TEXT,
   ATTENDANCE_TAG_CLASS,
@@ -309,4 +347,5 @@ module.exports = {
   getCurrentTermCode,
   shiftTermCode,
   getAcademicWeekNumber,
+  parseCheckinQrPayload,
 };

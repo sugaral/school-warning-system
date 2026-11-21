@@ -1,6 +1,6 @@
 let cleanupFns: Array<() => void> = [];
 const boundScrollableShells = new WeakSet<HTMLElement>();
-const MIN_RESIZABLE_COLUMN_WIDTH = 72;
+const MIN_RESIZABLE_COLUMN_WIDTH = 56;
 
 type HeaderMeta = {
   label: string;
@@ -401,7 +401,29 @@ function writeStoredColumnWidths(table: HTMLElement, nextWidths: Record<string, 
   table.dataset.wsColumnWidths = JSON.stringify(nextWidths);
 }
 
-function applyColumnWidth(table: HTMLElement, columnIndex: number, width: number) {
+let sharedMeasureCanvas: HTMLCanvasElement | null = null;
+
+function getTextMeasurer(font: string) {
+  if (typeof document === 'undefined') {
+    return (text: string) => String(text || '').length * 8;
+  }
+  if (!sharedMeasureCanvas) {
+    sharedMeasureCanvas = document.createElement('canvas');
+  }
+  const ctx = sharedMeasureCanvas.getContext('2d');
+  if (!ctx) {
+    return (text: string) => String(text || '').length * 8;
+  }
+  ctx.font = font;
+  return (text: string) => Math.ceil(ctx.measureText(String(text || '')).width);
+}
+
+function setColumnWidthInternal(
+  table: HTMLElement,
+  columnIndex: number,
+  width: number,
+  persist: boolean,
+) {
   const safeWidth = Math.max(MIN_RESIZABLE_COLUMN_WIDTH, Math.round(width));
   const widthText = `${safeWidth}px`;
 
@@ -434,9 +456,279 @@ function applyColumnWidth(table: HTMLElement, columnIndex: number, width: number
     targetHeader.style.maxWidth = widthText;
   }
 
-  const storedWidths = readStoredColumnWidths(table);
-  storedWidths[String(columnIndex)] = safeWidth;
-  writeStoredColumnWidths(table, storedWidths);
+  if (persist) {
+    const storedWidths = readStoredColumnWidths(table);
+    storedWidths[String(columnIndex)] = safeWidth;
+    writeStoredColumnWidths(table, storedWidths);
+  }
+}
+
+function applyColumnWidth(table: HTMLElement, columnIndex: number, width: number) {
+  setColumnWidthInternal(table, columnIndex, width, true);
+}
+
+function measureStructuredCellContent(
+  cell: HTMLElement,
+  measureBody: (text: string) => number,
+  padX: number,
+) {
+  const inner = (cell.querySelector('.cell') as HTMLElement | null) || cell;
+  const buttons = Array.from(inner.querySelectorAll('.el-button')).filter(
+    (node): node is HTMLElement => node instanceof HTMLElement,
+  );
+  const tags = Array.from(inner.querySelectorAll('.el-tag')).filter(
+    (node): node is HTMLElement => node instanceof HTMLElement,
+  );
+
+  // Action or button-row cells: keep all visible buttons on one clean line
+  if (buttons.length > 0) {
+    let totalBtnWidth = 0;
+    buttons.forEach((btn, idx) => {
+      const label = (btn.textContent || '').replace(/\s+/g, ' ').trim();
+      const isLink = btn.classList.contains('is-link') || btn.classList.contains('el-button--link');
+      const btnPad = isLink ? 10 : 28;
+      totalBtnWidth += measureBody(label) + btnPad;
+      if (idx > 0) {
+        totalBtnWidth += 8;
+      }
+    });
+    return {
+      width: totalBtnWidth + padX + 8,
+      kind: 'actions' as const,
+    };
+  }
+
+  // Multi-line summary container (e.g., two stat lines stacked inside .session-stats)
+  const blockChildren = Array.from(inner.children).filter(
+    (node): node is HTMLElement => node instanceof HTMLElement && node.tagName === 'DIV',
+  );
+  if (blockChildren.length > 1) {
+    let maxLineWidth = 0;
+    blockChildren.forEach((line) => {
+      const text = (line.textContent || '').replace(/\s+/g, ' ').trim();
+      const childTags = line.querySelectorAll('.el-tag').length;
+      const lineW = measureBody(text) + childTags * 22;
+      if (lineW > maxLineWidth) {
+        maxLineWidth = lineW;
+      }
+    });
+    return {
+      width: maxLineWidth + padX + 14,
+      kind: 'compact' as const,
+    };
+  }
+
+  // Tag-heavy cells
+  if (tags.length > 0) {
+    let totalTagWidth = 0;
+    tags.forEach((tag, idx) => {
+      const text = (tag.textContent || '').replace(/\s+/g, ' ').trim();
+      totalTagWidth += measureBody(text) + 28;
+      if (idx > 0) {
+        totalTagWidth += 6;
+      }
+    });
+    return {
+      width: totalTagWidth + padX + 8,
+      kind: 'tag' as const,
+    };
+  }
+
+  const hasTooltip = inner.classList.contains('el-tooltip') || Boolean(inner.querySelector('.el-tooltip'));
+  const text = (inner.textContent || '').replace(/\s+/g, ' ').trim();
+  return {
+    width: measureBody(text) + padX + 14,
+    kind: hasTooltip ? ('tooltip' as const) : ('text' as const),
+  };
+}
+
+function autoFitTableColumns(table: HTMLElement, headers: HeaderMeta[]) {
+  if (table.dataset.wsManualResized === 'true') {
+    return;
+  }
+
+  const headerCells = getLeafHeaderCells(table);
+  if (!headerCells.length || headerCells.length !== headers.length) {
+    return;
+  }
+
+  const bodyRows = Array.from(
+    table.querySelectorAll('.el-table__body-wrapper tbody tr'),
+  ).filter((row): row is HTMLElement => {
+    if (!(row instanceof HTMLElement)) {
+      return false;
+    }
+    const firstTd = row.querySelector('td.el-table__cell') as HTMLTableCellElement | null;
+    return Boolean(firstTd && firstTd.colSpan === 1);
+  });
+
+  const sampleRows = bodyRows.slice(0, 25);
+  const bodyWrapper = table.querySelector('.el-table__body-wrapper') as HTMLElement | null;
+  const viewportWidth = Math.max(
+    0,
+    Math.floor((bodyWrapper?.clientWidth || table.clientWidth || 0) - 2),
+  );
+
+  // Build compact content + width fingerprint so identical renders are skipped cleanly
+  const rowFingerprints = sampleRows
+    .map((row) =>
+      Array.from(row.querySelectorAll('td.el-table__cell'))
+        .map((td) => (td.textContent || '').trim().length)
+        .join(','),
+    )
+    .join(';');
+  const signature = `${headers.map((h) => h.label).join('|')}::${bodyRows.length}::${rowFingerprints}::${Math.round(viewportWidth / 16)}`;
+  if (table.dataset.wsAutoFitSig === signature) {
+    return;
+  }
+
+  const firstTh = headerCells[0];
+  const thStyle = typeof window !== 'undefined' ? window.getComputedStyle(firstTh) : null;
+  const headerFont = thStyle ? `${thStyle.fontWeight || '700'} ${thStyle.fontSize || '12px'} ${thStyle.fontFamily || 'sans-serif'}` : '700 12px sans-serif';
+  const headerPadX = thStyle
+    ? Math.ceil((parseFloat(thStyle.paddingLeft) || 14) + (parseFloat(thStyle.paddingRight) || 14))
+    : 28;
+
+  const firstTd = sampleRows[0]?.querySelector('td.el-table__cell') as HTMLElement | null;
+  const tdStyle = firstTd && typeof window !== 'undefined' ? window.getComputedStyle(firstTd) : null;
+  const bodyFont = tdStyle ? `${tdStyle.fontWeight || '400'} ${tdStyle.fontSize || '13px'} ${tdStyle.fontFamily || 'sans-serif'}` : '400 13px sans-serif';
+  const bodyPadX = tdStyle
+    ? Math.ceil((parseFloat(tdStyle.paddingLeft) || 14) + (parseFloat(tdStyle.paddingRight) || 14))
+    : 28;
+
+  const measureHeader = getTextMeasurer(headerFont);
+  const measureBody = getTextMeasurer(bodyFont);
+
+  const columnKinds: Array<'selection' | 'actions' | 'tag' | 'compact' | 'tooltip' | 'text'> = [];
+  const headerMinWidths: number[] = [];
+
+  const neededWidths = headers.map((header, colIdx) => {
+    if (header.role === 'selection') {
+      columnKinds[colIdx] = 'selection';
+      headerMinWidths[colIdx] = 48;
+      return 48;
+    }
+
+    const headerNeeded = Math.max(MIN_RESIZABLE_COLUMN_WIDTH, measureHeader(header.label) + headerPadX + 10);
+    headerMinWidths[colIdx] = headerNeeded;
+
+    let maxContentWidth = 0;
+    let kind: 'actions' | 'tag' | 'compact' | 'tooltip' | 'text' =
+      header.role === 'actions' ? 'actions' : 'text';
+
+    sampleRows.forEach((row) => {
+      const cells = row.querySelectorAll('td.el-table__cell');
+      const cell = cells[colIdx];
+      if (!(cell instanceof HTMLElement)) {
+        return;
+      }
+      const measured = measureStructuredCellContent(cell, measureBody, bodyPadX);
+      if (measured.width > maxContentWidth) {
+        maxContentWidth = measured.width;
+      }
+      if (measured.kind === 'actions') {
+        kind = 'actions';
+      } else if (kind !== 'actions' && measured.kind === 'tooltip') {
+        kind = 'tooltip';
+      } else if (kind === 'text' && (measured.kind === 'tag' || measured.kind === 'compact')) {
+        kind = measured.kind;
+      }
+    });
+
+    columnKinds[colIdx] = kind;
+    const rawNeeded = Math.max(headerNeeded, maxContentWidth);
+    if (kind === 'actions') {
+      return Math.min(360, rawNeeded);
+    }
+    if (kind === 'tag') {
+      return Math.min(160, rawNeeded);
+    }
+    if (kind === 'tooltip') {
+      return Math.min(240, rawNeeded);
+    }
+    return Math.min(260, rawNeeded);
+  });
+
+  const sumNeeded = neededWidths.reduce((sum, w) => sum + w, 0);
+  const finalWidths = [...neededWidths];
+
+  if (viewportWidth > 0 && sumNeeded < viewportWidth) {
+    let expandableIndices = columnKinds
+      .map((kind, idx) => (kind === 'text' || kind === 'tooltip' ? idx : -1))
+      .filter((idx) => idx >= 0);
+
+    if (expandableIndices.length === 0) {
+      expandableIndices = columnKinds
+        .map((kind, idx) => (kind !== 'selection' && kind !== 'actions' ? idx : -1))
+        .filter((idx) => idx >= 0);
+    }
+
+    if (expandableIndices.length > 0) {
+      const extra = viewportWidth - sumNeeded;
+      const baseSum = expandableIndices.reduce((sum, idx) => sum + neededWidths[idx], 0) || 1;
+      let assigned = 0;
+      expandableIndices.forEach((idx, pos) => {
+        const share =
+          pos === expandableIndices.length - 1
+            ? extra - assigned
+            : Math.floor((extra * neededWidths[idx]) / baseSum);
+        finalWidths[idx] = neededWidths[idx] + Math.max(0, share);
+        assigned += Math.max(0, share);
+      });
+    }
+  } else if (viewportWidth > 0 && sumNeeded > viewportWidth && sumNeeded <= viewportWidth * 1.35) {
+    // Fit moderately wide tables cleanly into the viewport without horizontal scrollbars
+    let excess = sumNeeded - viewportWidth;
+    const passGroups: number[][] = [
+      columnKinds
+        .map((kind, idx) => (kind === 'tooltip' || kind === 'text' || kind === 'compact' ? idx : -1))
+        .filter((idx) => idx >= 0),
+      columnKinds
+        .map((kind, idx) => (kind === 'tag' ? idx : -1))
+        .filter((idx) => idx >= 0),
+    ];
+
+    for (const group of passGroups) {
+      if (excess <= 0) {
+        break;
+      }
+      const totalSlack = group.reduce(
+        (sum, idx) => sum + Math.max(0, finalWidths[idx] - headerMinWidths[idx]),
+        0,
+      );
+      if (totalSlack <= 0) {
+        continue;
+      }
+      const trimTarget = Math.min(excess, totalSlack);
+      let trimmed = 0;
+      group.forEach((idx, pos) => {
+        const slack = Math.max(0, finalWidths[idx] - headerMinWidths[idx]);
+        if (slack <= 0) {
+          return;
+        }
+        const cut =
+          pos === group.length - 1
+            ? Math.min(slack, trimTarget - trimmed)
+            : Math.min(slack, Math.floor((trimTarget * slack) / totalSlack));
+        finalWidths[idx] -= cut;
+        trimmed += cut;
+      });
+      excess -= trimmed;
+    }
+  }
+
+  const totalFinalWidth = finalWidths.reduce((sum, w) => sum + w, 0);
+  table.dataset.wsAutoFitSig = signature;
+
+  finalWidths.forEach((width, colIdx) => {
+    setColumnWidthInternal(table, colIdx, width, false);
+  });
+
+  table.querySelectorAll('.el-table__header, .el-table__body').forEach((innerTable) => {
+    if (innerTable instanceof HTMLTableElement) {
+      innerTable.style.width = `${totalFinalWidth}px`;
+    }
+  });
 }
 
 function applyStoredColumnWidths(table: HTMLElement) {
@@ -470,6 +762,7 @@ function startLeftEdgeResize(
 
   document.body.style.cursor = 'col-resize';
   document.body.style.userSelect = 'none';
+  table.dataset.wsManualResized = 'true';
   table.classList.add('ws-table-resizing');
 
   const handleMouseMove = (moveEvent: MouseEvent) => {
@@ -541,6 +834,7 @@ function applyLabelsToTable(table: HTMLElement) {
     shell.dataset.hasActions = headers.some((item) => item.role === 'actions') ? 'true' : 'false';
     bindManagedTableScrollState(table, shell);
   }
+  autoFitTableColumns(table, headers);
   applyStoredColumnWidths(table);
   bindLeftResizeHandles(table);
   const bodyRows = table.querySelectorAll(

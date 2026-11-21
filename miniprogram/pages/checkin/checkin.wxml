@@ -2,44 +2,18 @@
   <view class="card" wx:if="{{!scanToken}}">
     <view class="card-title">课堂扫码签到</view>
     <view class="hint-clay">
-      请扫描任课教师展示的课堂动态二维码完成签到；若相机暂不可用，可手动填写课次 ID 与滚动口令。
+      请扫描任课教师展示的课堂动态二维码完成签到。
     </view>
 
-    <button class="btn" bindtap="onScan">扫描课堂二维码</button>
-
-    <view class="form-item" style="margin-top:24rpx">
-      <text class="form-label form-required">课次 ID</text>
-      <input
-        class="form-input"
-        type="number"
-        placeholder="请输入课次 ID"
-        value="{{sessionId}}"
-        bindinput="onSessionInput"
-      />
-    </view>
-
-    <view class="form-item">
-      <text class="form-label form-required">签到口令（scan_token）</text>
-      <input
-        class="form-input"
-        placeholder="请输入动态二维码中的口令"
-        value="{{manualToken}}"
-        bindinput="onTokenInput"
-      />
-    </view>
-
-    <button class="btn btn-ghost" bindtap="onManualSubmit" loading="{{submitting}}" disabled="{{submitting}}">
-      提交口令签到
+    <button class="btn" bindtap="onScan" loading="{{submitting}}" disabled="{{submitting}}">
+      扫描课堂二维码
     </button>
   </view>
 
   <view class="card" wx:else>
-    <view class="card-title">确认签到信息</view>
+    <view class="card-title">扫码签到信息</view>
     <view class="row"><text class="row-label">课次编号</text><text class="row-value">{{sessionId}}</text></view>
     <view class="row"><text class="row-label">动态口令</text><text class="row-value">{{scanToken}}</text></view>
-    <button class="btn" bindtap="onConfirm" loading="{{submitting}}" disabled="{{submitting}}">
-      确认立即签到
-    </button>
     <button class="btn btn-ghost" bindtap="onReset" disabled="{{submitting}}">
       重新扫码
     </button>

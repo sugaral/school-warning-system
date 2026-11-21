@@ -5127,39 +5127,184 @@ export class WarningService {
       }
     }
 
-    // 5. 批量写入（并发安全：createMany + catch P2002回退update）
+    // 5. 批量写入（与当前状态表 & 历史表原子双向同步，避免 skipDuplicates 跳过更新导致管理端与小程序不一致）
     if (currentStateRows.length > 0) {
+      const levelWeight: Record<string, number> = {
+        yellow: 1,
+        orange: 2,
+        red: 3,
+        severe: 4,
+      };
+
       await this.prisma.$transaction(async (tx) => {
-        try {
-          await tx.warning_current_states.createMany({ data: currentStateRows, skipDuplicates: true });
-        } catch (err: any) {
-          // skipDuplicates可能在部分情况下不生效，逐个处理
-          for (const row of currentStateRows) {
+        for (const row of currentStateRows) {
+          const existing = await tx.warning_current_states.findFirst({
+            where: {
+              student_id: row.student_id,
+              metric: row.metric,
+              window: row.window,
+              period_start: row.period_start,
+              period_end: row.period_end,
+              course_key: row.course_key,
+            },
+          });
+
+          const existingHistoryList = await tx.warnings.findMany({
+            where: {
+              student_id: row.student_id,
+              metric: row.metric,
+              window: row.window,
+              period_start: row.period_start,
+              period_end: row.period_end,
+              status: { in: ['open', 'acknowledged'] },
+            },
+            orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
+          });
+
+          const matchedHistory = existingHistoryList.find((item: any) => {
+            const itemDetail = (item.trigger_detail_json as Record<string, any>) || {};
+            const itemCourseId = item.course_id
+              ? item.course_id.toString()
+              : String(itemDetail.course_id || '').trim();
+            const itemCourseKey = itemCourseId || '__none__';
+            return itemCourseKey === row.course_key;
+          });
+
+          if (!existing) {
             try {
               await tx.warning_current_states.create({ data: row });
             } catch (e2: any) {
               if (e2?.code === 'P2002') {
                 await tx.warning_current_states.updateMany({
-                  where: { student_id: row.student_id, metric: row.metric, window: row.window,
-                    period_start: row.period_start, period_end: row.period_end, course_key: row.course_key },
-                  data: { level: row.level, current_count: row.current_count, status: 'open', updated_at: new Date() },
+                  where: {
+                    student_id: row.student_id,
+                    metric: row.metric,
+                    window: row.window,
+                    period_start: row.period_start,
+                    period_end: row.period_end,
+                    course_key: row.course_key,
+                  },
+                  data: {
+                    level: row.level,
+                    rule_id: row.rule_id,
+                    rule_snapshot_json: row.rule_snapshot_json,
+                    trigger_summary: row.trigger_summary,
+                    trigger_detail_json: row.trigger_detail_json,
+                    current_count: row.current_count,
+                    status: 'open',
+                    acknowledged_at: null,
+                    acknowledged_by: null,
+                    updated_at: new Date(),
+                  },
                 });
+              } else {
+                throw e2;
               }
             }
-          }
-        }
 
-        // 批量插入预警历史
-        const historyRows = currentStateRows.map(row => ({
-          student_id: row.student_id, class_id: row.class_id, org_id: row.org_id,
-          metric: row.metric, level: row.level, window: row.window,
-          period_start: row.period_start, period_end: row.period_end,
-          rule_id: row.rule_id, rule_snapshot_json: row.rule_snapshot_json,
-          trigger_summary: row.trigger_summary, trigger_detail_json: row.trigger_detail_json,
-          course_id: row.course_id, status: 'open',
-        }));
-        if (historyRows.length > 0) {
-          await tx.warnings.createMany({ data: historyRows });
+            if (matchedHistory) {
+              await tx.warnings.update({
+                where: { id: matchedHistory.id },
+                data: {
+                  level: row.level,
+                  rule_id: row.rule_id,
+                  rule_snapshot_json: row.rule_snapshot_json,
+                  trigger_summary: row.trigger_summary,
+                  trigger_detail_json: row.trigger_detail_json,
+                  status: 'open',
+                  acknowledged_at: null,
+                  acknowledged_by: null,
+                  updated_at: new Date(),
+                },
+              });
+            } else {
+              await tx.warnings.create({
+                data: {
+                  student_id: row.student_id,
+                  class_id: row.class_id,
+                  org_id: row.org_id,
+                  metric: row.metric,
+                  level: row.level,
+                  window: row.window,
+                  period_start: row.period_start,
+                  period_end: row.period_end,
+                  rule_id: row.rule_id,
+                  rule_snapshot_json: row.rule_snapshot_json,
+                  trigger_summary: row.trigger_summary,
+                  trigger_detail_json: row.trigger_detail_json,
+                  course_id: row.course_id,
+                  status: 'open',
+                },
+              });
+            }
+            continue;
+          }
+
+          const upgradedOrMoreViolations =
+            Number(row.current_count || 0) > Number(existing.current_count || 0) ||
+            (levelWeight[row.level] || 0) > (levelWeight[existing.level] || 0);
+          const shouldReopen = existing.status === 'closed' || upgradedOrMoreViolations;
+          const changed =
+            shouldReopen ||
+            row.trigger_summary !== existing.trigger_summary ||
+            row.level !== existing.level ||
+            Number(row.current_count || 0) !== Number(existing.current_count || 0);
+
+          if (changed) {
+            await tx.warning_current_states.update({
+              where: { id: existing.id },
+              data: {
+                class_id: row.class_id,
+                org_id: row.org_id,
+                level: row.level,
+                rule_id: row.rule_id,
+                rule_snapshot_json: row.rule_snapshot_json,
+                trigger_summary: row.trigger_summary,
+                trigger_detail_json: row.trigger_detail_json,
+                current_count: row.current_count,
+                ...(shouldReopen
+                  ? { status: 'open', acknowledged_at: null, acknowledged_by: null }
+                  : {}),
+                updated_at: new Date(),
+              },
+            });
+
+            if (matchedHistory) {
+              await tx.warnings.update({
+                where: { id: matchedHistory.id },
+                data: {
+                  level: row.level,
+                  rule_id: row.rule_id,
+                  rule_snapshot_json: row.rule_snapshot_json,
+                  trigger_summary: row.trigger_summary,
+                  trigger_detail_json: row.trigger_detail_json,
+                  ...(shouldReopen
+                    ? { status: 'open', acknowledged_at: null, acknowledged_by: null }
+                    : {}),
+                  updated_at: new Date(),
+                },
+              });
+            } else {
+              await tx.warnings.create({
+                data: {
+                  student_id: row.student_id,
+                  class_id: row.class_id,
+                  org_id: row.org_id,
+                  metric: row.metric,
+                  level: row.level,
+                  window: row.window,
+                  period_start: row.period_start,
+                  period_end: row.period_end,
+                  rule_id: row.rule_id,
+                  rule_snapshot_json: row.rule_snapshot_json,
+                  trigger_summary: row.trigger_summary,
+                  trigger_detail_json: row.trigger_detail_json,
+                  course_id: row.course_id,
+                  status: shouldReopen ? 'open' : existing.status,
+                },
+              });
+            }
+          }
         }
       });
     }

@@ -6,6 +6,10 @@
   </view>
 
   <view class="segmented login-tabs">
+    <view
+      class="glass-bubble"
+      style="width: calc((100% - 12rpx) / 2); transform: translateX({{mode === 'recovery' ? 100 : 0}}%);"
+    ></view>
     <view class="seg-item {{mode === 'login' ? 'active' : ''}}" bindtap="switchMode" data-mode="login">账号登录</view>
     <view class="seg-item {{mode === 'recovery' ? 'active' : ''}}" bindtap="switchMode" data-mode="recovery">找回密码</view>
   </view>
@@ -97,16 +101,20 @@
     <block wx:if="{{recoveryOptions}}">
       <view class="form-item">
         <text class="form-label">验证方式</text>
-        <view class="filters" style="margin-bottom:0">
+        <view class="glass-track" style="margin-bottom:0">
           <view
-            class="filter-item {{recoveryChannel === 'email' ? 'active' : ''}}"
+            class="glass-bubble"
+            style="width: calc((100% - 12rpx) / 2); transform: translateX({{recoveryChannel === 'sms' ? 100 : 0}}%);"
+          ></view>
+          <view
+            class="glass-item {{recoveryChannel === 'email' ? 'active' : ''}}"
             bindtap="selectRecoveryChannel"
             data-channel="email"
           >
             邮箱 {{recoveryOptions.email.bound ? '(' + recoveryOptions.email.masked + ')' : '(未绑定)'}}
           </view>
           <view
-            class="filter-item {{recoveryChannel === 'sms' ? 'active' : ''}}"
+            class="glass-item {{recoveryChannel === 'sms' ? 'active' : ''}}"
             bindtap="selectRecoveryChannel"
             data-channel="sms"
           >

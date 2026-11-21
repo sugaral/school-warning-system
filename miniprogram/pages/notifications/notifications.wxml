@@ -1,6 +1,10 @@
 <view class="page">
   <!-- 双通道切换：个人站内消息 + 班级公告 -->
   <view class="segmented">
+    <view
+      class="glass-bubble"
+      style="width: calc((100% - 12rpx) / 2); transform: translateX({{activeTab === 'class' ? 100 : 0}}%);"
+    ></view>
     <view class="seg-item {{activeTab === 'inbox' ? 'active' : ''}}" bindtap="switchTab" data-tab="inbox">
       <text>个人消息</text>
       <text class="seg-badge" wx:if="{{unreadCount > 0}}">{{unreadCount > 99 ? '99+' : unreadCount}}</text>
@@ -14,10 +18,14 @@
   <!-- 页签1：个人站内信 -->
   <block wx:if="{{activeTab === 'inbox'}}">
     <view class="inbox-toolbar">
-      <view class="filters" style="margin-bottom:0">
-        <view class="filter-item {{inboxFilter === 'all' ? 'active' : ''}}" bindtap="setInboxFilter" data-filter="all">全部</view>
-        <view class="filter-item {{inboxFilter === 'unread' ? 'active' : ''}}" bindtap="setInboxFilter" data-filter="unread">未读</view>
-        <view class="filter-item {{inboxFilter === 'read' ? 'active' : ''}}" bindtap="setInboxFilter" data-filter="read">已读</view>
+      <view class="glass-track glass-track-compact" style="flex:1;min-width:0;margin-bottom:0">
+        <view
+          class="glass-bubble"
+          style="width: calc((100% - 12rpx) / 3); transform: translateX({{inboxFilter === 'unread' ? 100 : (inboxFilter === 'read' ? 200 : 0)}}%);"
+        ></view>
+        <view class="glass-item {{inboxFilter === 'all' ? 'active' : ''}}" bindtap="setInboxFilter" data-filter="all">全部</view>
+        <view class="glass-item {{inboxFilter === 'unread' ? 'active' : ''}}" bindtap="setInboxFilter" data-filter="unread">未读</view>
+        <view class="glass-item {{inboxFilter === 'read' ? 'active' : ''}}" bindtap="setInboxFilter" data-filter="read">已读</view>
       </view>
       <button class="btn btn-ghost btn-sm" wx:if="{{unreadCount > 0}}" bindtap="onMarkAllRead">
         全部已读

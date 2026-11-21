@@ -38,6 +38,7 @@ import {
 import { PrismaService } from '../shared/prisma.service';
 import { RedisService } from '../shared/redis.service';
 import { SummaryService } from '../warning/summary.service';
+import { WarningSnapshotService } from '../warning/warning-snapshot.service';
 import { Idempotent } from '../shared/idempotency.decorator';
 
 class StudentLoginDto {
@@ -83,6 +84,7 @@ export class StudentsController {
     private readonly logger: PinoLogger,
     private readonly summaryService: SummaryService,
     @Optional() private readonly redis?: RedisService,
+    @Optional() private readonly warningSnapshotService?: WarningSnapshotService,
   ) {
     this.logger.setContext('StudentsController');
   }
@@ -1592,7 +1594,11 @@ export class StudentsController {
 
     const normalizedStatus = String(status || '').trim();
 
-    if (
+    if (!normalizedId) {
+      whereCondition.status = {
+        in: ['open', 'acknowledged'],
+      };
+    } else if (
       normalizedStatus &&
       normalizedStatus !== 'open' &&
       normalizedStatus !== 'student_acknowledged' &&
@@ -1605,7 +1611,7 @@ export class StudentsController {
       };
     }
 
-    const [warnings, student] =
+    const [warnings, student, currentStates] =
       await Promise.all([
         this.prisma.warnings.findMany({
           where: whereCondition,
@@ -1622,26 +1628,78 @@ export class StudentsController {
             },
           },
         }),
+        (this.prisma as any).warning_current_states.findMany({
+          where: { student_id: BigInt(studentId) },
+          select: {
+            metric: true,
+            window: true,
+            period_start: true,
+            period_end: true,
+            course_key: true,
+            current_count: true,
+          },
+        }),
       ]);
 
-    const items = warnings.map((warning: any) => {
+    const currentCountMap = new Map<string, number>();
+    for (const st of currentStates as any[]) {
+      const pStart = st.period_start ? new Date(st.period_start).toISOString().slice(0, 10) : '';
+      const pEnd = st.period_end ? new Date(st.period_end).toISOString().slice(0, 10) : '';
+      const key = `${st.metric || ''}|${st.window || ''}|${pStart}|${pEnd}|${String(st.course_key || '').trim() || '__none__'}`;
+      const prev = currentCountMap.get(key) || 0;
+      const cur = Number(st.current_count || 0);
+      if (cur > prev) {
+        currentCountMap.set(key, cur);
+      }
+    }
+
+    const dedupedWarnings = normalizedId
+      ? warnings
+      : (() => {
+          const seen = new Set<string>();
+          return warnings.filter((warning: any) => {
+            const detail = (warning.trigger_detail_json as Record<string, any>) || {};
+            const courseKey = String(warning.course_id || detail.course_id || '').trim() || '__none__';
+            const periodStartKey = warning.period_start
+              ? new Date(warning.period_start).toISOString().slice(0, 10)
+              : '';
+            const periodEndKey = warning.period_end
+              ? new Date(warning.period_end).toISOString().slice(0, 10)
+              : '';
+            const bizKey = `${warning.metric || ''}|${warning.window || ''}|${periodStartKey}|${periodEndKey}|${courseKey}`;
+            if (seen.has(bizKey)) {
+              return false;
+            }
+            seen.add(bizKey);
+            return true;
+          });
+        })();
+
+    const items = dedupedWarnings.map((warning: any) => {
       const detail = (warning.trigger_detail_json as Record<string, any>) || {};
       const createdAt = this.formatDateTime(warning.created_at);
       const periodStart = this.formatDateTime(warning.period_start);
       const periodEnd = this.formatDateTime(warning.period_end);
+      const courseKey = String(warning.course_id || detail.course_id || '').trim() || '__none__';
+      const periodStartKey = warning.period_start
+        ? new Date(warning.period_start).toISOString().slice(0, 10)
+        : '';
+      const periodEndKey = warning.period_end
+        ? new Date(warning.period_end).toISOString().slice(0, 10)
+        : '';
+      const bizKey = `${warning.metric || ''}|${warning.window || ''}|${periodStartKey}|${periodEndKey}|${courseKey}`;
+      const violationCount = Math.max(
+        Number(currentCountMap.get(bizKey) || 0),
+        Number(detail.violation_count || 0),
+        Number(detail.count || 0),
+      );
       const studentSelfAcknowledged = this.isStudentSelfAcknowledged(
         warning,
         student?.user_id || null,
       );
-      const effectiveStatus =
-        studentSelfAcknowledged
-          ? 'student_acknowledged'
-          : warning.status === 'acknowledged'
-            && student?.user_id
-            && warning.acknowledged_by
-            && warning.acknowledged_by.toString() !== student.user_id.toString()
-              ? 'closed'
-              : warning.status;
+      const effectiveStatus = studentSelfAcknowledged
+        ? 'student_acknowledged'
+        : warning.status;
       const legacyStatus = this.getLegacyWarningStatus(effectiveStatus);
 
       return {
@@ -1660,7 +1718,7 @@ export class StudentsController {
         course_name: detail.course_name || '',
         violation_type: detail.violation_type || '',
         violation_time: detail.violation_time || periodStart,
-        violation_count: detail.violation_count || 0,
+        violation_count: violationCount,
         status: effectiveStatus,
         status_text: this.getWarningStatusText(effectiveStatus),
         legacy_status: legacyStatus,
@@ -1741,6 +1799,13 @@ export class StudentsController {
       },
       select: {
         id: true,
+        student_id: true,
+        class_id: true,
+        metric: true,
+        window: true,
+        period_start: true,
+        period_end: true,
+        trigger_detail_json: true,
         status: true,
         acknowledged_at: true,
         acknowledged_by: true,
@@ -1781,7 +1846,10 @@ export class StudentsController {
       };
     }
 
-    if (this.isStudentSelfAcknowledged(warning, studentUserId)) {
+    if (
+      warning.status === 'acknowledged' &&
+      this.isStudentSelfAcknowledged(warning, studentUserId)
+    ) {
       return {
         code: 0,
         message: '确认成功',
@@ -1790,15 +1858,44 @@ export class StudentsController {
       };
     }
 
-    await this.prisma.warnings.update({
-      where: { id: warning.id },
-      data: {
-        status: 'open',
-        acknowledged_at: new Date(),
-        acknowledged_by: studentUserId,
-        updated_at: new Date(),
-      },
+    const detail = (warning.trigger_detail_json as Record<string, any>) || {};
+    const rawCourseId = detail.course_id ? String(detail.course_id).trim() : '';
+    const courseKey = rawCourseId && /^\d+$/.test(rawCourseId) ? rawCourseId : '__none__';
+    const ackedAt = warning.acknowledged_at || new Date();
+
+    await this.prisma.$transaction(async (tx: any) => {
+      await tx.warnings.update({
+        where: { id: warning.id },
+        data: {
+          status: 'acknowledged',
+          acknowledged_at: ackedAt,
+          acknowledged_by: studentUserId,
+          updated_at: ackedAt,
+        },
+      });
+
+      await tx.warning_current_states.updateMany({
+        where: {
+          student_id: warning.student_id,
+          metric: warning.metric,
+          window: warning.window,
+          period_start: warning.period_start,
+          period_end: warning.period_end,
+          course_key: courseKey,
+          status: 'open',
+        },
+        data: {
+          status: 'acknowledged',
+          acknowledged_at: ackedAt,
+          acknowledged_by: studentUserId,
+        },
+      });
     });
+
+    await this.warningSnapshotService?.invalidateStudents(
+      [warning.student_id],
+      warning.class_id ? [warning.class_id] : [],
+    );
 
     return {
       code: 0,
@@ -3250,7 +3347,7 @@ export class StudentsController {
     const currentPageSize = Math.min(100, Math.max(1, Number(pageSize) || 20));
     const skip = (currentPage - 1) * currentPageSize;
 
-    const [notifications, total] = await Promise.all([
+    const [notifications, total, allClassNotificationRows] = await Promise.all([
       this.prisma.class_notifications.findMany({
         where: {
           class_id: student.class_id,
@@ -3264,17 +3361,35 @@ export class StudentsController {
           class_id: student.class_id,
         },
       }),
+      this.prisma.class_notifications.findMany({
+        where: {
+          class_id: student.class_id,
+        },
+        select: { id: true },
+      }),
     ]);
 
     const notificationIds = notifications.map((item) => item.id);
-    const readRecords = notificationIds.length
-      ? await this.prisma.student_notification_reads.findMany({
-          where: {
-            student_id: BigInt(studentId),
-            notification_id: { in: notificationIds },
-          },
-        })
-      : [];
+    const allClassNotificationIds = allClassNotificationRows.map((item) => item.id);
+    const [readRecords, readTotal] = await Promise.all([
+      notificationIds.length
+        ? this.prisma.student_notification_reads.findMany({
+            where: {
+              student_id: BigInt(studentId),
+              notification_id: { in: notificationIds },
+            },
+          })
+        : Promise.resolve([]),
+      allClassNotificationIds.length
+        ? this.prisma.student_notification_reads.count({
+            where: {
+              student_id: BigInt(studentId),
+              notification_id: { in: allClassNotificationIds },
+              read_at: { not: null },
+            },
+          })
+        : Promise.resolve(0),
+    ]);
 
     const readMap = new Map(
       readRecords.map((item) => [
@@ -3282,6 +3397,8 @@ export class StudentsController {
         item.read_at !== null,
       ]),
     );
+
+    const unread = Math.max(0, total - readTotal);
 
     return {
       code: 0,
@@ -3296,6 +3413,7 @@ export class StudentsController {
           is_read: readMap.get(item.id.toString()) || false,
         })),
         total,
+        unread,
       },
       trace_id: req.trace_id,
     };

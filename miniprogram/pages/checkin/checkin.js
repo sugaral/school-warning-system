@@ -1,26 +1,41 @@
 const { api, toastError } = require('../../utils/request');
-const { ATTENDANCE_TEXT, formatDateTime } = require('../../utils/format');
+const { ATTENDANCE_TEXT, formatDateTime, parseCheckinQrPayload } = require('../../utils/format');
 
 Page({
   data: {
     sessionId: '',
     scanToken: '',
-    manualToken: '',
     submitting: false,
     result: null,
   },
 
   onLoad(options) {
-    if (options && options.session_id) this.setData({ sessionId: String(options.session_id) });
-    if (options && options.scan_token) this.setData({ scanToken: String(options.scan_token) });
-  },
+    if (options && options.session_id && options.scan_token) {
+      this.setData(
+        {
+          sessionId: String(options.session_id),
+          scanToken: String(options.scan_token),
+          result: null,
+        },
+        () => {
+          if (options.auto === '1') {
+            this.doCheckin();
+          }
+        },
+      );
+      return;
+    }
 
-  onSessionInput(e) {
-    this.setData({ sessionId: e.detail.value });
-  },
+    if (options && options.session_id) {
+      this.setData({ sessionId: String(options.session_id) });
+    }
+    if (options && options.scan_token) {
+      this.setData({ scanToken: String(options.scan_token) });
+    }
 
-  onTokenInput(e) {
-    this.setData({ manualToken: e.detail.value });
+    if (options && options.autoScan === '1') {
+      this.onScan();
+    }
   },
 
   onScan() {
@@ -28,72 +43,31 @@ Page({
       onlyFromCamera: false,
       scanType: ['qrCode'],
       success: (res) => {
-        const parsed = this.parseQrPayload(res.result || res.path || '');
+        const parsed = parseCheckinQrPayload(res.result || res.path || '');
         if (!parsed) {
           toastError('二维码内容无法识别，请确认是课堂签到码');
           return;
         }
-        this.setData({
-          sessionId: parsed.sessionId,
-          scanToken: parsed.scanToken,
-          result: null,
-        });
+        this.setData(
+          {
+            sessionId: parsed.sessionId,
+            scanToken: parsed.scanToken,
+            result: null,
+          },
+          () => this.doCheckin(),
+        );
       },
-      fail: () => toastError('扫码已取消'),
+      fail: (err) => {
+        const msg = String((err && err.errMsg) || '').toLowerCase();
+        if (msg.indexOf('cancel') === -1) {
+          toastError('扫码失败，请重试');
+        }
+      },
     });
-  },
-
-  parseQrPayload(text) {
-    const raw = String(text || '').trim();
-    if (!raw) return null;
-
-    if (raw.startsWith('{')) {
-      try {
-        const obj = JSON.parse(raw);
-        const sid = obj.session_id || obj.sessionId || obj.id;
-        const tok = obj.scan_token || obj.scanToken || obj.token;
-        if (sid && tok) return { sessionId: String(sid), scanToken: String(tok) };
-      } catch (e) {
-        /* continue */
-      }
-    }
-
-    const qsIndex = raw.indexOf('?');
-    const queryPart = qsIndex >= 0 ? raw.slice(qsIndex + 1) : raw;
-    const params = {};
-    queryPart.split('&').forEach((pair) => {
-      const idx = pair.indexOf('=');
-      if (idx > 0) {
-        params[pair.slice(0, idx)] = decodeURIComponent(pair.slice(idx + 1));
-      }
-    });
-    const sid = params.session_id || params.sessionId;
-    const tok = params.scan_token || params.scanToken || params.token;
-    if (sid && tok) return { sessionId: String(sid), scanToken: String(tok) };
-
-    if (raw.indexOf('|') > 0) {
-      const parts = raw.split('|');
-      if (parts.length >= 2 && parts[0] && parts[1]) {
-        return { sessionId: String(parts[0]), scanToken: String(parts[1]) };
-      }
-    }
-
-    return null;
-  },
-
-  onManualSubmit() {
-    const { sessionId, manualToken } = this.data;
-    if (!String(sessionId || '').trim()) return toastError('请输入课次 ID');
-    if (!String(manualToken || '').trim()) return toastError('请输入签到口令');
-    this.setData({ scanToken: String(manualToken).trim() }, () => this.doCheckin());
-  },
-
-  onConfirm() {
-    this.doCheckin();
   },
 
   onReset() {
-    this.setData({ scanToken: '', manualToken: '', result: null });
+    this.setData({ scanToken: '', result: null }, () => this.onScan());
   },
 
   async doCheckin() {

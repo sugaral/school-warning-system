@@ -2,11 +2,15 @@
   <view class="card">
     <view class="form-item">
       <text class="form-label form-required">请假类型</text>
-      <view class="filters" style="margin-bottom:0">
+      <view class="glass-track" style="margin-bottom:0">
+        <view
+          class="glass-bubble"
+          style="width: calc((100% - 12rpx) / 4); transform: translateX({{leaveType === '病假' ? 100 : (leaveType === '公假' ? 200 : (leaveType === '其他' ? 300 : 0))}}%);"
+        ></view>
         <view
           wx:for="{{leaveTypes}}"
           wx:key="*this"
-          class="filter-item {{leaveType === item ? 'active' : ''}}"
+          class="glass-item {{leaveType === item ? 'active' : ''}}"
           bindtap="selectLeaveType"
           data-type="{{item}}"
         >

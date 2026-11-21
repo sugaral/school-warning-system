@@ -94,16 +94,16 @@
               {{ row.class_name }}
             </template>
           </el-table-column>
-          <el-table-column label="开始时间" width="170">
+          <el-table-column label="开始时间" width="195">
             <template #default="{ row }">{{ formatDateTime(row.session_start) }}</template>
           </el-table-column>
           <el-table-column label="二维码刷新" width="110">
             <template #default="{ row }">{{ row.qr_refresh_seconds || qrRefreshSeconds }} 秒</template>
           </el-table-column>
-          <el-table-column label="签到截止" width="170">
+          <el-table-column label="签到截止" width="195">
             <template #default="{ row }">{{ formatDateTime(row.session_end || row.qr_expire_at) }}</template>
           </el-table-column>
-          <el-table-column label="签到统计" min-width="300">
+          <el-table-column label="签到统计" width="215">
             <template #default="{ row }">
               <div class="session-stats">
                 <div>
@@ -125,14 +125,14 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column prop="status" label="状态" width="100">
+          <el-table-column prop="status" label="状态" width="112">
             <template #default="{ row }">
               <el-tag :type="getAttendanceStatusType(row.status)">{{ getAttendanceStatusText(row.status) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="320" fixed="right">
+          <el-table-column label="操作" width="370" fixed="right">
             <template #default="{ row }">
-              <div class="action-row">
+              <div class="session-action-row">
                 <el-button
                   link
                   size="small"
@@ -1627,6 +1627,20 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
+}
+
+.session-action-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.session-action-row :deep(.el-button) {
+  margin-left: 0 !important;
+  padding-left: 2px;
+  padding-right: 2px;
 }
 
 .session-stats {

@@ -84,8 +84,6 @@
       </el-button>
     </template>
   </el-dialog>
-
-  <TableSpacingControl />
 </template>
 
 <script setup lang="ts">
@@ -93,7 +91,6 @@ import { computed, onMounted, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
 import MultiImageUploadField from '../components/MultiImageUploadField.vue';
-import TableSpacingControl from '../components/TableSpacingControl.vue';
 import { submitUserFeedback } from '../api';
 import { api } from '../api/http';
 import { roleMenuConfig } from '../config/menus';

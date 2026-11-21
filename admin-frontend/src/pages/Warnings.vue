@@ -5,7 +5,7 @@
         <span class="warnings-hero__eyebrow">Class Warning Desk</span>
         <h2 class="warnings-hero__title">班级预警中心</h2>
         <p class="warnings-hero__desc">
-          先按班级定位学生，再在右侧查看学生画像、当前预警、最高级别、最近预警时间，以及按课程聚合的预警明细。
+          先按班级定位学生，再在下方查看学生画像、当前预警、最高级别、最近预警时间，以及按课程聚合的预警明细。
         </p>
       </div>
       <div class="warnings-hero__actions">
@@ -37,11 +37,16 @@
         <div class="warnings-filter-card__header">
           <div>
             <span class="warnings-filter-card__title">筛选条件</span>
-            <p class="warnings-filter-card__desc">按学院、专业、班级和学生关键字查询，再从左侧学生列表进入详情。</p>
+            <p class="warnings-filter-card__desc">按学院、专业、班级和学生关键字查询，再从上方学生花名册选择学生进入详情。</p>
           </div>
-          <el-tag type="primary" effect="plain">
-            已加载 {{ students.length }} 人{{ studentsHasMore ? '，可继续加载' : '' }}
-          </el-tag>
+          <div class="filter-summary-pills">
+            <span class="filter-crumb">学院：<b>{{ selectedOrgName || '全部学院' }}</b></span>
+            <span class="filter-crumb">专业：<b>{{ query.major || '全部专业' }}</b></span>
+            <span class="filter-crumb">班级：<b>{{ selectedClassName || '未选班级' }}</b></span>
+            <el-tag type="primary" effect="plain" size="small">
+              已加载 {{ students.length }} 人{{ studentsHasMore ? '+' : '' }}
+            </el-tag>
+          </div>
         </div>
       </template>
 
@@ -138,12 +143,17 @@
     <section class="warnings-layout">
       <el-card class="warnings-student-card">
         <template #header>
-          <div class="panel-header">
+          <div class="panel-header panel-header--compact">
             <div>
-              <span class="panel-title">学生列表</span>
-              <p class="panel-desc">点击左侧学生，右侧查看完整预警信息。</p>
+              <span class="panel-title">学生花名册</span>
+              <p class="panel-desc">按学号紧凑网格排列，点击任意学生卡片查看下方详情。</p>
             </div>
-            <el-tag effect="plain" type="info">{{ selectedClassName || '未选择班级' }}</el-tag>
+            <div class="panel-header__right">
+              <el-radio-group v-model="studentListFilter" size="small">
+                <el-radio-button label="all">全部 ({{ students.length }})</el-radio-button>
+                <el-radio-button label="warned">仅看有预警 ({{ warnedStudentCount }})</el-radio-button>
+              </el-radio-group>
+            </div>
           </div>
         </template>
 
@@ -152,54 +162,72 @@
           description="请先选择班级后查询"
         />
 
-        <el-skeleton v-else-if="loadingStudents" :rows="8" animated />
+        <el-skeleton v-else-if="loadingStudents" :rows="4" animated />
 
-        <div v-else class="student-list">
-          <button
-            v-for="student in students"
-            :key="student.id"
-            type="button"
-            class="student-list__item"
-            :class="{ 'student-list__item--active': selectedStudentId === student.id }"
-            @click="selectStudent(student.id)"
-          >
-            <div class="student-list__main">
-              <div>
-                <div class="student-list__name">{{ student.student_name }}</div>
-                <div class="student-list__meta">{{ student.student_no }} / {{ student.major || '未填写专业' }}</div>
+        <el-empty
+          v-else-if="displayedStudents.length === 0"
+          description="当前筛选条件下暂无符合的学生"
+        />
+
+        <div v-else>
+          <div class="student-list">
+            <button
+              v-for="student in displayedStudents"
+              :key="student.id"
+              type="button"
+              class="student-list__item"
+              :class="{
+                'student-list__item--active': selectedStudentId === student.id,
+                'student-list__item--warned': (student.warning_count || 0) > 0,
+              }"
+              @click="selectStudent(student.id)"
+            >
+              <div class="student-list__main">
+                <span
+                  class="student-list__avatar"
+                  :class="{ 'student-list__avatar--warned': (student.warning_count || 0) > 0 }"
+                >
+                  {{ (student.student_name || '学').slice(0, 1) }}
+                </span>
+                <div class="student-list__identity">
+                  <div class="student-list__name">{{ student.student_name }}</div>
+                  <div class="student-list__meta">{{ student.student_no }}</div>
+                </div>
+                <el-tag
+                  v-if="(student.warning_count || 0) > 0 && student.highest_level"
+                  :color="getWarningLevelColor(student.highest_level)"
+                  effect="dark"
+                  style="border: none; flex-shrink: 0"
+                  size="small"
+                >
+                  {{ getWarningLevelText(student.highest_level) }}
+                </el-tag>
+                <span v-else class="student-list__level student-list__level--normal">正常</span>
               </div>
-              <el-tag
-                v-if="(student.warning_count || 0) > 0 && student.highest_level"
-                :color="getWarningLevelColor(student.highest_level)"
-                effect="dark"
-                style="border: none"
-                size="small"
-              >
-                {{ getWarningLevelText(student.highest_level) }}
-              </el-tag>
-              <span v-else class="student-list__level student-list__level--normal">正常</span>
-            </div>
-            <div class="student-list__stats">
-              <span v-if="(student.occurrence_total || 0) > 0" class="student-list__occurrence">
-                本周异常 {{ student.occurrence_total }} 次课
-              </span>
-              <span>最近预警 {{ formatDateTime(student.last_warning_at) }}</span>
-              <span v-if="student.processing_status === 'processing'">{{ student.processing_text || '正在完善预警相关信息' }}</span>
-              <span v-else-if="student.processing_status === 'failed'" style="color: #dc2626;">{{ student.processing_text || '完善预警相关信息失败' }}</span>
-            </div>
-          </button>
+              <div class="student-list__stats">
+                <span v-if="(student.occurrence_total || 0) > 0" class="student-list__occurrence">
+                  异常 {{ student.occurrence_total }} 次课
+                </span>
+                <span v-else-if="(student.warning_count || 0) > 0">预警 {{ student.warning_count }} 项</span>
+                <span v-else>无异常</span>
+                <span v-if="student.processing_status === 'processing'">完善中</span>
+                <span v-else-if="student.processing_status === 'failed'" style="color: #dc2626;">同步失败</span>
+                <span v-else>{{ formatCompactTime(student.last_warning_at) }}</span>
+              </div>
+            </button>
+          </div>
           <div v-if="studentsHasMore" class="student-list__load-more">
-            <el-button :loading="loadingMoreStudents" @click="loadMoreStudents">加载更多学生</el-button>
+            <el-button size="small" :loading="loadingMoreStudents" @click="loadMoreStudents">加载更多学生</el-button>
           </div>
         </div>
       </el-card>
 
       <el-card class="warnings-detail-card">
         <template #header>
-          <div class="panel-header">
+          <div class="panel-header panel-header--compact">
             <div>
               <span class="panel-title">学生预警详情</span>
-              <p class="panel-desc">这里只展示预警结果，不再展示异常事件明细。</p>
+              <p class="panel-desc">仅展示聚合后的课程预警记录，支持按周期切换核查。</p>
             </div>
             <el-segmented
               v-model="detailView"
@@ -211,70 +239,66 @@
 
         <el-empty
           v-if="!selectedStudentId && !detailLoading"
-          description="请选择左侧学生查看详情"
+          description="请选择上方学生查看详情"
         />
 
         <el-skeleton v-else-if="detailLoading" :rows="10" animated />
 
         <div v-else-if="studentDetail" class="student-detail">
-          <section class="student-profile">
-            <div class="student-profile__main">
-              <div>
-                <div class="student-profile__name">{{ studentDetail.student.student_name }}</div>
-                <div class="student-profile__meta">
-                  {{ studentDetail.student.student_no }} / {{ studentDetail.student.class_name }} / {{ studentDetail.student.org_name }}
-                </div>
+          <section class="student-overview-bar">
+            <div class="student-overview-bar__left">
+              <div class="student-overview-bar__title">
+                <span class="student-profile__name">{{ studentDetail.student.student_name }}</span>
+                <el-tag
+                  v-if="(studentDetail.summary.warning_count || 0) > 0 && studentDetail.summary.highest_level"
+                  :color="getWarningLevelColor(studentDetail.summary.highest_level)"
+                  effect="dark"
+                  style="border: none"
+                  size="small"
+                >
+                  {{ getWarningLevelText(studentDetail.summary.highest_level) }}
+                </el-tag>
+                <span v-else class="student-list__level student-list__level--normal">正常</span>
               </div>
-              <el-tag
-                v-if="(studentDetail.summary.warning_count || 0) > 0 && studentDetail.summary.highest_level"
-                :color="getWarningLevelColor(studentDetail.summary.highest_level)"
-                effect="dark"
-                style="border: none"
-                size="small"
-              >
-                {{ getWarningLevelText(studentDetail.summary.highest_level) }}
-              </el-tag>
-              <span v-else class="student-list__level student-list__level--normal">正常</span>
+              <div class="student-overview-bar__meta">
+                <span>学号 {{ studentDetail.student.student_no }}</span>
+                <span>性别 {{ formatGender(studentDetail.student.gender) }}</span>
+                <span>专业 {{ studentDetail.student.major || '未填写' }}</span>
+                <span>{{ studentDetail.student.org_name }}</span>
+              </div>
             </div>
 
-            <div class="student-profile__chips">
-              <span>性别 {{ formatGender(studentDetail.student.gender) }}</span>
-              <span>专业 {{ studentDetail.student.major || '未填写' }}</span>
-              <span>最近预警 {{ formatDateTime(studentDetail.summary.last_warning_at) }}</span>
+            <div class="student-overview-bar__kpis">
+              <div class="mini-kpi">
+                <span>当前预警</span>
+                <strong>{{ studentDetail.summary.warning_count || 0 }}</strong>
+                <em v-if="(studentDetail.summary.occurrence_total || 0) > 0" class="mini-kpi__hint">
+                  异常 {{ studentDetail.summary.occurrence_total }} 次课
+                </em>
+              </div>
+              <div class="mini-kpi">
+                <span>最高级别</span>
+                <strong>{{ studentDetail.summary.highest_level ? getWarningLevelText(studentDetail.summary.highest_level) : '正常' }}</strong>
+              </div>
+              <div class="mini-kpi">
+                <span>最近预警</span>
+                <strong>{{ formatCompactTime(studentDetail.summary.last_warning_at) }}</strong>
+              </div>
+              <div class="mini-kpi">
+                <span>预警课程</span>
+                <strong>{{ countWarningCourses(studentDetail.course_groups) }} 门</strong>
+              </div>
             </div>
-          </section>
-
-          <section class="student-summary-grid">
-            <article class="student-summary-card">
-              <span>当前预警条数</span>
-              <strong>{{ studentDetail.summary.warning_count || 0 }}</strong>
-              <em v-if="(studentDetail.summary.occurrence_total || 0) > 0" class="summary-hint">
-                本周期异常 {{ studentDetail.summary.occurrence_total }} 次课
-              </em>
-            </article>
-            <article class="student-summary-card">
-              <span>最高预警级别</span>
-              <strong>{{ studentDetail.summary.highest_level ? getWarningLevelText(studentDetail.summary.highest_level) : '正常' }}</strong>
-            </article>
-            <article class="student-summary-card">
-              <span>最近预警时间</span>
-              <strong>{{ formatDateTime(studentDetail.summary.last_warning_at) }}</strong>
-            </article>
-            <article class="student-summary-card">
-              <span>预警课程数</span>
-              <strong>{{ countWarningCourses(studentDetail.course_groups) }}</strong>
-            </article>
           </section>
 
           <section class="detail-toolbar">
             <div>
               <span class="panel-title panel-title--small">{{ studentDetail.view_label }}</span>
-              <p class="panel-desc">按课程查看聚合后的预警记录。</p>
-              <p v-if="studentDetail.warning_items_truncated" class="panel-desc">
-                当前仅展示最近 {{ studentDetail.warning_items_limit }} 条预警，更多记录请切换筛选范围查看。
-              </p>
+              <span v-if="studentDetail.warning_items_truncated" class="detail-toolbar__hint">
+                （仅展示最近 {{ studentDetail.warning_items_limit }} 条预警）
+              </span>
             </div>
-            <el-tag type="primary" effect="plain">课程 {{ studentDetail.course_groups.length }} 门</el-tag>
+            <el-tag type="primary" effect="plain" size="small">课程 {{ studentDetail.course_groups.length }} 门</el-tag>
           </section>
 
           <el-empty
@@ -316,56 +340,55 @@
               </template>
 
               <div v-if="courseGroup.warning_items.length > 0" class="course-group-block">
-                <div class="course-group-block__title">预警记录</div>
-                <el-table :data="courseGroup.warning_items" size="small">
-                  <el-table-column label="级别" width="110">
+                <el-table :data="courseGroup.warning_items" size="small" border>
+                  <el-table-column label="级别" width="132" align="center">
                     <template #default="{ row }">
                       <el-tag
                         :color="getWarningLevelColor(row.level)"
                         effect="dark"
+                        class="warning-level-badge"
                         style="border: none"
-                        size="small"
                       >
                         {{ row.level_text }}
                       </el-tag>
                     </template>
                   </el-table-column>
-                  <el-table-column label="指标" width="110">
+                  <el-table-column label="指标" width="92" align="center">
                     <template #default="{ row }">
                       {{ row.metric_text }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="时间窗" width="120">
+                  <el-table-column label="时间窗" width="92" align="center">
                     <template #default="{ row }">
                       {{ row.window_text }}
                     </template>
                   </el-table-column>
-                  <el-table-column prop="violation_count" label="次数" width="90" />
-                  <el-table-column label="触发原因" min-width="240" show-overflow-tooltip>
+                  <el-table-column prop="violation_count" label="次数" width="70" align="center" />
+                  <el-table-column label="触发原因" width="220" show-overflow-tooltip>
                     <template #default="{ row }">
                       {{ formatWarningSummary(row) }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="状态" width="110">
+                  <el-table-column label="状态" width="124" align="center">
                     <template #default="{ row }">
                       <el-tag :type="getStatusTagType(row.status)" size="small">
                         {{ row.status_text }}
                       </el-tag>
                     </template>
                   </el-table-column>
-                  <el-table-column label="预警时间" width="180">
+                  <el-table-column label="预警时间" min-width="176">
                     <template #default="{ row }">
                       {{ formatDateTime(row.created_at) }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="相关信息同步" min-width="220">
+                  <el-table-column label="相关信息同步" width="104" align="center">
                     <template #default="{ row }">
-                      <span v-if="row.processing_status === 'processing'">{{ buildProcessingText(courseGroup, row) }}</span>
-                      <span v-else-if="row.processing_status === 'failed'" style="color: #dc2626;">{{ row.processing_text || '完善预警相关信息失败' }}</span>
-                      <span v-else>已完成</span>
+                      <span v-if="row.processing_status === 'processing'" class="sync-status-text">{{ buildProcessingText(courseGroup, row) }}</span>
+                      <span v-else-if="row.processing_status === 'failed'" class="sync-status-text sync-status-text--error">{{ row.processing_text || '失败' }}</span>
+                      <span v-else class="sync-status-text">已完成</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="操作" width="160">
+                  <el-table-column label="操作" width="140" align="center" fixed="right">
                     <template #default="{ row }">
                       <div class="row-actions">
                         <el-button v-if="row.status === 'open'" type="primary" size="small" @click="onAck(row)">
@@ -439,6 +462,18 @@ const autoRefreshEnabled = ref(true);
 const lastUpdatedAt = ref<Date | null>(null);
 const currentRoles = ref<string[]>([]);
 const lockedHeadTeacherOrgId = ref('');
+const studentListFilter = ref<'all' | 'warned'>('all');
+
+const warnedStudentCount = computed(
+  () => students.value.filter((item) => (item.warning_count || 0) > 0).length,
+);
+
+const displayedStudents = computed(() => {
+  if (studentListFilter.value === 'warned') {
+    return students.value.filter((item) => (item.warning_count || 0) > 0);
+  }
+  return students.value;
+});
 
 const query = reactive({
   scope: 'active',
@@ -506,6 +541,14 @@ const scopeLabel = computed(() => {
     all: '全部预警',
   };
   return map[query.scope] || '班级预警';
+});
+
+const selectedOrgName = computed(() => {
+  if (!query.orgId) {
+    return '';
+  }
+  const found = orgList.value.find((org) => String(org.id) === String(query.orgId));
+  return found ? String(found.org_name || found.name || '') : '';
 });
 
 const lastUpdatedText = computed(() => {
@@ -1014,6 +1057,15 @@ const getStatusTagType = (status: string) => {
   return map[status] || 'info';
 };
 
+const formatCompactTime = (value: any) => {
+  if (!value) {
+    return '-';
+  }
+  const formatted = formatDateTime(value);
+  const match = /^\d{4}-(\d{2}-\d{2}\s+\d{2}:\d{2})/.exec(String(formatted || ''));
+  return match ? match[1] : formatted || '-';
+};
+
 watch(autoRefreshEnabled, () => {
   refreshAutoRefreshTimer();
 });
@@ -1050,98 +1102,103 @@ onBeforeUnmount(() => {
 .warnings-page {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
+}
+
+.warnings-page :deep(.el-tag) {
+  white-space: nowrap;
 }
 
 .warnings-hero {
   display: flex;
   justify-content: space-between;
-  align-items: stretch;
-  gap: 18px;
+  align-items: center;
+  gap: 14px;
   flex-wrap: wrap;
-  padding: 24px 26px;
+  padding: 18px 22px;
   border: 1px solid rgba(108, 140, 158, 0.16);
-  border-radius: 28px;
+  border-radius: 22px;
   background:
     linear-gradient(135deg, rgba(15, 118, 110, 0.08), transparent 34%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(246, 250, 252, 0.82));
-  box-shadow: 0 24px 48px rgba(34, 59, 78, 0.1);
+  box-shadow: 0 16px 34px rgba(34, 59, 78, 0.08);
 }
 
 .warnings-hero__copy {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-width: 760px;
+  gap: 4px;
+  max-width: 680px;
 }
 
 .warnings-hero__eyebrow {
   color: #5c7284;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
 .warnings-hero__title {
   margin: 0;
-  font-size: 30px;
+  font-size: 24px;
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   color: #173145;
 }
 
 .warnings-hero__desc {
   margin: 0;
   color: #5d7283;
-  line-height: 1.6;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .warnings-hero__actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
   justify-content: flex-end;
-  align-items: flex-end;
+  align-items: center;
 }
 
 .warnings-hero__meta {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 180px;
-  padding: 14px 16px;
+  gap: 3px;
+  min-width: 150px;
+  padding: 9px 12px;
   border: 1px solid rgba(108, 140, 158, 0.14);
-  border-radius: 18px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.68);
   color: #5e7384;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .warnings-hero__meta strong {
   color: #173145;
-  font-size: 26px;
-  line-height: 1;
+  font-size: 18px;
+  line-height: 1.15;
 }
 
 .auto-refresh {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
-  border-radius: 16px;
+  padding: 7px 12px;
+  border-radius: 14px;
   border: 1px solid rgba(108, 140, 158, 0.14);
   background: rgba(255, 255, 255, 0.72);
   color: #5c7284;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .warnings-filter-card,
 .warnings-student-card,
 .warnings-detail-card {
-  border-radius: 24px;
+  border-radius: 20px;
   border: 1px solid rgba(109, 140, 158, 0.16);
-  box-shadow: 0 18px 34px rgba(34, 59, 78, 0.08);
+  box-shadow: 0 14px 28px rgba(34, 59, 78, 0.07);
 }
 
 .warnings-filter-card__header,
@@ -1149,42 +1206,72 @@ onBeforeUnmount(() => {
 .course-group-card__header {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.panel-header--compact {
+  align-items: center;
+}
+
+.filter-summary-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(241, 246, 249, 0.92);
+  border: 1px solid rgba(108, 140, 158, 0.16);
+  color: #5d7283;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.filter-crumb b {
+  color: #173145;
+  font-weight: 600;
 }
 
 .warnings-filter-card__title,
 .panel-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: #173145;
 }
 
 .panel-title--small {
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .warnings-filter-card__desc,
 .panel-desc,
 .course-group-card__meta {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   color: #6b7f8e;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .scope-row {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
 }
 
 .scope-label,
 .filter-label {
   color: #5f7485;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -1195,7 +1282,7 @@ onBeforeUnmount(() => {
 .filter-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .filter-item--actions {
@@ -1203,79 +1290,141 @@ onBeforeUnmount(() => {
 }
 
 .warnings-layout {
-  display: grid;
-  grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
-  gap: 18px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.panel-header__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .student-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 10px;
+  max-height: 256px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .student-list__item {
   width: 100%;
-  border: 1px solid rgba(108, 140, 158, 0.16);
-  border-radius: 18px;
+  border: 1px solid rgba(108, 140, 158, 0.18);
+  border-radius: 12px;
   background: #fff;
-  padding: 14px 16px;
+  padding: 10px 12px;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.student-list__item--warned {
+  border-color: rgba(217, 119, 6, 0.24);
+  background: rgba(255, 251, 235, 0.55);
 }
 
 .student-list__item:hover,
 .student-list__item--active {
-  border-color: rgba(15, 118, 110, 0.35);
-  box-shadow: 0 14px 26px rgba(15, 118, 110, 0.12);
-  transform: translateY(-1px);
+  border-color: rgba(15, 118, 110, 0.58);
+  background: rgba(240, 253, 249, 0.92);
+  box-shadow: 0 6px 14px rgba(15, 118, 110, 0.12);
 }
 
-.student-list__main,
-.student-list__stats,
-.student-profile__main,
-.student-profile__chips,
+.student-list__main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.student-list__avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  background: #e7f3ec;
+  color: #2f7a53;
+}
+
+.student-list__avatar--warned {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.student-list__identity {
+  min-width: 0;
+  flex: 1;
+}
+
+.student-list__stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: nowrap;
+  align-items: center;
+  margin-top: 7px;
+  color: #5f7485;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 .detail-toolbar {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
   align-items: center;
 }
 
-.student-list__name,
+.detail-toolbar__hint {
+  margin-left: 6px;
+  color: #6b7f8e;
+  font-size: 12px;
+}
+
+.student-list__name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #173145;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .student-profile__name,
 .course-group-card__title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: #173145;
 }
 
-.student-list__meta,
-.student-profile__meta {
-  margin-top: 4px;
-  font-size: 12px;
+.student-list__meta {
+  margin-top: 2px;
+  font-size: 11px;
   color: #6b7f8e;
-}
-
-.student-list__stats,
-.student-profile__chips {
-  margin-top: 12px;
-  color: #5f7485;
-  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .student-list__load-more {
   display: flex;
   justify-content: center;
-  padding: 6px 0 2px;
+  padding: 10px 0 2px;
 }
 
 .student-list__level {
-  font-size: 12px;
+  font-size: 11px;
   color: #6b7f8e;
+  flex-shrink: 0;
 }
 
 .student-list__level--normal {
@@ -1285,50 +1434,83 @@ onBeforeUnmount(() => {
 .student-detail {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-}
-
-.student-profile {
-  padding: 18px;
-  border-radius: 20px;
-  background:
-    linear-gradient(135deg, rgba(15, 118, 110, 0.08), transparent 40%),
-    linear-gradient(180deg, rgba(247, 250, 252, 0.95), rgba(255, 255, 255, 0.98));
-  border: 1px solid rgba(109, 140, 158, 0.16);
-}
-
-.student-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
-.student-summary-card {
+.student-overview-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.07), transparent 45%),
+    rgba(247, 250, 252, 0.92);
+  border: 1px solid rgba(109, 140, 158, 0.16);
+}
+
+.student-overview-bar__left {
   display: flex;
   flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.student-overview-bar__title {
+  display: flex;
+  align-items: center;
   gap: 8px;
-  padding: 16px;
-  border-radius: 18px;
+  flex-wrap: wrap;
+}
+
+.student-overview-bar__meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #5f7485;
+}
+
+.student-overview-bar__kpis {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mini-kpi {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 92px;
+  padding: 7px 11px;
+  border-radius: 12px;
   background: #fff;
   border: 1px solid rgba(109, 140, 158, 0.14);
 }
 
-.student-summary-card span {
+.mini-kpi span {
   color: #6b7f8e;
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.2;
 }
 
-.student-summary-card strong {
+.mini-kpi strong {
   color: #173145;
-  font-size: 24px;
+  font-size: 15px;
+  line-height: 1.25;
+  white-space: nowrap;
 }
 
-/* 读时聚合出的「本周期异常 N 次课」提示 */
-.student-summary-card .summary-hint {
-  margin-top: 2px;
+.mini-kpi__hint {
   color: #b45309;
-  font-size: 12px;
+  font-size: 11px;
   font-style: normal;
+  line-height: 1.2;
 }
 
 .student-list__occurrence {
@@ -1339,52 +1521,58 @@ onBeforeUnmount(() => {
 .course-groups {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .course-group-card {
-  border-radius: 20px;
+  border-radius: 16px;
 }
 
 .course-group-block {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
-.course-group-block + .course-group-block {
-  margin-top: 18px;
-}
-
-.course-group-block__title {
+.warning-level-badge {
+  height: 26px;
+  padding: 0 12px;
   font-size: 13px;
-  font-weight: 700;
-  color: #173145;
+  font-weight: 600;
+}
+
+.sync-status-text {
+  font-size: 12px;
+  color: #5f7485;
+  white-space: nowrap;
+}
+
+.sync-status-text--error {
+  color: #dc2626;
 }
 
 .row-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  display: inline-flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: nowrap;
 }
 
 @media (max-width: 1200px) {
-  .warnings-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .student-summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .student-overview-bar {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 
 @media (max-width: 768px) {
   .warnings-hero {
-    padding: 20px;
+    padding: 16px;
   }
 
-  .student-summary-grid {
-    grid-template-columns: 1fr;
+  .student-overview-bar__kpis {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>
