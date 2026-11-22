@@ -16,6 +16,30 @@
 
 ## 更新记录（按时间戳分类）
 
+### `2026-11-22 23:00` — 预警中心与签到统计修复、表格 Tooltip 宽度同步与启停脚本优化
+- **预警中心交互与预警引擎优化**（`admin-frontend/src/pages/Warnings.vue`、`backend/src/warnings/warnings.controller.ts`、`backend/src/warning/`）：
+  - 移除班级预警中心的自动刷新定时器与开关，保留手动刷新（穿透前端缓存），解决页面周期性跳动与分页被重置的问题。
+  - 将班级学生花名册单页容量提升至 `500`（后端默认 `500` / 上限 `1000`），常规班级一次加载全班学生，不再需要反复点击「加载更多学生」；精简冗余的「查看范围」切换栏并优先展示完整触发原因。
+  - 优化批量预警生成 `generateWarningsBatchOptimized`：支持跨时间窗（日/周/月/学期）内存聚合与原地自动升级，统一触发原因文案；确认预警接口同步兼容 `warning_current_states` 与历史 `warnings` 状态更新。
+- **签到管理与统计快照一致性修复**（`admin-frontend/src/pages/Attendance.vue`、`TeacherAttendance.vue`、`backend/src/attendance/attendance.controller.ts`）：
+  - 修复单次提前结束及批量结束签到（`finalizeSessionEarly`）未刷新 `class_session_snapshots` 导致签到列表统计长期显示全 `0` 的问题；`GET /attendance/sessions` 新增已结束课次陈旧快照自动自愈与缺勤数兜底计算；批量结束改为补录缺勤完成后合并统一结算预警。
+  - 管理员端与教师端课次列表改用行底色 + 状态圆点图例区分「进行中 / 未开始 / 已结束」，精简冗余列提升一屏可读性。
+- **全局表格与 Tooltip 截断修复**（`admin-frontend/src/lib/responsive-table.ts`、`admin-frontend/src/styles/theme.css`、`Warnings.vue`）：
+  - 宽表横向溢出时新增顶部同步横向滚动条、右侧 `sticky` 固定操作列与 `Shift + 滚轮` 横向滚动。
+  - 新增 `syncTooltipCellWidths`，在列宽自适应、手动拖拽调宽及数据重渲染时同步更新 `.cell.el-tooltip` 内联宽度，并将预警明细「触发原因」列改为 `min-width="280"`，彻底解决列很宽但内容仍在 `220px` 处被截断省略的问题。
+- **Windows 一键启停脚本优化**（`start.ps1`、`stop.bat`、`stop.ps1`）：
+  - `stop.bat` / `stop.ps1` 默认改为 `docker compose stop`（保留容器与网络以便下次秒起），新增 `-Purge` 参数按需清理容器/网络（始终保留数据卷），并按仓库路径与监听端口精确清理残留 Node 进程。
+
+### `2026-11-22 17:10` — 收尾修复：报表状态/统计口径、开发代理、表格列宽、旧表清理与 `.env` 合并
+- 详细说明见 **[docs/变更说明-2026-11-22.md](docs/变更说明-2026-11-22.md)**。要点：
+  - 报表导出状态统一为 `completed`（下载端兼容旧 `success`），修复“永远显示生成中、无下载按钮”。
+  - 报表历史改为**按数据范围可见**（全校看全部，学院/班级/本人看自己+范围内），新增「创建人」列，下载/删除权限同步对齐。
+  - 「预警统计-1 · 院系处置表现」不再出现“未知学院”，组织名按“有预警 ∪ 有学生”补齐。
+  - Vite 开发代理按 `Accept: text/html` 区分页面与接口，直链刷新 `/warnings` 等路由不再变成 JSON。
+  - 全局表格不再压缩内容列（补齐 `.cell` 内边距测量），宽表改为横向滚动，杜绝“计…/2026-11-…”截断。
+  - 库内清理 47 张旧系统表（`EDU_*`/`SYS_*`/`DEV_*` 等），重导 `db/mysql/warnsys.sql` 与 `.gz` 快照并更新 `db/README.md` 基线。
+  - 根目录 `.env` 成为唯一配置源：容器内连接串由 compose 固定为服务名，`backend/.env` 改为指向根 `.env` 的硬链接，`start.ps1` 自动创建。
+
 ### `2026-11-22 00:25` — 预警双端一致闭环、自适应表格、小程序液态玻璃 UI 与一键启停脚本（重点）
 - **Windows 一键启停脚手架**（[start.bat](start.bat) / [start.ps1](start.ps1) / [stop.bat](stop.bat) / [stop.ps1](stop.ps1)）：
   - 一键自动拉起 Docker Desktop 与 MySQL / Redis / MinIO 基础容器并等待健康就绪，随后启动本地后端与 Vite 前端（支持 `-Docker` / `-Dev` / `-Rebuild` / `-KeepDocker` / `-NoPause`）；一键关闭优雅清理进程并完整保留数据卷。
