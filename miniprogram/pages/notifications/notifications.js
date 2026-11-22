@@ -91,9 +91,13 @@ Page({
         createdText: formatDateTime(item.created_at),
       }));
       const merged = reset ? mapped : this.data.classList.concat(mapped);
+      const classUnreadCount =
+        data && typeof data.unread === 'number'
+          ? Number(data.unread)
+          : merged.filter((x) => !x.is_read).length;
       this.setData({
         classList: merged,
-        classUnreadCount: merged.filter((x) => !x.is_read).length,
+        classUnreadCount,
         classHasMore: merged.length < total,
         classLoading: false,
       });

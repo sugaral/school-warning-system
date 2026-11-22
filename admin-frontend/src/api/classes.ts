@@ -60,43 +60,43 @@ export async function listCourseClassesByCourseId(courseId: string) {
 
 // 学院管理
 export async function listOrgs() {
-  const { data } = await api.get<ApiResponse<any[]>>('/api/orgs');
+  const { data } = await api.get<ApiResponse<any[]>>('/orgs');
   return data;
 }
 
 export async function createOrg(payload: any) {
-  const { data } = await api.post<ApiResponse<any>>('/api/orgs', payload);
+  const { data } = await api.post<ApiResponse<any>>('/orgs', payload);
   return data;
 }
 
 export async function updateOrg(id: string, payload: any) {
-  const { data } = await api.put<ApiResponse<any>>(`/api/orgs/${id}`, payload);
+  const { data } = await api.put<ApiResponse<any>>(`/orgs/${id}`, payload);
   return data;
 }
 
 export async function deleteOrg(id: string) {
-  const { data } = await api.delete<ApiResponse<any>>(`/api/orgs/${id}`);
+  const { data } = await api.delete<ApiResponse<any>>(`/orgs/${id}`);
   return data;
 }
 
 // 专业管理
 export async function listMajors(orgId: string) {
-  const { data } = await api.get<ApiResponse<any[]>>(`/api/orgs/${orgId}/majors`);
+  const { data } = await api.get<ApiResponse<any[]>>(`/orgs/${orgId}/majors`);
   return data;
 }
 
 export async function createMajor(orgId: string, payload: any) {
-  const { data } = await api.post<ApiResponse<any>>(`/api/orgs/${orgId}/majors`, payload);
+  const { data } = await api.post<ApiResponse<any>>(`/orgs/${orgId}/majors`, payload);
   return data;
 }
 
 export async function updateMajor(id: string, payload: any) {
-  const { data } = await api.put<ApiResponse<any>>(`/api/orgs/majors/${id}`, payload);
+  const { data } = await api.put<ApiResponse<any>>(`/orgs/majors/${id}`, payload);
   return data;
 }
 
 export async function deleteMajor(id: string) {
-  const { data } = await api.delete<ApiResponse<any>>(`/api/orgs/majors/${id}`);
+  const { data } = await api.delete<ApiResponse<any>>(`/orgs/majors/${id}`);
   return data;
 }
 

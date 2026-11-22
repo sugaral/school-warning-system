@@ -42,7 +42,7 @@ Page({
   },
 
   goCheckin() {
-    wx.navigateTo({ url: '/pages/checkin/checkin' });
+    wx.navigateTo({ url: '/pages/checkin/checkin?autoScan=1' });
   },
 
   goLeaveForm() {

@@ -9,11 +9,15 @@
   <view class="card">
     <view class="form-item">
       <text class="form-label form-required">申诉类型</text>
-      <view class="filters" style="margin-bottom:0">
+      <view class="glass-track glass-track-compact" style="margin-bottom:0">
+        <view
+          class="glass-bubble"
+          style="width: calc((100% - 12rpx) / 4); transform: translateX({{form.appeal_type === '考勤申诉' ? 100 : (form.appeal_type === '成绩申诉' ? 200 : (form.appeal_type === '其他申诉' ? 300 : 0))}}%);"
+        ></view>
         <view
           wx:for="{{appealTypes}}"
           wx:key="*this"
-          class="filter-item {{form.appeal_type === item ? 'active' : ''}}"
+          class="glass-item {{form.appeal_type === item ? 'active' : ''}}"
           bindtap="selectAppealType"
           data-type="{{item}}"
         >

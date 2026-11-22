@@ -46,10 +46,10 @@
   --ws-table-row-bg: rgba(255, 255, 255, 0.84);
   --ws-table-row-bg-hover: rgba(245, 251, 250, 0.96);
   --ws-table-row-border: rgba(108, 140, 158, 0.12);
-  --ws-table-header-padding-x: 18px;
-  --ws-table-header-padding-y: 16px;
-  --ws-table-body-padding-x: 18px;
-  --ws-table-body-padding-y: 15px;
+  --ws-table-header-padding-x: 14px;
+  --ws-table-header-padding-y: 13px;
+  --ws-table-body-padding-x: 14px;
+  --ws-table-body-padding-y: 12px;
   --el-color-primary: #0f766e;
   --el-color-success: #0f9f75;
   --el-color-warning: #d18a19;

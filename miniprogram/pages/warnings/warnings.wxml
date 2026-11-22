@@ -1,4 +1,4 @@
-<view class="page">
+<view class="page page-has-tabbar">
   <!-- 预警概览瓷砖 -->
   <view class="card">
     <view class="stat-grid">
@@ -14,10 +14,6 @@
         <view class="stat-value" style="color:#3f8a5d">{{stats.processing}}</view>
         <view class="stat-label">已确认</view>
       </view>
-      <view class="stat-tile" bindtap="onFilter" data-key="status" data-value="closed">
-        <view class="stat-value" style="color:#6f6875">{{stats.closed}}</view>
-        <view class="stat-label">已关闭</view>
-      </view>
     </view>
 
     <!-- 课程筛选 -->
@@ -32,26 +28,33 @@
     </view>
   </view>
 
-  <!-- 等级 & 状态筛选 -->
-  <view class="filters">
-    <view class="filter-item {{level === '' ? 'active' : ''}}" bindtap="onFilter" data-key="level" data-value="">全部等级</view>
-    <view class="filter-item {{level === 'yellow' ? 'active' : ''}}" bindtap="onFilter" data-key="level" data-value="yellow">黄色</view>
-    <view class="filter-item {{level === 'orange' ? 'active' : ''}}" bindtap="onFilter" data-key="level" data-value="orange">橙色</view>
-    <view class="filter-item {{level === 'red' ? 'active' : ''}}" bindtap="onFilter" data-key="level" data-value="red">红色</view>
-    <view class="filter-item {{level === 'severe' ? 'active' : ''}}" bindtap="onFilter" data-key="level" data-value="severe">严重</view>
+  <!-- 等级 & 状态气泡玻璃滑动筛选 -->
+  <view class="glass-track glass-track-compact">
+    <view
+      class="glass-bubble"
+      style="width: calc((100% - 12rpx) / 5); transform: translateX({{level === 'yellow' ? 100 : (level === 'orange' ? 200 : (level === 'red' ? 300 : (level === 'severe' ? 400 : 0)))}}%);"
+    ></view>
+    <view class="glass-item {{level === '' ? 'active' : ''}}" bindtap="onFilter" data-key="level" data-value="">全部</view>
+    <view class="glass-item {{level === 'yellow' ? 'active' : ''}}" bindtap="onFilter" data-key="level" data-value="yellow">黄色</view>
+    <view class="glass-item {{level === 'orange' ? 'active' : ''}}" bindtap="onFilter" data-key="level" data-value="orange">橙色</view>
+    <view class="glass-item {{level === 'red' ? 'active' : ''}}" bindtap="onFilter" data-key="level" data-value="red">红色</view>
+    <view class="glass-item {{level === 'severe' ? 'active' : ''}}" bindtap="onFilter" data-key="level" data-value="severe">严重</view>
   </view>
-  <view class="filters">
-    <view class="filter-item {{status === '' ? 'active' : ''}}" bindtap="onFilter" data-key="status" data-value="">全部状态</view>
-    <view class="filter-item {{status === 'open' ? 'active' : ''}}" bindtap="onFilter" data-key="status" data-value="open">待确认</view>
-    <view class="filter-item {{status === 'acknowledged' ? 'active' : ''}}" bindtap="onFilter" data-key="status" data-value="acknowledged">已确认</view>
-    <view class="filter-item {{status === 'closed' ? 'active' : ''}}" bindtap="onFilter" data-key="status" data-value="closed">已关闭</view>
+  <view class="glass-track glass-track-compact">
+    <view
+      class="glass-bubble"
+      style="width: calc((100% - 12rpx) / 3); transform: translateX({{status === 'open' ? 100 : (status === 'acknowledged' ? 200 : 0)}}%);"
+    ></view>
+    <view class="glass-item {{status === '' ? 'active' : ''}}" bindtap="onFilter" data-key="status" data-value="">全部</view>
+    <view class="glass-item {{status === 'open' ? 'active' : ''}}" bindtap="onFilter" data-key="status" data-value="open">待确认</view>
+    <view class="glass-item {{status === 'acknowledged' ? 'active' : ''}}" bindtap="onFilter" data-key="status" data-value="acknowledged">已确认</view>
   </view>
 
   <!-- 预警卡片列表 -->
   <view class="warn-item card" wx:for="{{items}}" wx:key="id" bindtap="goDetail" data-id="{{item.id}}">
     <view class="warn-head">
       <text class="badge badge-{{item.level}}">{{item.levelText}}</text>
-      <text class="warn-metric">{{item.metricText}}</text>
+      <text class="warn-metric">{{item.metricText}}{{item.violation_count > 0 ? ' ' + item.violation_count + ' 次' : ''}}</text>
       <text class="tag {{item.statusClass}}">{{item.statusText}}</text>
     </view>
 

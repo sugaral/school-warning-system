@@ -1,5 +1,9 @@
 <view class="page">
   <view class="segmented">
+    <view
+      class="glass-bubble"
+      style="width: calc((100% - 12rpx) / 3); transform: translateX({{activeTab === 'security' ? 100 : (activeTab === 'class' ? 200 : 0)}}%);"
+    ></view>
     <view class="seg-item {{activeTab === 'basic' ? 'active' : ''}}" bindtap="switchTab" data-tab="basic">基础资料</view>
     <view class="seg-item {{activeTab === 'security' ? 'active' : ''}}" bindtap="switchTab" data-tab="security">手机/邮箱</view>
     <view class="seg-item {{activeTab === 'class' ? 'active' : ''}}" bindtap="switchTab" data-tab="class">换班申请</view>
@@ -31,9 +35,14 @@
 
       <view class="form-item">
         <text class="form-label">性别</text>
-        <view class="filters" style="margin-bottom:0">
-          <view class="filter-item {{form.gender === 'male' ? 'active' : ''}}" bindtap="selectGender" data-gender="male">男</view>
-          <view class="filter-item {{form.gender === 'female' ? 'active' : ''}}" bindtap="selectGender" data-gender="female">女</view>
+        <view class="glass-track" style="margin-bottom:0">
+          <view
+            wx:if="{{form.gender === 'male' || form.gender === 'female'}}"
+            class="glass-bubble"
+            style="width: calc((100% - 12rpx) / 2); transform: translateX({{form.gender === 'female' ? 100 : 0}}%);"
+          ></view>
+          <view class="glass-item {{form.gender === 'male' ? 'active' : ''}}" bindtap="selectGender" data-gender="male">男</view>
+          <view class="glass-item {{form.gender === 'female' ? 'active' : ''}}" bindtap="selectGender" data-gender="female">女</view>
         </view>
       </view>
 

@@ -1,9 +1,10 @@
-const { api, config } = require('../../utils/request');
+const { api, config, toastError } = require('../../utils/request');
 const {
   ATTENDANCE_TEXT,
   ATTENDANCE_TAG_CLASS,
   HOMEWORK_TEXT,
   LEVEL_TEXT,
+  parseCheckinQrPayload,
 } = require('../../utils/format');
 
 Page({
@@ -37,6 +38,9 @@ Page({
   },
 
   onShow() {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ selected: 0 });
+    }
     const token = wx.getStorageSync(config.STORAGE_TOKEN);
     if (!token) {
       wx.reLaunch({ url: '/pages/login/login' });
@@ -53,7 +57,6 @@ Page({
     this.loadCachedStudent();
     await Promise.all([
       this.loadProfile(),
-      this.loadToday(),
       this.loadTrend(),
       this.loadWarnings(),
       this.loadMessages(),
@@ -196,7 +199,10 @@ Page({
 
       const inboxUnread = Number((inboxRes && inboxRes.unread) || 0);
       const classList = Array.isArray(classRes) ? classRes : (classRes && classRes.list) || [];
-      const classUnread = classList.filter((item) => item && item.is_read === false).length;
+      const classUnread =
+        classRes && typeof classRes.unread === 'number'
+          ? Number(classRes.unread)
+          : classList.filter((item) => item && item.is_read === false).length;
 
       this.setData({
         messageSummary: {
@@ -221,7 +227,30 @@ Page({
     wx.switchTab({ url: '/pages/schedules/schedules' });
   },
   goCheckin() {
-    wx.navigateTo({ url: '/pages/checkin/checkin' });
+    wx.scanCode({
+      onlyFromCamera: false,
+      scanType: ['qrCode'],
+      success: (res) => {
+        const parsed = parseCheckinQrPayload(res.result || res.path || '');
+        if (!parsed) {
+          toastError('二维码内容无法识别，请确认是课堂签到码');
+          return;
+        }
+        const url =
+          '/pages/checkin/checkin?session_id=' +
+          encodeURIComponent(parsed.sessionId) +
+          '&scan_token=' +
+          encodeURIComponent(parsed.scanToken) +
+          '&auto=1';
+        wx.navigateTo({ url });
+      },
+      fail: (err) => {
+        const msg = String((err && err.errMsg) || '').toLowerCase();
+        if (msg.indexOf('cancel') === -1) {
+          toastError('扫码失败，请重试');
+        }
+      },
+    });
   },
   goLeaves() {
     wx.navigateTo({ url: '/pages/leaves/leaves' });

@@ -48,9 +48,7 @@
             {{item.org_name || '未分配学院'}}{{item.head_teacher_name ? ' · 班主任：' + item.head_teacher_name : ''}}
           </view>
         </view>
-        <text class="tag {{selectedId === item.id ? 'tag-success' : 'tag-plain'}}">
-          {{selectedId === item.id ? '已选' : '选择'}}
-        </text>
+        <view class="tag {{selectedId === item.id ? 'tag-success' : 'tag-plain'}}">{{selectedId === item.id ? '已选' : '选择'}}</view>
       </view>
     </block>
     <view class="empty" wx:else style="padding:60rpx 0">

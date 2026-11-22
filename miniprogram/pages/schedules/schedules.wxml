@@ -1,4 +1,4 @@
-<view class="page">
+<view class="page page-has-tabbar">
   <view class="card card-amber" wx:if="{{unboundError}}" bindtap="goBindClass">
     <view class="card-title" style="margin-bottom:6rpx">
       <text style="color:#a16207">您尚未绑定班级，暂无法加载本班课表</text>
@@ -30,12 +30,16 @@
       </view>
     </view>
 
-    <!-- 星期筛选胶囊 -->
-    <view class="filters">
+    <!-- 星期气泡玻璃平滑切换 -->
+    <view class="glass-track glass-track-xs">
+      <view
+        class="glass-bubble"
+        style="width: calc((100% - 12rpx) / 8); transform: translateX({{activeWeekday * 100}}%);"
+      ></view>
       <view
         wx:for="{{weekdays}}"
         wx:key="key"
-        class="filter-item {{activeWeekday === item.key ? 'active' : ''}}"
+        class="glass-item {{activeWeekday === item.key ? 'active' : ''}}"
         bindtap="onWeekdaySelect"
         data-key="{{item.key}}"
       >

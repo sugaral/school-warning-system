@@ -416,6 +416,7 @@ export class WarningsController {
       where: { id: studentId },
       select: {
         id: true,
+        user_id: true,
         student_no: true,
         gender: true,
         major: true,
@@ -601,6 +602,7 @@ export class WarningsController {
         null,
         occurrence.byCourse,
         occurrence.byCourseMetric,
+        student.user_id,
       ),
     };
     this.logger.log(
@@ -1177,6 +1179,7 @@ export class WarningsController {
         metric: true,
         level: true,
         window: true,
+        course_key: true,
         period_start: true,
         period_end: true,
         rule_id: true,
@@ -1252,25 +1255,58 @@ export class WarningsController {
         return false;
       }
 
-      await tx.warnings.create({
-        data: {
+      const warningDetail = (warning.trigger_detail_json as Record<string, any>) || {};
+      const warningCourseKey =
+        String(warning.course_key || warningDetail.course_id || '').trim() || '__none__';
+
+      const existingWarnings = await tx.warnings.findMany({
+        where: {
           student_id: warning.student_id,
-          class_id: warning.class_id,
-          org_id: warning.org_id,
           metric: warning.metric,
-          level: warning.level,
           window: warning.window,
           period_start: warning.period_start,
           period_end: warning.period_end,
-          rule_id: warning.rule_id,
-          rule_snapshot_json: warning.rule_snapshot_json,
-          trigger_summary: warning.trigger_summary,
-          trigger_detail_json: warning.trigger_detail_json,
-          status: 'acknowledged',
-          acknowledged_at: ackedAt,
-          acknowledged_by: userId,
+          status: { in: ['open', 'acknowledged'] },
         },
+        orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
       });
+
+      const matchedExisting = existingWarnings.find((item: any) => {
+        const itemDetail = (item.trigger_detail_json as Record<string, any>) || {};
+        const itemCourseKey = String(itemDetail.course_id || '').trim() || '__none__';
+        return itemCourseKey === warningCourseKey;
+      });
+
+      if (matchedExisting) {
+        await tx.warnings.update({
+          where: { id: matchedExisting.id },
+          data: {
+            status: 'acknowledged',
+            acknowledged_at: ackedAt,
+            acknowledged_by: userId,
+          },
+        });
+      } else {
+        await tx.warnings.create({
+          data: {
+            student_id: warning.student_id,
+            class_id: warning.class_id,
+            org_id: warning.org_id,
+            metric: warning.metric,
+            level: warning.level,
+            window: warning.window,
+            period_start: warning.period_start,
+            period_end: warning.period_end,
+            rule_id: warning.rule_id,
+            rule_snapshot_json: warning.rule_snapshot_json,
+            trigger_summary: warning.trigger_summary,
+            trigger_detail_json: warning.trigger_detail_json,
+            status: 'acknowledged',
+            acknowledged_at: ackedAt,
+            acknowledged_by: userId,
+          },
+        });
+      }
       return true;
     });
 
@@ -2068,6 +2104,7 @@ export class WarningsController {
     processingState?: { status?: string; text?: string } | null,
     occurrenceByCourse?: Map<string, number>,
     occurrenceByCourseMetric?: Map<string, number>,
+    studentUserId?: bigint | null,
   ) {
     const groups = new Map<string, any>();
     const levelWeight: Record<string, number> = {
@@ -2081,7 +2118,13 @@ export class WarningsController {
       const detail = (warning.trigger_detail_json as Record<string, any>) || {};
       const courseId = String(detail.course_id || '').trim() || '__none__';
       const courseName = String(detail.course_name || '').trim() || '未区分课程';
+      const isStudentAck =
+        warning.status === 'acknowledged' &&
+        Boolean(studentUserId) &&
+        Boolean(warning.acknowledged_by) &&
+        warning.acknowledged_by.toString() === studentUserId!.toString();
       const displayStatus = this.getDisplayStatus(warning);
+      const statusText = isStudentAck ? '学生已确认' : this.getStatusText(warning.status);
       const current = groups.get(courseId) || {
         course_id: courseId === '__none__' ? '' : courseId,
         course_name: courseName,
@@ -2090,8 +2133,18 @@ export class WarningsController {
         warning_total_count: 0,
         warning_items: [],
       };
+      const occurrenceCount =
+        occurrenceByCourseMetric?.get(`${courseId}|${String(warning.metric || '').trim()}`) ??
+        occurrenceByCourse?.get(courseId) ??
+        0;
+      const violationCount = Math.max(
+        Number(warning.current_count || 0),
+        Number(detail.violation_count || 0),
+        Number(detail.count || 0),
+        occurrenceCount,
+      );
       current.warning_count += 1;
-      current.warning_total_count += Number(detail.violation_count || 0) || 0;
+      current.warning_total_count += violationCount;
       if ((levelWeight[warning.level] || 0) > (levelWeight[current.highest_level] || 0)) {
         current.highest_level = warning.level;
       }
@@ -2103,17 +2156,16 @@ export class WarningsController {
         metric_text: this.getWarningMetricText(warning),
         window: warning.window,
         window_text: this.getWindowText(warning.window),
-        violation_count: Number(detail.violation_count || 0),
+        violation_count: violationCount,
         // 读时聚合：该课程 + 该指标在本视图周期内实际发生的课次数
-        occurrence_count:
-          occurrenceByCourseMetric?.get(`${courseId}|${String(warning.metric || '').trim()}`) ??
-          occurrenceByCourse?.get(courseId) ??
-          0,
+        occurrence_count: occurrenceCount,
         trigger_summary: warning.trigger_summary,
         status: warning.status,
-        status_text: this.getStatusText(warning.status),
+        status_text: statusText,
         display_status: displayStatus.display_status,
-        display_status_text: displayStatus.display_status_text,
+        display_status_text: isStudentAck && displayStatus.display_status === 'acknowledged'
+          ? '学生已确认'
+          : displayStatus.display_status_text,
         created_at: warning.created_at,
         close_note: warning.close_note || '',
         processing_status: processingState?.status || '',

@@ -1,0 +1,79 @@
+.glass-tabbar-wrap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 24rpx calc(20rpx + env(safe-area-inset-bottom));
+  pointer-events: none;
+  z-index: 999;
+}
+
+.glass-tabbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 112rpx;
+  padding: 8rpx;
+  border-radius: 999rpx;
+  box-sizing: border-box;
+  pointer-events: auto;
+  background: rgba(247, 251, 248, 0.78);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border: 2rpx solid rgba(255, 255, 255, 0.88);
+  box-shadow:
+    0 16rpx 36rpx rgba(34, 62, 46, 0.14),
+    0 4rpx 12rpx rgba(56, 49, 57, 0.06),
+    inset 0 2rpx 6rpx rgba(255, 255, 255, 0.94);
+}
+
+.glass-tabbar-bubble {
+  position: absolute;
+  top: 8rpx;
+  bottom: 8rpx;
+  left: 8rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(224, 245, 232, 0.88) 100%);
+  border: 1rpx solid rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 8rpx 20rpx rgba(63, 138, 93, 0.2),
+    inset 0 2rpx 6rpx rgba(255, 255, 255, 0.98),
+    inset 0 -3rpx 8rpx rgba(63, 138, 93, 0.12);
+  transition: transform 0.36s cubic-bezier(0.34, 1.35, 0.64, 1);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.glass-tabbar-item {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4rpx;
+  color: #6f6875;
+  transition: color 0.24s ease, transform 0.24s ease;
+}
+
+.glass-tabbar-item.active {
+  color: #2f7a53;
+}
+
+.glass-tabbar-icon {
+  width: 44rpx;
+  height: 44rpx;
+  transition: transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.glass-tabbar-item.active .glass-tabbar-icon {
+  transform: translateY(-2rpx) scale(1.08);
+}
+
+.glass-tabbar-text {
+  font-size: 24rpx;
+  font-weight: 600;
+  line-height: 1.1;
+}
