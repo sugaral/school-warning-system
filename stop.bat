@@ -4,7 +4,10 @@ setlocal
 cd /d "%~dp0"
 
 REM WARNSYS One-Click Stop (delegates to stop.ps1)
-REM Options: -KeepDocker | -NoPause
+REM Options: -Purge | -KeepDocker | -NoPause
+REM   -Purge      delete containers/network (volumes kept)
+REM   -KeepDocker stop local processes only
+REM   -NoPause    do not wait for keypress
 
 set "NEED_PAUSE=1"
 for %%A in (%*) do (

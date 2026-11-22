@@ -238,7 +238,17 @@ export class SessionWarningGenerationService {
 
         const primary = this.pickPrimaryRule(matchedRules);
         const totalCount = Object.values(metricCounts).reduce((sum, value) => sum + Number(value || 0), 0);
-        const triggerSummary = this.buildShortSummary(metricCounts);
+        const metricTextMap: Record<string, string> = {
+          late: '迟到',
+          absent: '缺勤',
+          early_leave: '早退',
+        };
+        const studentName = student.users?.name || '未知学生';
+        const courseName = session.courses?.course_name || '';
+        const metricText = metricTextMap[primary.metric] || primary.metric;
+        const triggerSummary = courseName
+          ? `${studentName}在《${courseName}》课程中今日${metricText} ${primary.count} 次，触发日预警`
+          : `${studentName}今日${metricText} ${primary.count} 次，触发日预警`;
         const triggerDetail = {
           violation_count: totalCount,
           total_count: totalCount,

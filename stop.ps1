@@ -3,11 +3,21 @@
 
   作用：
     1. 终止由 start.bat 启动的本地后端与前端进程（含子进程树），并清理本项目端口残留 Node 进程
-    2. 停止并移除本项目 Docker Compose 容器（保留 MySQL / Redis / MinIO 数据卷）
+    2. 关闭本项目 Docker Compose 容器
+       - 默认：docker compose stop（保留容器与网络，下次 start 秒起）
+       - -Purge：docker compose down --remove-orphans（删除容器与网络，数据卷始终保留）
+       - -KeepDocker：完全不碰 Docker，只停本地进程
+
+  用法：
+    .\stop.bat
+    .\stop.bat -Purge
+    .\stop.bat -KeepDocker
+    .\stop.bat -NoPause
 #>
 [CmdletBinding()]
 param(
   [switch]$KeepDocker,
+  [switch]$Purge,
   [switch]$NoPause
 )
 
@@ -41,40 +51,66 @@ if (Test-Path $pidFile) {
   Remove-Item -Path $pidFile -Force -ErrorAction SilentlyContinue
 }
 
-# 2) 按当前仓库路径精确兜底清理可能残留的本地 Node 进程（不误伤其它项目进程）
+# 2) 兜底清理残留 Node 进程（只认本项目特征，避免误伤其它项目）：
+#    a) 命令行里直接出现本项目根目录 —— 一定是本项目的
+#    b) 相对路径启动的 vite（node_modules/vite/bin/vite.js）且确实在监听 5173
+#    c) dist/main.js 或 dist/worker.js 且确实在监听 3000
 $rootPattern = [Regex]::Escape($PSScriptRoot)
+
+function Test-ListenOnPort($procId, $port) {
+  $conn = Get-NetTCPConnection -OwningProcess $procId -State Listen -ErrorAction SilentlyContinue |
+    Where-Object { $_.LocalPort -eq $port }
+  return [bool]$conn
+}
+
 $strayNodes = Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue | Where-Object {
-  $_.CommandLine -and (
-    ($_.CommandLine -match $rootPattern) -or
-    ($_.CommandLine -match 'dist[\\/]main\.js' -and (Get-NetTCPConnection -OwningProcess $_.ProcessId -LocalPort 3000 -ErrorAction SilentlyContinue)) -or
-    ($_.CommandLine -match 'vite\.js' -and (Get-NetTCPConnection -OwningProcess $_.ProcessId -LocalPort 5173 -ErrorAction SilentlyContinue))
-  )
+  $cmd = [string]$_.CommandLine
+  if (-not $cmd) { return $false }
+  if ($cmd -match $rootPattern) { return $true }
+  if ($cmd -match 'vite(\.js|/bin/vite)' -and (Test-ListenOnPort $_.ProcessId 5173)) { return $true }
+  if ($cmd -match 'dist[\\/](main|worker)\.js' -and (Test-ListenOnPort $_.ProcessId 3000)) { return $true }
+  return $false
 }
 foreach ($proc in $strayNodes) {
   Stop-ProcessTree ([int]$proc.ProcessId) "残留 Node 进程 ($($proc.ProcessId))"
 }
+if (-not $strayNodes) {
+  Write-Step '未发现本项目残留 Node 进程。'
+}
 
-# 3) 停止 Docker Compose 容器（保留数据卷）
-if (-not $KeepDocker) {
+# 3) 处理 Docker
+if ($KeepDocker) {
+  Write-Step '已指定 -KeepDocker，保留 Docker 容器运行。'
+} else {
   $null = & cmd /c "docker info >nul 2>&1"
   if ($LASTEXITCODE -eq 0) {
-    Write-Step '正在停止项目 Docker 容器（保留 MySQL / Redis / MinIO 数据卷）...'
-    docker compose down --remove-orphans
-    if ($LASTEXITCODE -eq 0) {
-      Write-Ok 'Docker 容器已全部停止，数据卷已保留：'
-      docker volume ls --filter name=warnsys --format '   {{.Name}}'
+    if ($Purge) {
+      Write-Step '正在删除项目 Docker 容器与网络（数据卷保留）...'
+      docker compose down --remove-orphans
+      if ($LASTEXITCODE -eq 0) {
+        Write-Ok 'Docker 容器已删除，数据卷已保留：'
+        docker volume ls --filter name=warnsys --format '   {{.Name}}'
+      } else {
+        Write-Warn 'docker compose down 返回非零状态，请检查容器状态。'
+      }
     } else {
-      Write-Warn 'docker compose down 返回非零状态，请检查容器状态。'
+      Write-Step '正在停止项目 Docker 容器（保留容器与数据卷，下次启动更快）...'
+      docker compose stop
+      if ($LASTEXITCODE -eq 0) {
+        Write-Ok 'Docker 容器已停止，数据卷已保留：'
+        docker volume ls --filter name=warnsys --format '   {{.Name}}'
+      } else {
+        Write-Warn 'docker compose stop 返回非零状态，请检查容器状态。'
+      }
     }
   } else {
     Write-Warn 'Docker 引擎当前未运行，已跳过容器关闭步骤。'
   }
-} else {
-  Write-Step '已指定 -KeepDocker，保留 Docker 容器运行。'
 }
 
 Write-Host ''
 Write-Host '============================================================' -ForegroundColor Green
 Write-Host ' [OK] 学业预警系统已关闭' -ForegroundColor Green
 Write-Host '   重新启动： .\start.bat' -ForegroundColor Green
+Write-Host '   彻底清容器： .\stop.bat -Purge  （数据卷仍保留）' -ForegroundColor DarkGray
 Write-Host '============================================================' -ForegroundColor Green

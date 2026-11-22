@@ -55,18 +55,37 @@
         <div class="teacher-attendance-table-card__header">
           <div>
             <span class="teacher-attendance-table-card__title">课次列表</span>
-            <p class="teacher-attendance-table-card__desc">桌面端支持一屏查看课程、班级、截止时间和签到统计。</p>
+            <p class="teacher-attendance-table-card__desc">按行颜色快速区分签到状态，支持一屏查看课程、班级和签到统计。</p>
           </div>
-          <el-tag type="primary" effect="plain">当前 {{ sessions.length }} 条</el-tag>
+          <div class="session-header-meta">
+            <div class="session-status-legend" aria-label="课次状态颜色说明">
+              <span class="session-legend-item">
+                <span class="session-status-dot is-active" />
+                <span>进行中</span>
+              </span>
+              <span class="session-legend-item">
+                <span class="session-status-dot is-not-started" />
+                <span>未开始</span>
+              </span>
+              <span class="session-legend-item">
+                <span class="session-status-dot is-ended" />
+                <span>已结束</span>
+              </span>
+            </div>
+            <el-tag type="primary" effect="plain">当前 {{ sessions.length }} 条</el-tag>
+          </div>
         </div>
       </template>
 
       <div class="table-shell">
-      <el-table :data="sessions">
+      <el-table :data="sessions" :row-class-name="getSessionRowClass">
         <el-table-column prop="id" label="课次ID" width="90" />
         <el-table-column label="课程" min-width="180">
           <template #default="{ row }">
-            {{ row.course_name }}
+            <span class="session-course-cell" :title="`${getSessionStatusTitle(row)} · ${row.course_name || ''}`">
+              <span class="session-status-dot" :class="getSessionStatusClass(row)" />
+              <span class="session-course-name">{{ row.course_name }}</span>
+            </span>
           </template>
         </el-table-column>
         <el-table-column label="班级" min-width="160">
@@ -77,16 +96,6 @@
         <el-table-column label="开始时间" width="195">
           <template #default="{ row }">
             {{ formatDateTime(row.session_start) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="二维码刷新" width="110">
-          <template #default="{ row }">
-            {{ row.qr_refresh_seconds || qrRefreshSeconds }} 秒
-          </template>
-        </el-table-column>
-        <el-table-column label="签到截止" width="195">
-          <template #default="{ row }">
-            {{ formatDateTime(row.session_end || row.qr_expire_at) }}
           </template>
         </el-table-column>
         <el-table-column label="签到统计" width="215">
@@ -111,14 +120,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="112">
-          <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)">
-              {{ getStatusText(row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="350" fixed="right">
+        <el-table-column label="操作" width="360" fixed="right">
           <template #default="{ row }">
             <div class="session-action-row">
               <el-button
@@ -450,18 +452,22 @@ const startQrCountdown = () => {
 
 
 
-const getStatusType = (status: string) => {
-  if (status === 'not_started') return 'info';
-  if (status === 'active') return 'success';
-  if (status === 'inactive') return 'warning';
-  return '';
+const getSessionStatusClass = (row: any) => {
+  if (row?.status === 'active') return 'is-active';
+  if (row?.status === 'not_started') return 'is-not-started';
+  return 'is-ended';
 };
 
-const getStatusText = (status: string) => {
-  if (status === 'not_started') return '未开始';
-  if (status === 'active') return '进行中';
-  if (status === 'inactive') return '已结束';
-  return status;
+const getSessionStatusTitle = (row: any) => {
+  if (row?.status === 'active') return '进行中';
+  if (row?.status === 'not_started') return '未开始';
+  return '已结束';
+};
+
+const getSessionRowClass = ({ row }: { row: any }) => {
+  if (row?.status === 'active') return 'session-row--active';
+  if (row?.status === 'not_started') return 'session-row--not-started';
+  return 'session-row--ended';
 };
 
 const loadMyBindings = async () => {
@@ -1021,20 +1027,120 @@ onBeforeUnmount(() => {
   line-height: 1.6;
 }
 
+.session-header-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.session-status-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(241, 246, 249, 0.9);
+  border: 1px solid rgba(108, 140, 158, 0.16);
+  font-size: 12px;
+  font-weight: 600;
+  color: #334e63;
+}
+
+.session-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.session-course-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  display: inline-block;
+}
+
+.session-status-dot.is-active {
+  background: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
+}
+
+.session-status-dot.is-not-started {
+  background: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.16);
+}
+
+.session-status-dot.is-ended {
+  background: #94a3b8;
+}
+
+.table-shell :deep(.el-table tbody tr.session-row--active > td.el-table__cell),
+.table-shell :deep(.el-table tbody tr.session-row--active > td.el-table__cell.ws-sticky-action-col) {
+  background: #f2fbf5 !important;
+}
+
+.table-shell :deep(.el-table tbody tr.session-row--active:hover > td.el-table__cell),
+.table-shell :deep(.el-table tbody tr.session-row--active:hover > td.el-table__cell.ws-sticky-action-col) {
+  background: #e6f7ec !important;
+}
+
+.table-shell :deep(.el-table tbody tr.session-row--active > td.el-table__cell:first-child) {
+  box-shadow: inset 4px 0 0 #16a34a;
+}
+
+.table-shell :deep(.el-table tbody tr.session-row--not-started > td.el-table__cell),
+.table-shell :deep(.el-table tbody tr.session-row--not-started > td.el-table__cell.ws-sticky-action-col) {
+  background: #fefaf0 !important;
+}
+
+.table-shell :deep(.el-table tbody tr.session-row--not-started:hover > td.el-table__cell),
+.table-shell :deep(.el-table tbody tr.session-row--not-started:hover > td.el-table__cell.ws-sticky-action-col) {
+  background: #fcf2dc !important;
+}
+
+.table-shell :deep(.el-table tbody tr.session-row--not-started > td.el-table__cell:first-child) {
+  box-shadow: inset 4px 0 0 #d97706;
+}
+
+.table-shell :deep(.el-table tbody tr.session-row--ended > td.el-table__cell),
+.table-shell :deep(.el-table tbody tr.session-row--ended > td.el-table__cell.ws-sticky-action-col) {
+  background: #f8fafc !important;
+}
+
+.table-shell :deep(.el-table tbody tr.session-row--ended:hover > td.el-table__cell),
+.table-shell :deep(.el-table tbody tr.session-row--ended:hover > td.el-table__cell.ws-sticky-action-col) {
+  background: #f1f5f9 !important;
+}
+
+.table-shell :deep(.el-table tbody tr.session-row--ended > td.el-table__cell:first-child) {
+  box-shadow: inset 4px 0 0 #94a3b8;
+}
+
+.table-shell :deep(.el-table tbody tr.session-row--ended > td.el-table__cell:not(.ws-sticky-action-col) .cell) {
+  color: #64748b;
+}
+
 /* Note: hero/overview/table-card patterns available globally in page-layout.css */
 
 .session-action-row {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   flex-wrap: nowrap;
   white-space: nowrap;
 }
 
+.session-action-row :deep(.el-button.is-link),
 .session-action-row :deep(.el-button) {
   margin-left: 0 !important;
-  padding-left: 2px;
-  padding-right: 2px;
+  padding: 2px 4px !important;
 }
 
 .session-stats {

@@ -3716,28 +3716,34 @@ export class WarningService {
   ) {
     const studentName = student.users?.name || '未知学生';
     const metricText = this.getMetricText(metric);
+    const windowPrefix = this.getWindowPrefix(windowType);
+    const windowText = this.getWindowText(windowType);
 
     if (metric === CUMULATIVE_WARNING_METRIC) {
       if (windowType === 'week' && windowContext?.weekLabel) {
         return `${studentName}在${windowContext.weekLabel}${this.getCountPhrase(metric, violationCount)}，触发周预警`;
       }
 
-      return `${studentName}${this.getWindowPrefix(windowType)}${this.getCountPhrase(metric, violationCount)}，触发${this.getWindowText(windowType)}预警`;
+      return `${studentName}${windowPrefix}${this.getCountPhrase(metric, violationCount)}，触发${windowText}预警`;
     }
 
-    if (windowType === 'day') {
-      if (courseName) {
-        return `${studentName}在《${courseName}》课程中${metricText}，触发日预警`;
+    if (
+      TERM_METRIC_SCALE[metric] ||
+      metric === 'failed_courses' ||
+      metric === UNACKNOWLEDGED_METRIC
+    ) {
+      if (windowType === 'week' && windowContext?.weekLabel) {
+        return `${studentName}在${windowContext.weekLabel}${this.getCountPhrase(metric, violationCount)}，触发周预警`;
       }
 
-      return `${studentName}${this.getWindowPrefix(windowType)}${metricText}，触发日预警`;
+      return `${studentName}${windowPrefix}${this.getCountPhrase(metric, violationCount)}，触发${windowText}预警`;
     }
 
-    if (windowType === 'week' && windowContext?.weekLabel) {
-      return `${studentName}在${windowContext.weekLabel}${this.getCountPhrase(metric, violationCount)}，触发周预警`;
+    if (courseName) {
+      return `${studentName}在《${courseName}》课程中${windowPrefix}${metricText} ${violationCount} 次，触发${windowText}预警`;
     }
 
-    return `${studentName}${this.getWindowPrefix(windowType)}${this.getCountPhrase(metric, violationCount)}，触发${this.getWindowText(windowType)}预警`;
+    return `${studentName}${windowPrefix}${metricText} ${violationCount} 次，触发${windowText}预警`;
   }
 
   private getCountMode(metric: string) {
@@ -5002,8 +5008,8 @@ export class WarningService {
   }
 
   /**
-   * 批量优化版：一次加载全部考勤记录，内存计算，批量写入
-   * 适用于批量结束签到等场景，比逐学生处理快10-20倍
+   * 批量优化版：一次加载全部考勤记录，跨时间窗内存计算并原地自动升级，批量写入
+   * 适用于结束签到/批量结束签到等场景，比逐学生处理快10-20倍
    */
   async generateWarningsBatchOptimized(
     targets: Array<{ studentId: bigint; courseId?: bigint; recordDate: Date; sessionId?: bigint }>,
@@ -5011,37 +5017,28 @@ export class WarningService {
     const startedAt = Date.now();
     if (targets.length === 0) return { warnings_generated: 0 };
 
-    // 1. 获取规则（缓存）
+    // 1. 获取规则与学生上下文
     const rules = await this.getRules();
+    const studentIds = Array.from(new Set(targets.map((t) => t.studentId.toString()))).map((id) =>
+      BigInt(id),
+    );
     const students = await this.prisma.student_profiles.findMany({
-      where: { id: { in: targets.map(t => t.studentId) } },
+      where: { id: { in: studentIds } },
       select: { id: true, class_id: true, org_id: true, users: { select: { name: true, email: true } } },
     });
-    const studentMap = new Map(students.map(s => [s.id.toString(), s]));
+    const studentMap = new Map(students.map((s) => [s.id.toString(), s]));
 
-    // 2. 一次查询所有考勤记录
-    const targetMap = new Map<string, { studentId: bigint; courseId?: bigint; recordDate: Date; sessionId?: bigint }>();
-    for (const target of targets) {
-      const key = [
-        target.studentId.toString(),
-        target.courseId?.toString() || '',
-        this.toDateOnlyKey(target.recordDate),
-      ].join('|');
-      targetMap.set(key, target);
-    }
-
-    const studentIds = Array.from(new Set(targets.map(t => t.studentId.toString()))).map(id => BigInt(id));
-    const courseIds = Array.from(
-      new Set(targets.filter(t => t.courseId).map(t => t.courseId!.toString())),
-    ).map(id => BigInt(id));
+    // 2. 一次查询相关学生+课程的所有异常考勤记录（跨日累计，供 day/week/month/term 评估）
+    const allHaveCourseId = targets.every((t) => Boolean(t.courseId));
+    const courseIds = allHaveCourseId
+      ? Array.from(new Set(targets.map((t) => t.courseId!.toString()))).map((id) => BigInt(id))
+      : [];
 
     const allRecords = await this.prisma.attendance_records.findMany({
       where: {
         student_id: { in: studentIds },
         attendance_status: { in: ['absent', 'late', 'early_leave'] },
-        sessions: {
-          ...(courseIds.length > 0 ? { course_id: { in: courseIds } } : {}),
-        },
+        ...(courseIds.length > 0 ? { sessions: { course_id: { in: courseIds } } } : {}),
       },
       select: {
         student_id: true,
@@ -5054,112 +5051,205 @@ export class WarningService {
       },
     });
 
-    // 3. 按学生+课程+日期过滤在范围内的记录
-    const recalcMap = new Map<string, Array<typeof allRecords[0]>>();
+    // 3. 按 学生|课程 分组保留全量异常记录，并对 targets 按 学生|课程 去重（保留最新目标日期/sessionId）
+    const recordsByStudentCourse = new Map<string, Array<(typeof allRecords)[0]>>();
     for (const r of allRecords) {
       const recordCourseId = r.sessions?.course_id?.toString() || '';
-      const recordDateKey = this.toDateOnlyKey(r.sessions?.session_start);
-      const targetKey = `${r.student_id.toString()}|${recordCourseId}|${recordDateKey}`;
-      const studentTarget = targetMap.get(targetKey);
-      if (!studentTarget) continue;
-      const bucket = recalcMap.get(targetKey) || [];
+      const groupKey = `${r.student_id.toString()}|${recordCourseId}`;
+      const bucket = recordsByStudentCourse.get(groupKey) || [];
       bucket.push(r);
-      recalcMap.set(targetKey, bucket);
+      recordsByStudentCourse.set(groupKey, bucket);
     }
 
-    // 4. 内存计算 + 批量写入
+    const latestTargetMap = new Map<
+      string,
+      { studentId: bigint; courseId?: bigint; recordDate: Date; sessionId?: bigint }
+    >();
+    for (const target of targets) {
+      const groupKey = `${target.studentId.toString()}|${target.courseId?.toString() || ''}`;
+      const prev = latestTargetMap.get(groupKey);
+      if (!prev || new Date(target.recordDate).getTime() >= new Date(prev.recordDate).getTime()) {
+        latestTargetMap.set(groupKey, target);
+      }
+    }
+
+    // 4. 缓存各日期对应的时间窗边界并评估最高级别规则
+    const levelWeight: Record<string, number> = {
+      yellow: 1,
+      orange: 2,
+      red: 3,
+      severe: 4,
+    };
+    const windowWeight: Record<string, number> = {
+      day: 1,
+      week: 2,
+      month: 3,
+      term: 4,
+    };
+    const boundaryCache = new Map<string, { start: Date; end: Date; periodStart: Date; periodEnd: Date }>();
+    const getCachedWindow = async (recordDate: Date, windowType: string) => {
+      const cacheKey = `${this.toDateOnlyKey(recordDate)}|${windowType}`;
+      const cached = boundaryCache.get(cacheKey);
+      if (cached) {
+        return cached;
+      }
+      const bounds = await this.getWindowBoundaries(recordDate, windowType);
+      const startTz = dayjs(bounds.start).tz(DEFAULT_TZ);
+      const endTz = dayjs(bounds.end).tz(DEFAULT_TZ);
+      const entry = {
+        start: bounds.start,
+        end: bounds.end,
+        periodStart: new Date(Date.UTC(startTz.year(), startTz.month(), startTz.date())),
+        periodEnd: new Date(Date.UTC(endTz.year(), endTz.month(), endTz.date(), 23, 59, 59, 999)),
+      };
+      boundaryCache.set(cacheKey, entry);
+      return entry;
+    };
+
     const currentStateRows: any[] = [];
     let genCount = 0;
 
-    for (const [targetKey, records] of recalcMap) {
-      const [studentIdStr, courseIdStr] = targetKey.split('|');
+    for (const [groupKey, studentTarget] of latestTargetMap.entries()) {
+      const [studentIdStr, courseIdStr] = groupKey.split('|');
       const student = studentMap.get(studentIdStr);
       if (!student) continue;
-      const studentTarget = targetMap.get(targetKey);
-      if (!studentTarget) continue;
 
-      const metrics = { absent: 0, late: 0, early_leave: 0 } as Record<string, number>;
-      for (const r of records) {
-        const s = r.attendance_status;
-        if (s in metrics) metrics[s]++;
+      const records = recordsByStudentCourse.get(groupKey) || [];
+      if (records.length === 0) continue;
+
+      const effectiveRules = this.resolveEffectiveRules(rules, student).filter((r: any) => r.enabled);
+      const windowBoundsMap = new Map<string, { start: Date; end: Date; periodStart: Date; periodEnd: Date }>();
+      for (const win of WINDOW_ORDER) {
+        windowBoundsMap.set(win, await getCachedWindow(studentTarget.recordDate, win));
       }
 
+      const normalizedCourseId = courseIdStr ? BigInt(courseIdStr) : null;
+      const courseName = records[0]?.sessions?.courses?.course_name || '';
+
       for (const metric of ['absent', 'late', 'early_leave']) {
-        const count = metrics[metric];
-        if (count === 0) continue;
-        const metricRules = rules.filter(
-          r => r.metric === metric && r.window === 'day' && r.enabled,
-        ).sort((a, b) => b.threshold - a.threshold);
+        let bestMatch: {
+          windowType: string;
+          count: number;
+          rule: any;
+          periodStart: Date;
+          periodEnd: Date;
+        } | null = null;
 
-        const matchedRule = metricRules.find(r => isThresholdHit(metric, count, r.threshold));
-        if (!matchedRule) continue;
+        for (const win of WINDOW_ORDER) {
+          const bounds = windowBoundsMap.get(win)!;
+          const count = records.filter((r) => {
+            if (r.attendance_status !== metric) return false;
+            const sessionStart = r.sessions?.session_start ? new Date(r.sessions.session_start) : null;
+            return Boolean(sessionStart && sessionStart >= bounds.start && sessionStart <= bounds.end);
+          }).length;
+          if (count <= 0) continue;
 
-        const periodDate = new Date(studentTarget.recordDate);
-        const periodStart = new Date(Date.UTC(periodDate.getUTCFullYear(), periodDate.getUTCMonth(), periodDate.getUTCDate()));
-        const periodEnd = new Date(Date.UTC(periodDate.getUTCFullYear(), periodDate.getUTCMonth(), periodDate.getUTCDate(), 23, 59, 59, 999));
-        const normalizedCourseId = courseIdStr ? BigInt(courseIdStr) : null;
+          const winRules = effectiveRules
+            .filter((r: any) => r.metric === metric && r.window === win)
+            .sort((a: any, b: any) => {
+              const lvlDiff = (levelWeight[b.level] || 0) - (levelWeight[a.level] || 0);
+              if (lvlDiff !== 0) return lvlDiff;
+              return Number(b.threshold || 0) - Number(a.threshold || 0);
+            });
 
-        // 使用统一的指标文案映射，避免扩展指标（作业/课堂表现）落到 "早退" 兜底分支
-        const triggerSummary = `${this.getMetricText(metric)} ${count} 次`;
+          const matchedRule = winRules.find((r: any) => isThresholdHit(metric, count, r.threshold));
+          if (!matchedRule) continue;
+
+          if (!bestMatch) {
+            bestMatch = {
+              windowType: win,
+              count,
+              rule: matchedRule,
+              periodStart: bounds.periodStart,
+              periodEnd: bounds.periodEnd,
+            };
+            continue;
+          }
+
+          const lvlDiff = (levelWeight[matchedRule.level] || 0) - (levelWeight[bestMatch.rule.level] || 0);
+          const winDiff = (windowWeight[win] || 0) - (windowWeight[bestMatch.windowType] || 0);
+          if (lvlDiff > 0 || (lvlDiff === 0 && (winDiff > 0 || count > bestMatch.count))) {
+            bestMatch = {
+              windowType: win,
+              count,
+              rule: matchedRule,
+              periodStart: bounds.periodStart,
+              periodEnd: bounds.periodEnd,
+            };
+          }
+        }
+
+        if (!bestMatch) continue;
+
+        const triggerSummary = this.buildTriggerSummary(
+          student,
+          metric,
+          bestMatch.windowType,
+          bestMatch.count,
+          courseName,
+        );
 
         currentStateRows.push({
-          student_id: student.id, class_id: student.class_id, org_id: student.org_id || 0n,
-          metric, level: matchedRule.level, window: 'day',
-          period_start: periodStart, period_end: periodEnd,
-          // 必须与 getCourseKey() 保持一致（裸 id / '__none__'），
-          // 否则同一学生同一课程会在 current_states 里出现 'course_9' 与 '9' 两份，
-          // 导致「当前预警条数」翻倍（实测 273 vs 304）。
+          student_id: student.id,
+          class_id: student.class_id,
+          org_id: student.org_id || 0n,
+          metric,
+          level: bestMatch.rule.level,
+          window: bestMatch.windowType,
+          period_start: bestMatch.periodStart,
+          period_end: bestMatch.periodEnd,
           course_key: this.getCourseKey(normalizedCourseId),
           course_id: normalizedCourseId,
-          rule_id: matchedRule.id,
-          rule_snapshot_json: this.serializeRuleSnapshot(matchedRule, 'day'),
+          rule_id: bestMatch.rule.id,
+          rule_snapshot_json: this.serializeRuleSnapshot(bestMatch.rule, bestMatch.windowType),
           trigger_summary: triggerSummary,
           trigger_detail_json: {
             course_id: normalizedCourseId ? Number(normalizedCourseId.toString()) : null,
-            course_name: records[0]?.sessions?.courses?.course_name || '',
-            violation_count: count,
-            count,
+            course_name: courseName,
+            violation_count: bestMatch.count,
+            count: bestMatch.count,
             session_id: studentTarget.sessionId?.toString() || null,
           },
-          status: 'open', current_count: count,
+          status: 'open',
+          current_count: bestMatch.count,
         });
         genCount++;
       }
     }
 
-    // 5. 批量写入（与当前状态表 & 历史表原子双向同步，避免 skipDuplicates 跳过更新导致管理端与小程序不一致）
+    // 5. 批量写入与原地升级（保留已有预警规则，升级时直接更新当前状态行及对应历史记录，不新增冗余/已关闭记录）
     if (currentStateRows.length > 0) {
-      const levelWeight: Record<string, number> = {
-        yellow: 1,
-        orange: 2,
-        red: 3,
-        severe: 4,
-      };
-
       await this.prisma.$transaction(async (tx) => {
         for (const row of currentStateRows) {
-          const existing = await tx.warning_current_states.findFirst({
-            where: {
-              student_id: row.student_id,
-              metric: row.metric,
-              window: row.window,
-              period_start: row.period_start,
-              period_end: row.period_end,
-              course_key: row.course_key,
-            },
-          });
-
-          const existingHistoryList = await tx.warnings.findMany({
-            where: {
-              student_id: row.student_id,
-              metric: row.metric,
-              window: row.window,
-              period_start: row.period_start,
-              period_end: row.period_end,
-              status: { in: ['open', 'acknowledged'] },
-            },
-            orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
-          });
+          const [exactState, activeStates, existingHistoryList] = await Promise.all([
+            tx.warning_current_states.findFirst({
+              where: {
+                student_id: row.student_id,
+                metric: row.metric,
+                window: row.window,
+                period_start: row.period_start,
+                period_end: row.period_end,
+                course_key: row.course_key,
+              },
+            }),
+            tx.warning_current_states.findMany({
+              where: {
+                student_id: row.student_id,
+                metric: row.metric,
+                course_key: row.course_key,
+                status: { in: ACTIVE_WARNING_STATUSES },
+              },
+              orderBy: [{ updated_at: 'desc' }, { id: 'desc' }],
+            }),
+            tx.warnings.findMany({
+              where: {
+                student_id: row.student_id,
+                metric: row.metric,
+                status: { in: ACTIVE_WARNING_STATUSES },
+              },
+              orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
+            }),
+          ]);
 
           const matchedHistory = existingHistoryList.find((item: any) => {
             const itemDetail = (item.trigger_detail_json as Record<string, any>) || {};
@@ -5170,7 +5260,8 @@ export class WarningService {
             return itemCourseKey === row.course_key;
           });
 
-          if (!existing) {
+          const targetState = exactState || activeStates[0] || null;
+          if (!targetState) {
             try {
               await tx.warning_current_states.create({ data: row });
             } catch (e2: any) {
@@ -5206,6 +5297,9 @@ export class WarningService {
               await tx.warnings.update({
                 where: { id: matchedHistory.id },
                 data: {
+                  window: row.window,
+                  period_start: row.period_start,
+                  period_end: row.period_end,
                   level: row.level,
                   rule_id: row.rule_id,
                   rule_snapshot_json: row.rule_snapshot_json,
@@ -5240,22 +5334,41 @@ export class WarningService {
             continue;
           }
 
+          const obsoleteStateIds = activeStates
+            .filter((s: any) => s.id !== targetState.id)
+            .map((s: any) => s.id);
+          if (obsoleteStateIds.length > 0) {
+            await tx.warning_current_states.deleteMany({
+              where: { id: { in: obsoleteStateIds } },
+            });
+          }
+
+          const baselineStates = exactState
+            ? [exactState, ...activeStates.filter((s: any) => s.id !== exactState.id)]
+            : activeStates;
+          const prevMaxCount = Math.max(0, ...baselineStates.map((s: any) => Number(s.current_count || 0)));
+          const prevMaxLevel = Math.max(0, ...baselineStates.map((s: any) => levelWeight[s.level] || 0));
+
           const upgradedOrMoreViolations =
-            Number(row.current_count || 0) > Number(existing.current_count || 0) ||
-            (levelWeight[row.level] || 0) > (levelWeight[existing.level] || 0);
-          const shouldReopen = existing.status === 'closed' || upgradedOrMoreViolations;
+            Number(row.current_count || 0) > prevMaxCount ||
+            (levelWeight[row.level] || 0) > prevMaxLevel;
+          const shouldReopen = targetState.status === 'closed' || upgradedOrMoreViolations;
           const changed =
             shouldReopen ||
-            row.trigger_summary !== existing.trigger_summary ||
-            row.level !== existing.level ||
-            Number(row.current_count || 0) !== Number(existing.current_count || 0);
+            row.window !== targetState.window ||
+            row.trigger_summary !== targetState.trigger_summary ||
+            row.level !== targetState.level ||
+            Number(row.current_count || 0) !== Number(targetState.current_count || 0);
 
           if (changed) {
             await tx.warning_current_states.update({
-              where: { id: existing.id },
+              where: { id: targetState.id },
               data: {
                 class_id: row.class_id,
                 org_id: row.org_id,
+                window: row.window,
+                period_start: row.period_start,
+                period_end: row.period_end,
                 level: row.level,
                 rule_id: row.rule_id,
                 rule_snapshot_json: row.rule_snapshot_json,
@@ -5273,6 +5386,9 @@ export class WarningService {
               await tx.warnings.update({
                 where: { id: matchedHistory.id },
                 data: {
+                  window: row.window,
+                  period_start: row.period_start,
+                  period_end: row.period_end,
                   level: row.level,
                   rule_id: row.rule_id,
                   rule_snapshot_json: row.rule_snapshot_json,
@@ -5300,13 +5416,15 @@ export class WarningService {
                   trigger_summary: row.trigger_summary,
                   trigger_detail_json: row.trigger_detail_json,
                   course_id: row.course_id,
-                  status: shouldReopen ? 'open' : existing.status,
+                  status: shouldReopen ? 'open' : targetState.status,
                 },
               });
             }
           }
         }
       });
+
+      await this.warningSnapshotService.refreshStudents(studentIds);
     }
 
     this.logger.log(`[预警][批量优化] 完成 耗时=${Date.now() - startedAt}ms 学生=${studentIds.length} 记录=${allRecords.length} 生成=${genCount}`);

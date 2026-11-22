@@ -15,11 +15,7 @@
           <small>已选班级 {{ selectedClassName || '未选择' }}</small>
           <small>上次更新：{{ lastUpdatedText }}</small>
         </div>
-        <div class="auto-refresh auto-refresh--panel">
-          <span>自动刷新</span>
-          <el-switch v-model="autoRefreshEnabled" />
-        </div>
-        <el-button type="primary" size="small" :loading="loadingStudents" @click="loadStudents()">刷新学生列表</el-button>
+        <el-button type="primary" size="small" :loading="loadingStudents" @click="refreshStudents">刷新学生列表</el-button>
         <el-button size="small" @click="reset">重置</el-button>
         <el-button
           v-if="canDeleteWarnings"
@@ -49,15 +45,6 @@
           </div>
         </div>
       </template>
-
-      <div class="scope-row">
-        <span class="scope-label">查看范围</span>
-        <el-radio-group v-model="query.scope" @change="loadStudents">
-          <el-radio-button label="active">当前预警</el-radio-button>
-          <el-radio-button label="history">历史预警</el-radio-button>
-          <el-radio-button label="all">全部预警</el-radio-button>
-        </el-radio-group>
-      </div>
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="8" :lg="5">
@@ -125,8 +112,8 @@
               v-model="query.keyword"
               placeholder="姓名 / 学号 / 专业"
               clearable
-              @keyup.enter="loadStudents"
-              @clear="loadStudents"
+              @keyup.enter="refreshStudents"
+              @clear="refreshStudents"
             />
           </div>
         </el-col>
@@ -134,7 +121,7 @@
         <el-col :xs="24" :sm="12" :md="8" :lg="4">
           <div class="filter-item filter-item--actions">
             <span class="filter-label">执行</span>
-            <el-button type="primary" :loading="loadingStudents" @click="loadStudents()">查询班级预警</el-button>
+            <el-button type="primary" :loading="loadingStudents" @click="refreshStudents">查询班级预警</el-button>
           </div>
         </el-col>
       </el-row>
@@ -364,7 +351,7 @@
                     </template>
                   </el-table-column>
                   <el-table-column prop="violation_count" label="次数" width="70" align="center" />
-                  <el-table-column label="触发原因" width="220" show-overflow-tooltip>
+                  <el-table-column label="触发原因" min-width="280" show-overflow-tooltip>
                     <template #default="{ row }">
                       {{ formatWarningSummary(row) }}
                     </template>
@@ -417,7 +404,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onActivated, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { takePreloadedValue } from '../preload-cache';
 import {
@@ -441,8 +428,7 @@ import {
 import { getWarningLevelColor, getWarningLevelText } from '../lib/warning-level';
 import { formatDateTime } from '../lib/format';
 
-const AUTO_REFRESH_INTERVAL = 30_000;
-const STUDENTS_PAGE_SIZE = 50;
+const STUDENTS_PAGE_SIZE = 500;
 
 const orgList = ref<any[]>([]);
 const classList = ref<any[]>([]);
@@ -458,7 +444,6 @@ const selectedClassName = ref('');
 const weekLabel = ref('第1周');
 const loadingStudents = ref(false);
 const detailLoading = ref(false);
-const autoRefreshEnabled = ref(true);
 const lastUpdatedAt = ref<Date | null>(null);
 const currentRoles = ref<string[]>([]);
 const lockedHeadTeacherOrgId = ref('');
@@ -476,7 +461,7 @@ const displayedStudents = computed(() => {
 });
 
 const query = reactive({
-  scope: 'active',
+  scope: 'all',
   orgId: '',
   major: '',
   classId: '',
@@ -491,7 +476,6 @@ const detailViewOptions = [
   { label: '全部预警', value: 'all' },
 ];
 
-let autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
 let studentsRequestSeq = 0;
 let detailRequestSeq = 0;
 let detailRequestKey = '';
@@ -503,7 +487,7 @@ const buildStudentsRequestKey = (page = studentsPage.value) =>
   [
     query.orgId || '',
     query.classId || '',
-    query.scope || 'active',
+    query.scope || 'all',
     (query.keyword || '').trim().toLowerCase(),
     page,
     STUDENTS_PAGE_SIZE,
@@ -958,29 +942,14 @@ const onClearAllWarnings = async () => {
   }
 };
 
-const refreshAutoRefreshTimer = () => {
-  if (autoRefreshTimer) {
-    clearInterval(autoRefreshTimer);
-    autoRefreshTimer = null;
-  }
-
-  if (autoRefreshEnabled.value) {
-    autoRefreshTimer = setInterval(() => {
-      void loadStudents({ silent: true, loadDetail: true });
-    }, AUTO_REFRESH_INTERVAL);
-  }
-};
-
-const stopAutoRefreshTimer = () => {
-  if (autoRefreshTimer) {
-    clearInterval(autoRefreshTimer);
-    autoRefreshTimer = null;
-  }
+const refreshStudents = async () => {
+  clearWarningsPageCache();
+  await loadStudents({ loadDetail: true, force: true });
 };
 
 const reset = async () => {
   clearWarningsPageCache();
-  query.scope = 'active';
+  query.scope = 'all';
   query.orgId = isHeadTeacherView.value ? lockedHeadTeacherOrgId.value : '';
   query.major = '';
   query.classId = '';
@@ -1021,6 +990,11 @@ const buildStudentProcessingText = (summary: any) => {
 };
 
 const formatWarningSummary = (row: any) => {
+  const summary = String(row?.trigger_summary || '').trim();
+  if (summary) {
+    return summary;
+  }
+
   const detail = row?.trigger_detail_json || {};
   const hasMetricCounts =
     detail.late_count !== undefined ||
@@ -1035,7 +1009,7 @@ const formatWarningSummary = (row: any) => {
     ].join('，');
   }
 
-  return row?.trigger_summary || '-';
+  return '-';
 };
 
 const getMetricText = (metric: string) => {
@@ -1066,35 +1040,16 @@ const formatCompactTime = (value: any) => {
   return match ? match[1] : formatted || '-';
 };
 
-watch(autoRefreshEnabled, () => {
-  refreshAutoRefreshTimer();
-});
-
-watch(
-  () => query.scope,
-  async () => {
-    await loadStudents({ loadDetail: true, force: true });
-  },
-);
-
 onMounted(async () => {
   loadCurrentRoles();
   await loadOrgs();
   await loadClasses();
   await loadStudents({ loadDetail: true, force: true });
-  refreshAutoRefreshTimer();
 });
 
 onActivated(() => {
-  refreshAutoRefreshTimer();
-});
-
-onDeactivated(() => {
-  stopAutoRefreshTimer();
-});
-
-onBeforeUnmount(() => {
-  stopAutoRefreshTimer();
+  clearWarningsPageCache();
+  void loadStudents({ silent: true, loadDetail: true, force: true });
 });
 </script>
 
@@ -1181,18 +1136,6 @@ onBeforeUnmount(() => {
   line-height: 1.15;
 }
 
-.auto-refresh {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(108, 140, 158, 0.14);
-  background: rgba(255, 255, 255, 0.72);
-  color: #5c7284;
-  font-size: 12px;
-}
-
 .warnings-filter-card,
 .warnings-student-card,
 .warnings-detail-card {
@@ -1260,15 +1203,6 @@ onBeforeUnmount(() => {
   line-height: 1.45;
 }
 
-.scope-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-
-.scope-label,
 .filter-label {
   color: #5f7485;
   font-size: 12px;

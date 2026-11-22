@@ -626,7 +626,11 @@ export class AttendanceController {
     };
   }
 
-  private async processSingleEndSession(sessionId: string, dataScope: any) {
+  private async processSingleEndSession(
+    sessionId: string,
+    dataScope: any,
+    options?: { deferWarnings?: boolean },
+  ) {
     const startedAt = Date.now();
     const lockKey = `lock:session:end:${sessionId}`;
     this.logger.log(`[batchEnd][single] session=${sessionId} started`);
@@ -648,29 +652,35 @@ export class AttendanceController {
 
       if (!session) {
         this.logger.log(`[batchEnd][single] session=${sessionId} skipped reason=missing`);
-        return { ended: false };
+        return { ended: false, warningTargets: [] as any[] };
       }
       if (!this.isSessionWithinDataScope(session, dataScope)) {
         this.logger.log(`[batchEnd][single] session=${sessionId} skipped reason=scope`);
-        return { ended: false };
+        return { ended: false, warningTargets: [] as any[] };
       }
 
       const now = new Date();
       if (session.status !== 'active') {
         this.logger.log(`[batchEnd][single] session=${sessionId} skipped reason=not-active`);
-        return { ended: false };
+        return { ended: false, warningTargets: [] as any[] };
       }
 
-      await this.markSessionEndedFast(session.id, now);
-      void this.finalizeSessionEarlyAsync(session, now);
-      return { ended: true };
+      const changed = await this.markSessionEndedFast(session.id, now);
+      if (!changed) {
+        return { ended: false, warningTargets: [] as any[] };
+      }
+      const finalized = await this.finalizeSessionEarly(session, now, {
+        skipWarningGeneration: Boolean(options?.deferWarnings),
+      });
+      return { ended: true, warningTargets: finalized.warningTargets || [] };
     });
 
     const ended = Boolean(lockResult.locked && lockResult.result?.ended);
+    const warningTargets = lockResult.locked ? (lockResult.result?.warningTargets || []) : [];
     this.logger.log(
       `[batchEnd][single] session=${sessionId} locked=${lockResult.locked} ended=${ended} cost=${Date.now() - startedAt}ms`,
     );
-    return ended;
+    return { ended, warningTargets };
   }
 
   private async processSingleDeleteSession(sessionIdText: string, dataScope: any) {
@@ -801,15 +811,28 @@ export class AttendanceController {
             );
             try {
               if (type === 'batch_end') {
-                const ended = await this.processSingleEndSession(sessionId, dataScope);
-                if (ended) {
+                const endResult = await this.processSingleEndSession(sessionId, dataScope, {
+                  deferWarnings: true,
+                });
+                if (endResult.ended) {
                   state.success_count += 1;
                   state.session_ids.push(sessionId);
+                  (endResult.warningTargets || []).forEach((target: any) => {
+                    if (!target?.studentId || !(target.recordDate instanceof Date)) {
+                      return;
+                    }
+                    const recalcKey = [
+                      target.studentId.toString(),
+                      target.recordDate.toISOString().slice(0, 10),
+                      target.courseId?.toString?.() || '',
+                    ].join('_');
+                    recalcTargets.set(recalcKey, target);
+                  });
                 } else {
                   state.skipped_count += 1;
                 }
                 this.logger.log(
-                  `[batchJob][session] job=${jobId} type=${type} worker=${workerIndex + 1} session=${sessionId} ended=${ended} cost=${Date.now() - sessionStartedAt}ms`,
+                  `[batchJob][session] job=${jobId} type=${type} worker=${workerIndex + 1} session=${sessionId} ended=${endResult.ended} cost=${Date.now() - sessionStartedAt}ms`,
                 );
               } else {
                 const result = await this.processSingleDeleteSession(sessionId, dataScope);
@@ -852,6 +875,14 @@ export class AttendanceController {
           }
         }),
       );
+
+      if (type === 'batch_end' && recalcTargets.size > 0) {
+        state.message = '课次已结束，正在实时生成预警…';
+        await this.saveBatchJob(state);
+        await this.warningService.generateWarningsBatchOptimized(
+          Array.from(recalcTargets.values()),
+        );
+      }
 
       if (type === 'batch_delete' && affectedStudentIds.size > 0) {
         state.message = '删除已完成，正在刷新预警快照…';
@@ -911,20 +942,51 @@ export class AttendanceController {
 
     const workerCount = Math.min(12, normalizedIds.length);
     let nextIndex = 0;
+    const recalcTargets = new Map<
+      string,
+      {
+        studentId: bigint;
+        recordDate: Date;
+        courseId?: bigint;
+        sessionId?: bigint;
+      }
+    >();
 
-    // 全部异步处理，API立即返回
-    for (let i = 0; i < workerCount; i++) {
-      void (async () => {
-        while (true) {
-          const currentIndex = nextIndex;
-          nextIndex += 1;
-          if (currentIndex >= normalizedIds.length) return;
-          try {
-            await this.processSingleEndSession(normalizedIds[currentIndex], dataScope);
-          } catch { /* logged inside */ }
-        }
-      })();
-    }
+    // 全部异步处理，API立即返回；所有课次补录缺勤完成后合并统一结算预警
+    void (async () => {
+      await Promise.all(
+        Array.from({ length: workerCount }, async () => {
+          while (true) {
+            const currentIndex = nextIndex;
+            nextIndex += 1;
+            if (currentIndex >= normalizedIds.length) return;
+            try {
+              const res = await this.processSingleEndSession(
+                normalizedIds[currentIndex],
+                dataScope,
+                { deferWarnings: true },
+              );
+              (res.warningTargets || []).forEach((target: any) => {
+                if (!target?.studentId || !(target.recordDate instanceof Date)) {
+                  return;
+                }
+                const recalcKey = [
+                  target.studentId.toString(),
+                  target.recordDate.toISOString().slice(0, 10),
+                  target.courseId?.toString?.() || '',
+                ].join('_');
+                recalcTargets.set(recalcKey, target);
+              });
+            } catch { /* logged inside */ }
+          }
+        }),
+      );
+      if (recalcTargets.size > 0) {
+        await this.warningService.generateWarningsBatchOptimized(
+          Array.from(recalcTargets.values()),
+        );
+      }
+    })();
 
     return {
       requested_count: normalizedIds.length,
@@ -1660,18 +1722,11 @@ export class AttendanceController {
     return changed;
   }
 
-  /**
-   * 异步处理签到记录和预警，不阻塞调用方
-   */
-  private finalizeSessionEarlyAsync(session: any, cutoffTime: Date) {
-    this.finalizeSessionEarly(session, cutoffTime).catch((err: any) => {
-      this.logger.error(
-        `[endSession][async] session=${session.id?.toString()} 异步处理签到记录失败: ${err?.message || err}`,
-      );
-    });
-  }
-
-  private async finalizeSessionEarly(session: any, cutoffTime: Date) {
+  private async finalizeSessionEarly(
+    session: any,
+    cutoffTime: Date,
+    options?: { skipWarningGeneration?: boolean },
+  ) {
     const finalizeStartedAt = Date.now();
     this.logger.log(
       `[endSession][finalize] session=${session.id.toString()} 开始 学生数=${session.classes?.student_profiles?.length || 0} 截止时间=${cutoffTime.toISOString()}`,
@@ -1865,18 +1920,31 @@ export class AttendanceController {
       `[endSession][finalize] session=${session.id.toString()} 提交事务 耗时=${Date.now() - t}ms`,
     );
 
+    try {
+      await this.attendanceSnapshotService.refreshSessions([session.id]);
+    } catch (snapErr: any) {
+      this.logger.warn(
+        `[endSession][finalize] session=${session.id.toString()} 刷新签到快照失败: ${snapErr?.message || snapErr}`,
+      );
+    }
+
     void this.blockRecentEndedRecovery(session.id);
 
     // 批量优化：一次查询+内存计算+批量写入
     const targets = Array.from(affectedRecords.values());
-    const startWarn = Date.now();
-    this.warningService.generateWarningsBatchOptimized(targets).then(result => {
-      this.logger.log(
-        `[endSession][finalize] session=${session.id.toString()} 优化预警完成 耗时=${Date.now() - startWarn}ms 生成=${result.warnings_generated}`,
-      );
-    }).catch((err: any) => {
-      this.logger.error(`[endSession][finalize] session=${session.id.toString()} 优化预警失败: ${err?.message || err}`);
-    });
+    if (!options?.skipWarningGeneration && targets.length > 0) {
+      const startWarn = Date.now();
+      try {
+        const result = await this.warningService.generateWarningsBatchOptimized(targets);
+        this.logger.log(
+          `[endSession][finalize] session=${session.id.toString()} 优化预警完成 耗时=${Date.now() - startWarn}ms 生成=${result.warnings_generated}`,
+        );
+      } catch (err: any) {
+        this.logger.error(
+          `[endSession][finalize] session=${session.id.toString()} 优化预警失败: ${err?.message || err}`,
+        );
+      }
+    }
 
     this.logger.log(
       `[endSession][finalize] session=${session.id.toString()} 完成 总耗时=${Date.now() - finalizeStartedAt}ms`,
@@ -1885,6 +1953,7 @@ export class AttendanceController {
     return {
       affectedStudents: students.length,
       absent_records_generated: absentCount,
+      warningTargets: targets,
     };
   }
 
@@ -2435,6 +2504,33 @@ export class AttendanceController {
     const refreshSeconds = await this.getQrRefreshSeconds();
     const now = new Date();
 
+    const staleEndedSessionIds = sessions
+      .filter((s) => {
+        const snapshot = snapshotMap.get(s.id.toString());
+        if (!snapshot) {
+          return false;
+        }
+        const sessionEnd = this.getSessionDeadline(s);
+        const isEnded = sessionEnd <= now || String(s.status || '').trim() === 'ended';
+        if (!isEnded) {
+          return false;
+        }
+        const total = Number(snapshot.total_students || 0);
+        const checkedIn = Number(snapshot.checked_in_count || 0);
+        const leave = Number(snapshot.leave_count || 0);
+        const expectedAbsent = Math.max(total - leave - checkedIn, 0);
+        return expectedAbsent > 0 && Number(snapshot.absent_count || 0) === 0;
+      })
+      .map((s) => s.id);
+
+    if (staleEndedSessionIds.length > 0) {
+      await this.attendanceSnapshotService.refreshSessions(staleEndedSessionIds);
+      const refreshed = await this.attendanceSnapshotService.getOrRefreshSessionSnapshots(
+        staleEndedSessionIds,
+      );
+      refreshed.forEach((value, key) => snapshotMap.set(String(key), value));
+    }
+
     return {
       code: 0,
       message: 'ok',
@@ -2446,10 +2542,13 @@ export class AttendanceController {
         const lateCount = Number(snapshot.late_count || 0);
         const leaveCount = Number(snapshot.leave_count || 0);
         const sessionEnd = this.getSessionDeadline(s);
-        const absentCount =
-          sessionEnd <= now || String(s.status || '').trim() === 'ended'
+        const isEnded = sessionEnd <= now || String(s.status || '').trim() === 'ended';
+        const computedAbsent = Math.max(totalStudents - leaveCount - checkedInCount, 0);
+        const absentCount = isEnded
+          ? Number(snapshot.absent_count || 0) > 0
             ? Number(snapshot.absent_count || 0)
-            : 0;
+            : computedAbsent
+          : 0;
         const qrState = getRollingQrState({
           sessionStart: s.session_start,
           sessionEnd,

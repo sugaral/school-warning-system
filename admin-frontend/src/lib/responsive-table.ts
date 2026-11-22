@@ -72,50 +72,17 @@ function ensureTableShell(table: HTMLElement) {
 
 function forceOpaqueFixedColumns(table: HTMLElement) {
   const fixedMode = table.dataset.fixedMode || 'disabled';
+  table.removeAttribute('data-fixed-disabled');
 
-  if (fixedMode === 'left-only') {
-    table.removeAttribute('data-fixed-disabled');
+  const fixedWrappers = table.querySelectorAll(
+    '.el-table__fixed, .el-table__fixed-right, .el-table__fixed-right-patch, .el-table__fixed-left-patch',
+  );
+  fixedWrappers.forEach((node) => {
+    if (!(node instanceof HTMLElement)) {
+      return;
+    }
 
-    const rightFixedWrappers = table.querySelectorAll(
-      '.el-table__fixed-right, .el-table__fixed-right-patch',
-    );
-    rightFixedWrappers.forEach((node) => {
-      if (!(node instanceof HTMLElement)) {
-        return;
-      }
-
-      node.style.display = 'none';
-      node.style.width = '0';
-      node.style.minWidth = '0';
-      node.style.maxWidth = '0';
-      node.style.overflow = 'hidden';
-      node.style.boxShadow = 'none';
-    });
-
-    const rightStickyCells = table.querySelectorAll('.el-table-fixed-column--right');
-    rightStickyCells.forEach((node) => {
-      if (!(node instanceof HTMLElement)) {
-        return;
-      }
-
-      node.style.position = 'static';
-      node.style.left = 'auto';
-      node.style.right = 'auto';
-      node.style.zIndex = 'auto';
-      node.style.boxShadow = 'none';
-      node.style.background = 'inherit';
-      node.style.backgroundColor = 'inherit';
-      node.style.backgroundImage = 'none';
-    });
-
-    const leftFixedNodes = table.querySelectorAll(
-      '.el-table__fixed, .el-table-fixed-column--left',
-    );
-    leftFixedNodes.forEach((node) => {
-      if (!(node instanceof HTMLElement)) {
-        return;
-      }
-
+    if (fixedMode === 'left-only' && node.classList.contains('el-table__fixed')) {
       node.style.display = '';
       node.style.width = '';
       node.style.minWidth = '';
@@ -128,18 +95,6 @@ function forceOpaqueFixedColumns(table: HTMLElement) {
       (node.style as any).webkitBackdropFilter = 'none';
       node.style.opacity = '1';
       node.style.boxShadow = '';
-    });
-
-    return;
-  }
-
-  table.setAttribute('data-fixed-disabled', 'true');
-
-  const fixedWrappers = table.querySelectorAll(
-    '.el-table__fixed, .el-table__fixed-right, .el-table__fixed-right-patch, .el-table__fixed-left-patch',
-  );
-  fixedWrappers.forEach((node) => {
-    if (!(node instanceof HTMLElement)) {
       return;
     }
 
@@ -151,22 +106,77 @@ function forceOpaqueFixedColumns(table: HTMLElement) {
     node.style.boxShadow = 'none';
   });
 
-  const stickyCells = table.querySelectorAll(
-    '.el-table-fixed-column--left, .el-table-fixed-column--right',
-  );
-  stickyCells.forEach((node) => {
+  // Left fixed columns keep previous opt-in semantics, while right action column pinning
+  // is handled uniformly on CSS via .ws-sticky-action-col when overflowing horizontally.
+  const leftStickyCells = table.querySelectorAll('.el-table-fixed-column--left');
+  leftStickyCells.forEach((node) => {
     if (!(node instanceof HTMLElement)) {
       return;
     }
+    if (fixedMode === 'left-only') {
+      node.style.display = '';
+      node.style.width = '';
+      node.style.minWidth = '';
+      node.style.maxWidth = '';
+      node.style.overflow = '';
+      node.style.background = '#f8fbfc';
+      node.style.backgroundColor = '#f8fbfc';
+      node.style.backgroundImage = 'none';
+      node.style.backdropFilter = 'none';
+      (node.style as any).webkitBackdropFilter = 'none';
+      node.style.opacity = '1';
+      node.style.boxShadow = '';
+      node.style.position = '';
+      node.style.left = '';
+      node.style.zIndex = '';
+    } else {
+      node.style.position = 'static';
+      node.style.left = 'auto';
+      node.style.zIndex = 'auto';
+      node.style.boxShadow = 'none';
+      node.style.background = 'inherit';
+      node.style.backgroundColor = 'inherit';
+      node.style.backgroundImage = 'none';
+    }
+  });
 
-    node.style.position = 'static';
-    node.style.left = 'auto';
-    node.style.right = 'auto';
-    node.style.zIndex = 'auto';
-    node.style.boxShadow = 'none';
-    node.style.background = 'inherit';
-    node.style.backgroundColor = 'inherit';
-    node.style.backgroundImage = 'none';
+  const rightStickyCells = table.querySelectorAll('.el-table-fixed-column--right');
+  rightStickyCells.forEach((node) => {
+    if (!(node instanceof HTMLElement)) {
+      return;
+    }
+    node.style.position = '';
+    node.style.right = '';
+    node.style.zIndex = '';
+    node.style.boxShadow = '';
+    node.style.background = '';
+    node.style.backgroundColor = '';
+    node.style.backgroundImage = '';
+  });
+}
+
+function syncStickyActionColumn(table: HTMLElement, headers: HeaderMeta[]) {
+  let actionColIndex = -1;
+  for (let i = headers.length - 1; i >= 0; i -= 1) {
+    if (headers[i].role === 'actions') {
+      actionColIndex = i;
+      break;
+    }
+  }
+
+  const headerCells = getLeafHeaderCells(table);
+  headerCells.forEach((cell, idx) => {
+    cell.classList.toggle('ws-sticky-action-col', idx === actionColIndex);
+  });
+
+  const bodyRows = table.querySelectorAll('.el-table__body-wrapper tbody tr');
+  bodyRows.forEach((row) => {
+    const cells = row.querySelectorAll('td.el-table__cell');
+    cells.forEach((cell, idx) => {
+      if (cell instanceof HTMLElement) {
+        cell.classList.toggle('ws-sticky-action-col', idx === actionColIndex);
+      }
+    });
   });
 }
 
@@ -188,49 +198,161 @@ function resolveHorizontalScrollHost(
   );
 }
 
-function updateFixedColumnOpacityState(
+function ensureTopHorizontalScrollbar(table: HTMLElement, shell: HTMLElement) {
+  let topScroll = shell.querySelector(':scope > .ws-table-top-scroll') as HTMLDivElement | null;
+  if (!topScroll) {
+    topScroll = document.createElement('div');
+    topScroll.className = 'ws-table-top-scroll';
+    topScroll.setAttribute('aria-hidden', 'true');
+    const track = document.createElement('div');
+    track.className = 'ws-table-top-scroll__track';
+    topScroll.appendChild(track);
+    shell.insertBefore(topScroll, table);
+  }
+  const track = topScroll.querySelector(':scope > .ws-table-top-scroll__track') as HTMLDivElement | null;
+  return { topScroll, track };
+}
+
+function updateScrollCoveredState(
   table: HTMLElement,
   shell: HTMLElement,
   source?: EventTarget | null,
 ) {
-  if (table.dataset.fixedDisabled === 'true') {
-    shell.dataset.scrollLeftCovered = 'false';
-    shell.dataset.scrollRightCovered = 'false';
-    shell.dataset.scrollXActive = 'false';
-    return;
-  }
-
   const host = resolveHorizontalScrollHost(table, source);
+  const { topScroll, track } = ensureTopHorizontalScrollbar(table, shell);
   if (!host) {
     shell.dataset.scrollLeftCovered = 'false';
     shell.dataset.scrollRightCovered = 'false';
     shell.dataset.scrollXActive = 'false';
+    shell.dataset.hasHorizontalOverflow = 'false';
+    if (track) track.style.width = '0px';
     return;
   }
 
   const maxScrollLeft = Math.max(0, host.scrollWidth - host.clientWidth);
+  const hasOverflow = maxScrollLeft > 2;
   const scrollLeft = Math.max(0, host.scrollLeft);
 
-  shell.dataset.scrollXActive = maxScrollLeft > 0 ? 'true' : 'false';
-  shell.dataset.scrollLeftCovered = scrollLeft > 0 ? 'true' : 'false';
-  shell.dataset.scrollRightCovered = scrollLeft < maxScrollLeft - 1 ? 'true' : 'false';
+  shell.dataset.hasHorizontalOverflow = hasOverflow ? 'true' : 'false';
+  shell.dataset.scrollXActive = hasOverflow ? 'true' : 'false';
+  shell.dataset.scrollLeftCovered = hasOverflow && scrollLeft > 1 ? 'true' : 'false';
+  shell.dataset.scrollRightCovered = hasOverflow && scrollLeft < maxScrollLeft - 2 ? 'true' : 'false';
+
+  if (hasOverflow) {
+    topScroll.style.width = `${host.clientWidth}px`;
+    if (track) {
+      track.style.width = `${host.scrollWidth}px`;
+    }
+    if (Math.abs(topScroll.scrollLeft - scrollLeft) > 1) {
+      topScroll.scrollLeft = scrollLeft;
+    }
+  } else {
+    topScroll.style.width = '';
+    if (track) {
+      track.style.width = '0px';
+    }
+  }
 }
 
 function bindManagedTableScrollState(table: HTMLElement, shell: HTMLElement) {
+  updateScrollCoveredState(table, shell);
+
   if (boundScrollableShells.has(shell)) {
-    updateFixedColumnOpacityState(table, shell);
     return;
   }
 
-  const handleScroll = (event: Event) => {
-    updateFixedColumnOpacityState(table, shell, event.target);
+  const { topScroll } = ensureTopHorizontalScrollbar(table, shell);
+
+  const handleTopScroll = () => {
+    const host = resolveHorizontalScrollHost(table);
+    if (!host) {
+      return;
+    }
+    if (Math.abs(host.scrollLeft - topScroll.scrollLeft) > 1) {
+      host.scrollLeft = topScroll.scrollLeft;
+    }
+    updateScrollCoveredState(table, shell, host);
   };
 
-  shell.addEventListener('scroll', handleScroll, true);
-  updateFixedColumnOpacityState(table, shell);
+  const handleBodyScroll = (event: Event) => {
+    if (event.target === topScroll) {
+      return;
+    }
+    const target = event.target instanceof HTMLElement ? event.target : null;
+    if (
+      target
+      && !target.classList.contains('el-scrollbar__wrap')
+      && !target.classList.contains('el-table__body-wrapper')
+      && !target.classList.contains('el-table__header-wrapper')
+    ) {
+      return;
+    }
+    const host = resolveHorizontalScrollHost(table, target);
+    if (!host) {
+      return;
+    }
+    if (Math.abs(topScroll.scrollLeft - host.scrollLeft) > 1) {
+      topScroll.scrollLeft = host.scrollLeft;
+    }
+    updateScrollCoveredState(table, shell, host);
+  };
+
+  const handleShiftWheel = (event: WheelEvent) => {
+    if (!event.shiftKey || event.deltaY === 0) {
+      return;
+    }
+    const host = resolveHorizontalScrollHost(table);
+    if (!host || host.scrollWidth - host.clientWidth <= 2) {
+      return;
+    }
+    const prev = host.scrollLeft;
+    host.scrollLeft += event.deltaY;
+    if (host.scrollLeft !== prev) {
+      event.preventDefault();
+      if (Math.abs(topScroll.scrollLeft - host.scrollLeft) > 1) {
+        topScroll.scrollLeft = host.scrollLeft;
+      }
+      updateScrollCoveredState(table, shell, host);
+    }
+  };
+
+  let lastObservedWidth = Math.round(shell.clientWidth);
+  let resizeRaf = 0;
+  const resizeObserver =
+    typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(() => {
+          const nextWidth = Math.round(shell.clientWidth);
+          if (Math.abs(nextWidth - lastObservedWidth) < 2) {
+            return;
+          }
+          lastObservedWidth = nextWidth;
+          if (resizeRaf) {
+            cancelAnimationFrame(resizeRaf);
+          }
+          resizeRaf = requestAnimationFrame(() => {
+            resizeRaf = 0;
+            if (table.isConnected) {
+              applyLabelsToTable(table);
+            }
+          });
+        })
+      : null;
+
+  topScroll.addEventListener('scroll', handleTopScroll, { passive: true });
+  shell.addEventListener('scroll', handleBodyScroll, true);
+  table.addEventListener('wheel', handleShiftWheel, { passive: false });
+  resizeObserver?.observe(shell);
+
   boundScrollableShells.add(shell);
   cleanupFns.push(() => {
-    shell.removeEventListener('scroll', handleScroll, true);
+    topScroll.removeEventListener('scroll', handleTopScroll);
+    shell.removeEventListener('scroll', handleBodyScroll, true);
+    table.removeEventListener('wheel', handleShiftWheel);
+    if (resizeRaf) {
+      cancelAnimationFrame(resizeRaf);
+      resizeRaf = 0;
+    }
+    resizeObserver?.disconnect();
   });
 }
 
@@ -418,6 +540,79 @@ function getTextMeasurer(font: string) {
   return (text: string) => Math.ceil(ctx.measureText(String(text || '')).width);
 }
 
+function syncTooltipCellWidths(table: HTMLElement) {
+  const bodyRows = table.querySelectorAll('.el-table__body-wrapper tbody tr');
+  if (!bodyRows.length) {
+    return;
+  }
+
+  if (typeof window !== 'undefined' && window.innerWidth <= 960) {
+    bodyRows.forEach((row) => {
+      row.querySelectorAll('td.el-table__cell .cell.el-tooltip').forEach((node) => {
+        if (node instanceof HTMLElement && node.style.width) {
+          node.style.width = '';
+        }
+      });
+    });
+    return;
+  }
+
+  const bodyTable = table.querySelector('.el-table__body-wrapper table');
+  const cols = bodyTable
+    ? (Array.from(bodyTable.querySelectorAll('colgroup > col')).filter(
+        (col) => col instanceof HTMLElement && col.getAttribute('name') !== 'gutter',
+      ) as HTMLElement[])
+    : [];
+
+  let cachedTdPadX: number | null = null;
+  const getTdPadX = (td: HTMLElement) => {
+    if (cachedTdPadX !== null) {
+      return cachedTdPadX;
+    }
+    if (typeof window === 'undefined') {
+      cachedTdPadX = 28;
+      return cachedTdPadX;
+    }
+    const style = window.getComputedStyle(td);
+    cachedTdPadX = Math.ceil(
+      (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0),
+    );
+    return cachedTdPadX;
+  };
+
+  bodyRows.forEach((row) => {
+    const cells = row.querySelectorAll('td.el-table__cell');
+    cells.forEach((cell, colIdx) => {
+      if (!(cell instanceof HTMLTableCellElement) || cell.colSpan > 1) {
+        return;
+      }
+      const tooltipCell = cell.querySelector('.cell.el-tooltip') as HTMLElement | null;
+      if (!tooltipCell) {
+        return;
+      }
+
+      const col = cols[colIdx];
+      const colWidth =
+        parseFloat(col?.style.width || '') ||
+        parseFloat(col?.getAttribute('width') || '') ||
+        Math.floor(cell.getBoundingClientRect().width);
+      if (!Number.isFinite(colWidth) || colWidth <= 0) {
+        return;
+      }
+
+      if (tooltipCell.dataset.wsOrigTooltipWidth === undefined) {
+        tooltipCell.dataset.wsOrigTooltipWidth = tooltipCell.style.width || '';
+      }
+
+      const targetWidth = Math.max(40, Math.floor(colWidth - getTdPadX(cell) - 1));
+      const targetWidthText = `${targetWidth}px`;
+      if (tooltipCell.style.width !== targetWidthText) {
+        tooltipCell.style.width = targetWidthText;
+      }
+    });
+  });
+}
+
 function setColumnWidthInternal(
   table: HTMLElement,
   columnIndex: number,
@@ -442,6 +637,10 @@ function setColumnWidthInternal(
       return;
     }
 
+    if (!persist && targetCol.dataset.wsOrigWidth === undefined) {
+      targetCol.dataset.wsOrigWidth = targetCol.getAttribute('width') ?? '';
+    }
+
     targetCol.setAttribute('width', String(safeWidth));
     targetCol.style.width = widthText;
     targetCol.style.minWidth = widthText;
@@ -456,11 +655,63 @@ function setColumnWidthInternal(
     targetHeader.style.maxWidth = widthText;
   }
 
+  syncTooltipCellWidths(table);
+
   if (persist) {
     const storedWidths = readStoredColumnWidths(table);
     storedWidths[String(columnIndex)] = safeWidth;
     writeStoredColumnWidths(table, storedWidths);
   }
+}
+
+function restoreOriginalAutoFitWidths(table: HTMLElement) {
+  if (table.dataset.wsAutoFitApplied !== 'true') {
+    return;
+  }
+
+  table.querySelectorAll('table').forEach((innerTable) => {
+    if (!(innerTable instanceof HTMLTableElement)) {
+      return;
+    }
+    const cols = Array.from(innerTable.querySelectorAll('colgroup > col')).filter((col) => {
+      return col instanceof HTMLElement && col.getAttribute('name') !== 'gutter';
+    }) as HTMLElement[];
+
+    cols.forEach((col) => {
+      if (col.dataset.wsOrigWidth !== undefined) {
+        if (col.dataset.wsOrigWidth) {
+          col.setAttribute('width', col.dataset.wsOrigWidth);
+        } else {
+          col.removeAttribute('width');
+        }
+        delete col.dataset.wsOrigWidth;
+      }
+      col.style.width = '';
+      col.style.minWidth = '';
+      col.style.maxWidth = '';
+    });
+  });
+
+  getLeafHeaderCells(table).forEach((th) => {
+    th.style.width = '';
+    th.style.minWidth = '';
+    th.style.maxWidth = '';
+  });
+
+  table.querySelectorAll('.el-table__header, .el-table__body').forEach((innerTable) => {
+    if (innerTable instanceof HTMLTableElement) {
+      innerTable.style.width = '';
+    }
+  });
+
+  table.querySelectorAll('.el-table__body-wrapper tbody td .cell.el-tooltip').forEach((node) => {
+    if (node instanceof HTMLElement && node.dataset.wsOrigTooltipWidth !== undefined) {
+      node.style.width = node.dataset.wsOrigTooltipWidth;
+      delete node.dataset.wsOrigTooltipWidth;
+    }
+  });
+
+  delete table.dataset.wsAutoFitApplied;
 }
 
 function applyColumnWidth(table: HTMLElement, columnIndex: number, width: number) {
@@ -484,12 +735,13 @@ function measureStructuredCellContent(
   if (buttons.length > 0) {
     let totalBtnWidth = 0;
     buttons.forEach((btn, idx) => {
+      const renderedWidth = Math.ceil(btn.getBoundingClientRect().width);
       const label = (btn.textContent || '').replace(/\s+/g, ' ').trim();
       const isLink = btn.classList.contains('is-link') || btn.classList.contains('el-button--link');
-      const btnPad = isLink ? 10 : 28;
-      totalBtnWidth += measureBody(label) + btnPad;
+      const fallbackWidth = measureBody(label) + (isLink ? 12 : 28);
+      totalBtnWidth += renderedWidth > 0 ? Math.max(renderedWidth, fallbackWidth) : fallbackWidth;
       if (idx > 0) {
-        totalBtnWidth += 8;
+        totalBtnWidth += 6;
       }
     });
     return {
@@ -644,7 +896,7 @@ function autoFitTableColumns(table: HTMLElement, headers: HeaderMeta[]) {
     columnKinds[colIdx] = kind;
     const rawNeeded = Math.max(headerNeeded, maxContentWidth);
     if (kind === 'actions') {
-      return Math.min(360, rawNeeded);
+      return Math.min(420, rawNeeded);
     }
     if (kind === 'tag') {
       return Math.min(160, rawNeeded);
@@ -658,11 +910,11 @@ function autoFitTableColumns(table: HTMLElement, headers: HeaderMeta[]) {
   const sumNeeded = neededWidths.reduce((sum, w) => sum + w, 0);
   const finalWidths = [...neededWidths];
 
-  // 内容总宽度已经超过可视区域：交给 el-table 自己的横向滚动 + 固定列（操作列
-  // sticky）处理，不再覆写列宽。之前"压到刚好放下"的策略正是把
-  // “计算机组成原理 / 2026-11-22 15:38 / 学生30”截成“计… / 2026-11-… / 学…”
-  // 的根因；覆写列宽还会破坏固定列的定位，让操作按钮被挤出可视区。
+  // 内容总宽度已经超过可视区域：恢复原始列宽并交给横向滚动 + 顶部镜像滚动条 + sticky 操作列处理，
+  // 不压窄文字、不留宽屏放大时残留的多余空白宽度。
   if (viewportWidth > 0 && sumNeeded > viewportWidth) {
+    restoreOriginalAutoFitWidths(table);
+    table.dataset.wsAutoFitSig = signature;
     return;
   }
 
@@ -694,6 +946,7 @@ function autoFitTableColumns(table: HTMLElement, headers: HeaderMeta[]) {
 
   const totalFinalWidth = finalWidths.reduce((sum, w) => sum + w, 0);
   table.dataset.wsAutoFitSig = signature;
+  table.dataset.wsAutoFitApplied = 'true';
 
   finalWidths.forEach((width, colIdx) => {
     setColumnWidthInternal(table, colIdx, width, false);
@@ -756,6 +1009,10 @@ function startLeftEdgeResize(
     table.classList.remove('ws-table-resizing');
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
+    const shell = table.closest('.ws-table-shell');
+    if (shell instanceof HTMLElement) {
+      updateScrollCoveredState(table, shell);
+    }
   };
 
   document.addEventListener('mousemove', handleMouseMove);
@@ -768,9 +1025,12 @@ function bindLeftResizeHandles(table: HTMLElement) {
     return;
   }
 
-  table
-    .querySelectorAll('.ws-col-left-resizer')
-    .forEach((node) => node.parentNode?.removeChild(node));
+  const existingHandles = table.querySelectorAll('.ws-col-left-resizer');
+  if (existingHandles.length === headerCells.length - 1) {
+    return;
+  }
+
+  existingHandles.forEach((node) => node.parentNode?.removeChild(node));
 
   headerCells.forEach((cell, index) => {
     if (index === 0) {
@@ -804,14 +1064,17 @@ function applyLabelsToTable(table: HTMLElement) {
   }
   forceOpaqueFixedColumns(table);
 
+  autoFitTableColumns(table, headers);
+  applyStoredColumnWidths(table);
+  syncTooltipCellWidths(table);
+  bindLeftResizeHandles(table);
+  syncStickyActionColumn(table, headers);
+
   if (shell) {
     shell.dataset.tableColumns = String(headers.length);
     shell.dataset.hasActions = headers.some((item) => item.role === 'actions') ? 'true' : 'false';
     bindManagedTableScrollState(table, shell);
   }
-  autoFitTableColumns(table, headers);
-  applyStoredColumnWidths(table);
-  bindLeftResizeHandles(table);
   const bodyRows = table.querySelectorAll(
     '.el-table__body-wrapper tbody tr',
   );

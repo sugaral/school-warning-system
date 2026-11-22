@@ -1,4 +1,4 @@
-<#
+﻿<#
   学业预警系统 · 一键启动脚本 (Windows PowerShell)
 
   默认模式（混合极速）：Docker 基础依赖 (mysql/redis/minio/minio-init) + 本地后端 + 本地前端

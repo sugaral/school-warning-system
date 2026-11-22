@@ -60,8 +60,8 @@ type WarningListRow = {
 
 const DEFAULT_TZ = 'Asia/Shanghai';
 const ABNORMAL_ATTENDANCE_STATUSES = ['late', 'absent', 'early_leave'];
-const CLASS_VIEW_STUDENTS_DEFAULT_PAGE_SIZE = 50;
-const CLASS_VIEW_STUDENTS_MAX_PAGE_SIZE = 100;
+const CLASS_VIEW_STUDENTS_DEFAULT_PAGE_SIZE = 500;
+const CLASS_VIEW_STUDENTS_MAX_PAGE_SIZE = 1000;
 const CLASS_VIEW_DETAIL_WARNING_LIMIT = 200;
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -1168,7 +1168,7 @@ export class WarningsController {
     }
     const userId = this.getRequestUserId(req);
     const warningId = BigInt(id);
-    const warning = await (this.prisma as any).warning_current_states.findUnique({
+    const currentWarning = await (this.prisma as any).warning_current_states.findUnique({
       where: { id: warningId },
       select: {
         id: true,
@@ -1188,6 +1188,28 @@ export class WarningsController {
         trigger_detail_json: true,
       },
     });
+    const historyWarning = currentWarning
+      ? null
+      : await this.prisma.warnings.findUnique({
+          where: { id: warningId },
+          select: {
+            id: true,
+            student_id: true,
+            class_id: true,
+            org_id: true,
+            status: true,
+            metric: true,
+            level: true,
+            window: true,
+            period_start: true,
+            period_end: true,
+            rule_id: true,
+            rule_snapshot_json: true,
+            trigger_summary: true,
+            trigger_detail_json: true,
+          },
+        });
+    const warning = currentWarning || historyWarning;
 
     if (!warning) {
       return {
@@ -1241,9 +1263,86 @@ export class WarningsController {
       };
     }
 
+    if (warning.status === 'closed') {
+      return {
+        code: 400,
+        message: '已关闭的预警无需确认',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
     const ackedAt = new Date();
     const ackResult = await this.prisma.$transaction(async (tx: any) => {
-      const updated = await tx.warning_current_states.updateMany({
+      const warningDetail = (warning.trigger_detail_json as Record<string, any>) || {};
+      const warningCourseKey =
+        String((warning as any).course_key || warningDetail.course_id || '').trim() || '__none__';
+
+      if (currentWarning) {
+        const updated = await tx.warning_current_states.updateMany({
+          where: { id: warningId, status: 'open' },
+          data: {
+            status: 'acknowledged',
+            acknowledged_at: ackedAt,
+            acknowledged_by: userId,
+          },
+        });
+        if (updated.count === 0) {
+          return false;
+        }
+
+        const existingWarnings = await tx.warnings.findMany({
+          where: {
+            student_id: warning.student_id,
+            metric: warning.metric,
+            window: warning.window,
+            period_start: warning.period_start,
+            period_end: warning.period_end,
+            status: { in: ['open', 'acknowledged'] },
+          },
+          orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
+        });
+
+        const matchedExisting = existingWarnings.find((item: any) => {
+          const itemDetail = (item.trigger_detail_json as Record<string, any>) || {};
+          const itemCourseKey = String(itemDetail.course_id || '').trim() || '__none__';
+          return itemCourseKey === warningCourseKey;
+        });
+
+        if (matchedExisting) {
+          await tx.warnings.update({
+            where: { id: matchedExisting.id },
+            data: {
+              status: 'acknowledged',
+              acknowledged_at: ackedAt,
+              acknowledged_by: userId,
+            },
+          });
+        } else {
+          await tx.warnings.create({
+            data: {
+              student_id: warning.student_id,
+              class_id: warning.class_id,
+              org_id: warning.org_id,
+              metric: warning.metric,
+              level: warning.level,
+              window: warning.window,
+              period_start: warning.period_start,
+              period_end: warning.period_end,
+              rule_id: warning.rule_id,
+              rule_snapshot_json: warning.rule_snapshot_json,
+              trigger_summary: warning.trigger_summary,
+              trigger_detail_json: warning.trigger_detail_json,
+              status: 'acknowledged',
+              acknowledged_at: ackedAt,
+              acknowledged_by: userId,
+            },
+          });
+        }
+        return true;
+      }
+
+      const updatedHistory = await tx.warnings.updateMany({
         where: { id: warningId, status: 'open' },
         data: {
           status: 'acknowledged',
@@ -1251,56 +1350,33 @@ export class WarningsController {
           acknowledged_by: userId,
         },
       });
-      if (updated.count === 0) {
+      if (updatedHistory.count === 0) {
         return false;
       }
 
-      const warningDetail = (warning.trigger_detail_json as Record<string, any>) || {};
-      const warningCourseKey =
-        String(warning.course_key || warningDetail.course_id || '').trim() || '__none__';
-
-      const existingWarnings = await tx.warnings.findMany({
+      const currentStates = await tx.warning_current_states.findMany({
         where: {
           student_id: warning.student_id,
           metric: warning.metric,
           window: warning.window,
           period_start: warning.period_start,
           period_end: warning.period_end,
-          status: { in: ['open', 'acknowledged'] },
+          status: 'open',
         },
-        orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
       });
+      const matchedCurrentIds = currentStates
+        .filter((item: any) => {
+          const itemDetail = (item.trigger_detail_json as Record<string, any>) || {};
+          const itemCourseKey =
+            String(item.course_key || itemDetail.course_id || '').trim() || '__none__';
+          return itemCourseKey === warningCourseKey;
+        })
+        .map((item: any) => item.id);
 
-      const matchedExisting = existingWarnings.find((item: any) => {
-        const itemDetail = (item.trigger_detail_json as Record<string, any>) || {};
-        const itemCourseKey = String(itemDetail.course_id || '').trim() || '__none__';
-        return itemCourseKey === warningCourseKey;
-      });
-
-      if (matchedExisting) {
-        await tx.warnings.update({
-          where: { id: matchedExisting.id },
+      if (matchedCurrentIds.length > 0) {
+        await tx.warning_current_states.updateMany({
+          where: { id: { in: matchedCurrentIds }, status: 'open' },
           data: {
-            status: 'acknowledged',
-            acknowledged_at: ackedAt,
-            acknowledged_by: userId,
-          },
-        });
-      } else {
-        await tx.warnings.create({
-          data: {
-            student_id: warning.student_id,
-            class_id: warning.class_id,
-            org_id: warning.org_id,
-            metric: warning.metric,
-            level: warning.level,
-            window: warning.window,
-            period_start: warning.period_start,
-            period_end: warning.period_end,
-            rule_id: warning.rule_id,
-            rule_snapshot_json: warning.rule_snapshot_json,
-            trigger_summary: warning.trigger_summary,
-            trigger_detail_json: warning.trigger_detail_json,
             status: 'acknowledged',
             acknowledged_at: ackedAt,
             acknowledged_by: userId,

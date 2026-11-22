@@ -977,8 +977,8 @@ select {
   .app-shell .ws-table-shell .el-table td.el-table__cell[data-column-role='actions'] .cell {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
+    justify-content: flex-start;
+    gap: 6px;
     flex-wrap: wrap;
   }
 
@@ -1030,9 +1030,102 @@ select {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
+
+  /* 顶部同步横向滚动条：宽表在笔记本/缩放屏无需拉到底部拖滚动条 */
+  .ws-table-top-scroll {
+    display: none;
+    position: sticky;
+    top: 8px;
+    z-index: 6;
+    width: 100%;
+    height: 10px;
+    margin-bottom: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-radius: 999px;
+    background: rgba(203, 220, 229, 0.38);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(15, 118, 110, 0.45) transparent;
+  }
+
+  .ws-table-shell[data-has-horizontal-overflow='true'] > .ws-table-top-scroll {
+    display: block;
+  }
+
+  .ws-table-top-scroll__track {
+    height: 1px;
+    pointer-events: none;
+  }
+
+  .ws-table-top-scroll::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .ws-table-top-scroll::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 999px;
+  }
+
+  .ws-table-top-scroll::-webkit-scrollbar-thumb {
+    background: rgba(15, 118, 110, 0.42);
+    border-radius: 999px;
+  }
+
+  .ws-table-top-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(15, 118, 110, 0.65);
+  }
+
+  /* 横向溢出时将右侧操作列固定在视口右边缘，点按钮无需横拉到底 */
+  .ws-table-shell[data-has-horizontal-overflow='true'] .el-table th.el-table__cell.ws-sticky-action-col,
+  .ws-table-shell[data-has-horizontal-overflow='true'] .el-table td.el-table__cell.ws-sticky-action-col {
+    position: sticky !important;
+    right: 0 !important;
+  }
+
+  .ws-table-shell[data-has-horizontal-overflow='true'] .el-table th.el-table__cell.ws-sticky-action-col {
+    z-index: 5;
+    background: #eef5f8 !important;
+  }
+
+  .ws-table-shell[data-has-horizontal-overflow='true'] .el-table td.el-table__cell.ws-sticky-action-col {
+    z-index: 4;
+    background: #f9fcfd !important;
+  }
+
+  .ws-table-shell[data-has-horizontal-overflow='true'] .el-table tbody tr:hover > td.el-table__cell.ws-sticky-action-col {
+    background: #eef7f6 !important;
+  }
+
+  .ws-table-shell[data-has-horizontal-overflow='true'][data-scroll-right-covered='true'] .el-table th.el-table__cell.ws-sticky-action-col,
+  .ws-table-shell[data-has-horizontal-overflow='true'][data-scroll-right-covered='true'] .el-table td.el-table__cell.ws-sticky-action-col {
+    box-shadow: -8px 0 16px -10px rgba(15, 23, 42, 0.24);
+  }
+}
+
+@media (min-width: 961px) and (max-width: 1440px) {
+  :root {
+    --ws-table-header-padding-x: 10px;
+    --ws-table-body-padding-x: 10px;
+    --ws-table-header-padding-y: 10px;
+    --ws-table-body-padding-y: 10px;
+  }
+
+  .app-shell .ws-table-shell {
+    padding: 12px;
+    border-radius: 24px;
+  }
+
+  .app-shell .ws-table-shell .el-table {
+    font-size: 13px;
+    border-radius: 18px;
+  }
 }
 
 @media (max-width: 960px) {
+  .ws-table-top-scroll {
+    display: none !important;
+  }
+
   .app-shell .el-table[data-responsive-table='ready'] {
     border-radius: 0;
     border: none;
