@@ -84,12 +84,12 @@
       <div class="table-shell">
         <el-table :data="sessions">
           <el-table-column prop="id" label="课次ID" width="90" />
-          <el-table-column label="课程" min-width="180">
+          <el-table-column label="课程" min-width="180" show-overflow-tooltip>
             <template #default="{ row }">
               {{ row.course_name }}
             </template>
           </el-table-column>
-          <el-table-column label="班级" min-width="160">
+          <el-table-column label="班级" min-width="160" show-overflow-tooltip>
             <template #default="{ row }">
               {{ row.class_name }}
             </template>

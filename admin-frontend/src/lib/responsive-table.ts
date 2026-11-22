@@ -585,32 +585,38 @@ function autoFitTableColumns(table: HTMLElement, headers: HeaderMeta[]) {
   const firstTh = headerCells[0];
   const thStyle = typeof window !== 'undefined' ? window.getComputedStyle(firstTh) : null;
   const headerFont = thStyle ? `${thStyle.fontWeight || '700'} ${thStyle.fontSize || '12px'} ${thStyle.fontFamily || 'sans-serif'}` : '700 12px sans-serif';
-  const headerPadX = thStyle
-    ? Math.ceil((parseFloat(thStyle.paddingLeft) || 14) + (parseFloat(thStyle.paddingRight) || 14))
-    : 28;
+  // 单元格内还有一层 .cell（el-table 自带左右 padding），只算 td 的 padding
+  // 会低估 24px 左右，导致"学生1""2026-11-22 15:38"这类内容刚好被截成省略号。
+  const innerPadX = (node: HTMLElement | null | undefined) => {
+    if (!node || typeof window === 'undefined') return 0;
+    const style = window.getComputedStyle(node);
+    return Math.ceil((parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0));
+  };
+  const headerPadX =
+    (thStyle
+      ? Math.ceil((parseFloat(thStyle.paddingLeft) || 14) + (parseFloat(thStyle.paddingRight) || 14))
+      : 28) + innerPadX(firstTh.querySelector('.cell') as HTMLElement | null);
 
   const firstTd = sampleRows[0]?.querySelector('td.el-table__cell') as HTMLElement | null;
   const tdStyle = firstTd && typeof window !== 'undefined' ? window.getComputedStyle(firstTd) : null;
   const bodyFont = tdStyle ? `${tdStyle.fontWeight || '400'} ${tdStyle.fontSize || '13px'} ${tdStyle.fontFamily || 'sans-serif'}` : '400 13px sans-serif';
-  const bodyPadX = tdStyle
-    ? Math.ceil((parseFloat(tdStyle.paddingLeft) || 14) + (parseFloat(tdStyle.paddingRight) || 14))
-    : 28;
+  const bodyPadX =
+    (tdStyle
+      ? Math.ceil((parseFloat(tdStyle.paddingLeft) || 14) + (parseFloat(tdStyle.paddingRight) || 14))
+      : 28) + innerPadX(firstTd?.querySelector('.cell') as HTMLElement | null);
 
   const measureHeader = getTextMeasurer(headerFont);
   const measureBody = getTextMeasurer(bodyFont);
 
   const columnKinds: Array<'selection' | 'actions' | 'tag' | 'compact' | 'tooltip' | 'text'> = [];
-  const headerMinWidths: number[] = [];
 
   const neededWidths = headers.map((header, colIdx) => {
     if (header.role === 'selection') {
       columnKinds[colIdx] = 'selection';
-      headerMinWidths[colIdx] = 48;
       return 48;
     }
 
     const headerNeeded = Math.max(MIN_RESIZABLE_COLUMN_WIDTH, measureHeader(header.label) + headerPadX + 10);
-    headerMinWidths[colIdx] = headerNeeded;
 
     let maxContentWidth = 0;
     let kind: 'actions' | 'tag' | 'compact' | 'tooltip' | 'text' =
@@ -652,6 +658,14 @@ function autoFitTableColumns(table: HTMLElement, headers: HeaderMeta[]) {
   const sumNeeded = neededWidths.reduce((sum, w) => sum + w, 0);
   const finalWidths = [...neededWidths];
 
+  // 内容总宽度已经超过可视区域：交给 el-table 自己的横向滚动 + 固定列（操作列
+  // sticky）处理，不再覆写列宽。之前"压到刚好放下"的策略正是把
+  // “计算机组成原理 / 2026-11-22 15:38 / 学生30”截成“计… / 2026-11-… / 学…”
+  // 的根因；覆写列宽还会破坏固定列的定位，让操作按钮被挤出可视区。
+  if (viewportWidth > 0 && sumNeeded > viewportWidth) {
+    return;
+  }
+
   if (viewportWidth > 0 && sumNeeded < viewportWidth) {
     let expandableIndices = columnKinds
       .map((kind, idx) => (kind === 'text' || kind === 'tooltip' ? idx : -1))
@@ -675,45 +689,6 @@ function autoFitTableColumns(table: HTMLElement, headers: HeaderMeta[]) {
         finalWidths[idx] = neededWidths[idx] + Math.max(0, share);
         assigned += Math.max(0, share);
       });
-    }
-  } else if (viewportWidth > 0 && sumNeeded > viewportWidth && sumNeeded <= viewportWidth * 1.35) {
-    // Fit moderately wide tables cleanly into the viewport without horizontal scrollbars
-    let excess = sumNeeded - viewportWidth;
-    const passGroups: number[][] = [
-      columnKinds
-        .map((kind, idx) => (kind === 'tooltip' || kind === 'text' || kind === 'compact' ? idx : -1))
-        .filter((idx) => idx >= 0),
-      columnKinds
-        .map((kind, idx) => (kind === 'tag' ? idx : -1))
-        .filter((idx) => idx >= 0),
-    ];
-
-    for (const group of passGroups) {
-      if (excess <= 0) {
-        break;
-      }
-      const totalSlack = group.reduce(
-        (sum, idx) => sum + Math.max(0, finalWidths[idx] - headerMinWidths[idx]),
-        0,
-      );
-      if (totalSlack <= 0) {
-        continue;
-      }
-      const trimTarget = Math.min(excess, totalSlack);
-      let trimmed = 0;
-      group.forEach((idx, pos) => {
-        const slack = Math.max(0, finalWidths[idx] - headerMinWidths[idx]);
-        if (slack <= 0) {
-          return;
-        }
-        const cut =
-          pos === group.length - 1
-            ? Math.min(slack, trimTarget - trimmed)
-            : Math.min(slack, Math.floor((trimTarget * slack) / totalSlack));
-        finalWidths[idx] -= cut;
-        trimmed += cut;
-      });
-      excess -= trimmed;
     }
   }
 

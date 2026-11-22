@@ -12,8 +12,13 @@
  * 修复后链路：
  *   创建 job(status='queued') → worker 领取(status='running')
  *   → 生成 xlsx → 上传 MinIO → 写 files(source='export')
- *   → 回填 export_jobs.file_id + status='success'
+ *   → 回填 export_jobs.file_id + status='completed'
  *   失败则写 error_msg + status='failed'
+ *
+ * 状态口径（统一）：
+ *   历史数据与前端都以 'completed' 作为"已完成"；
+ *   之前这里写的是 'success'，导致前端只认 'completed' 时永远显示"生成中"、
+ *   下载按钮不出现（文件其实已经生成）。下载端同时兼容旧的 'success'。
  *
  * 并发：
  *  - 用条件更新（CAS）领取任务，避免多副本重复处理；
@@ -179,7 +184,7 @@ export class ExportProcessorService {
       await this.prisma.export_jobs.update({
         where: { id: jobId },
         data: {
-          status: 'success',
+          status: 'completed',
           file_id: fileRow.id,
           error_msg: null,
           updated_at: new Date(),

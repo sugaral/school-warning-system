@@ -11,6 +11,76 @@ if (!globalThis.crypto) {
   });
 }
 
+const BACKEND = 'http://localhost:3000';
+
+/**
+ * 代理到后端，但把「浏览器导航」放行给 SPA。
+ *
+ * 前端路由与后端接口存在同名前缀（/warnings、/students、/attendance、
+ * /reports、/users、/orgs、/courses …）。如果不区分请求类型，直接刷新
+ * 或收藏这些路由时请求会被代理到后端，页面变成一段 JSON（401
+ * "Missing authentication token"）。生产 nginx 已按 Accept 头做了区分
+ * （text/html → index.html），这里保持一致。
+ */
+function apiProxy(rewrite?: (path: string) => string) {
+  return {
+    target: BACKEND,
+    changeOrigin: true,
+    ...(rewrite ? { rewrite } : {}),
+    bypass(req: any) {
+      const accept = String(req?.headers?.accept || '');
+      if (accept.includes('text/html')) return '/index.html';
+      return undefined;
+    },
+  };
+}
+
+const proxyMap: Record<string, any> = {
+  '/api': apiProxy((path: string) => path.replace(/^\/api/, '')),
+};
+
+// 其余后端前缀（与后端 controller 路由一一对应）
+for (const prefix of [
+  '/admin',
+  '/auth',
+  '/orgs',
+  '/student',
+  '/warnings',
+  '/warning-cases',
+  '/leave_requests',
+  '/makeup_requests',
+  '/appeals',
+  '/attendance',
+  '/schedules',
+  '/jobs',
+  '/warning-rules',
+  '/courses',
+  '/student-admin',
+  '/teaching-admin',
+  '/teacher',
+  '/vice-dean',
+  '/head-teacher',
+  '/class-monitor',
+  '/classes',
+  '/teachers',
+  '/students',
+  '/reports',
+  '/audit',
+  '/stats',
+  '/config',
+  '/users',
+  '/course-classes',
+  '/health',
+  '/requests',
+  '/permission',
+  '/role',
+  '/feedback',
+  '/files',
+  '/uploads',
+]) {
+  proxyMap[prefix] = apiProxy();
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
 
@@ -70,157 +140,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: '0.0.0.0',
       port: 5173,
-      proxy: {
-        '/api': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, ''),
-        },
-        '/admin': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/auth': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/orgs': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/student': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/warnings': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/warning-cases': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/leave_requests': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/makeup_requests': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/appeals': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/attendance': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/schedules': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/jobs': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/warning-rules': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/courses': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/student-admin': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/teaching-admin': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/teacher': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/vice-dean': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/head-teacher': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/class-monitor': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/classes': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/teachers': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/students': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/reports': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/audit': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/stats': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/config': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/users': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/course-classes': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/health': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/requests': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/permission': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/role': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/feedback': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/files': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-        '/uploads': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-      },
+      proxy: proxyMap,
     },
     define: {
       'import.meta.env.VITE_API_BASE_URL': JSON.stringify(env.VITE_API_BASE_URL || ''),

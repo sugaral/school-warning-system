@@ -1039,11 +1039,15 @@ export class StatsController {
       this.buildWeeklyWarningTrend(scope),
     ]);
 
+    // 组织名必须覆盖"有预警的组织"和"有学生的组织"：只按预警分组取 org 时，
+    // 没有预警的学院会命中 fallback 名字，在「院系处置表现」里显示成一行
+    // “未知学院”，多个学院还会挤成多行同名记录。
     const orgIds = [
       ...new Set(
-        warningGroups
-          .map((item: any) => item.org_id?.toString())
-          .filter(Boolean),
+        [
+          ...warningGroups.map((item: any) => item.org_id?.toString()),
+          ...studentCounts.map((item: any) => item.org_id?.toString()),
+        ].filter(Boolean),
       ),
     ].map((item: any) => BigInt(item));
     const orgRows = orgIds.length > 0

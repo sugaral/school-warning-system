@@ -108,15 +108,15 @@
         <el-table-column prop="date" label="导出时间" />
         <el-table-column prop="status" label="状态">
           <template #default="scope">
-            <el-tag :type="scope.row.status === 'completed' ? 'success' : 'warning'">
-              {{ scope.row.status === 'completed' ? '已完成' : '生成中' }}
+            <el-tag :type="isReportDone(scope.row.status) ? 'success' : (isReportFailed(scope.row.status) ? 'danger' : 'warning')">
+              {{ isReportDone(scope.row.status) ? '已完成' : (isReportFailed(scope.row.status) ? '生成失败' : '生成中') }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作">
           <template #default="scope">
             <el-button 
-              v-if="scope.row.status === 'completed'" 
+              v-if="isReportDone(scope.row.status)" 
               size="small" 
               type="primary"
               @click="downloadReport(scope.row)"
@@ -128,7 +128,7 @@
               size="small" 
               disabled
             >
-              生成中
+              {{ isReportFailed(scope.row.status) ? '生成失败' : '生成中' }}
             </el-button>
             <el-button 
               size="small" 
@@ -165,29 +165,35 @@ const filterStatus = ref('all');
 const selectedOrgId = ref('');
 const orgOptions = ref<any[]>([]);
 
+// 后端历史上出现过 completed / success 两种“已完成”口径，统一在前端收敛，
+// 否则新生成的报表会一直显示“生成中”，下载按钮也不出现（文件其实已生成）。
+const REPORT_DONE_STATUSES = ['completed', 'success'];
+const isReportDone = (status: string) => REPORT_DONE_STATUSES.includes(String(status || ''));
+const isReportFailed = (status: string) => String(status || '') === 'failed';
+
 const filteredExportHistory = computed(() => {
   if (filterStatus.value === 'all') return exportHistory.value;
 
   return exportHistory.value.filter((item: any) => {
     if (filterStatus.value === 'closed') {
-      return item.status === 'completed';
+      return isReportDone(item.status);
     }
     if (filterStatus.value === 'open') {
-      return item.status !== 'completed';
+      return !isReportDone(item.status);
     }
     if (filterStatus.value === 'acknowledged') {
-      return item.status === 'completed';
+      return isReportDone(item.status);
     }
     return true;
   });
 });
 
 const completedHistoryCount = computed(
-  () => exportHistory.value.filter((item: any) => item.status === 'completed').length,
+  () => exportHistory.value.filter((item: any) => isReportDone(item.status)).length,
 );
 
 const pendingHistoryCount = computed(
-  () => exportHistory.value.filter((item: any) => item.status !== 'completed').length,
+  () => exportHistory.value.filter((item: any) => !isReportDone(item.status)).length,
 );
 
 const filteredHistoryCount = computed(() => filteredExportHistory.value.length);
@@ -279,8 +285,10 @@ const downloadReport = async (row: any) => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    // 将后缀改为 .csv
-    const fileName = (row.fileName || 'report.csv').replace('.pdf', '.csv');
+    // 后端下发的是 xlsx（历史兜底分支才是 csv），按真实类型命名，避免被当成 CSV 打开
+    const fileName = /\.(xlsx|csv)$/i.test(row.fileName || '')
+      ? row.fileName
+      : `${row.reportType || '报表'}-${Date.now()}.xlsx`;
     a.download = fileName;
     document.body.appendChild(a);
     a.click();

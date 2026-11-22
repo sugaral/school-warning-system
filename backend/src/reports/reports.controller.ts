@@ -1137,7 +1137,7 @@ export class ReportsController {
             status: item.status,
             fileName: `${reportTypeLabels[item.report_type] || '报表'}-${item.created_at
               .toLocaleString()
-              .replace(/[\/:]/g, '-')}.csv`,
+              .replace(/[\/:]/g, '-')}.xlsx`,
           })),
           total: history.length,
         },
@@ -1196,7 +1196,11 @@ export class ReportsController {
       // P1-7：若 worker 已生成真实 xlsx 文件（file_id 已回填），
       // 优先直接下发该文件；否则回退到"下载时重新查库生成 CSV"的旧行为，
       // 保证历史任务与尚未处理完的任务仍可下载。
-      if (job.status === 'success' && job.file_id) {
+      // 兼容两种历史口径：'completed'（统一后）与 'success'（旧数据）。
+      if (
+        (job.status === 'completed' || job.status === 'success') &&
+        job.file_id
+      ) {
         const fileRow = await this.prisma.files.findUnique({
           where: { id: job.file_id },
         });
