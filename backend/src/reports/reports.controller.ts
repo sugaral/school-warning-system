@@ -1108,22 +1108,73 @@ export class ReportsController {
     }
   }
 
+  /**
+   * 导出历史：按数据范围可见，而不是只看自己创建的。
+   *
+   * 之前固定 `creator_user_id = 当前用户`，导致换管理员登录后历史全部消失
+   * （库里 100+ 条记录只返回 1 条）。现在：
+   *  - 全校范围（sys_admin / school）→ 全部任务
+   *  - 学院 / 班级 / 本人范围 → 自己创建的 + 落在自己范围内的任务
+   */
   @Get('history')
   @Permissions('report:export')
   async getExportHistory(@Req() req: any) {
     try {
       const userId = this.getRequestUserId(req);
-      const history = await this.prisma.export_jobs.findMany({
-        where: { creator_user_id: userId },
-        orderBy: { created_at: 'desc' },
-        take: 20,
-      });
+      const scope = await this.resolveReportScope(userId);
+
+      if (scope.type === 'none') {
+        return { code: 0, message: 'ok', data: { list: [], total: 0 } };
+      }
+
+      const where: any =
+        scope.type === 'all'
+          ? {}
+          : {
+              OR: [
+                { creator_user_id: userId },
+                ...(scope.orgIds.length
+                  ? [{ scope_type: 'org', scope_id: { in: scope.orgIds } }]
+                  : []),
+                ...(scope.classIds.length
+                  ? [{ scope_type: 'class', scope_id: { in: scope.classIds } }]
+                  : []),
+                ...(scope.studentIds.length
+                  ? [{ scope_type: 'self', scope_id: { in: scope.studentIds } }]
+                  : []),
+              ],
+            };
+
+      const [history, historyTotal] = await Promise.all([
+        this.prisma.export_jobs.findMany({
+          where,
+          orderBy: { created_at: 'desc' },
+          take: 50,
+        }),
+        this.prisma.export_jobs.count({ where }),
+      ]);
+
+      const creatorIds = Array.from(
+        new Set(history.map((item: any) => item.creator_user_id?.toString()).filter(Boolean)),
+      ).map((id: any) => BigInt(id));
+      const creators = creatorIds.length
+        ? await this.prisma.users.findMany({
+            where: { id: { in: creatorIds } },
+            select: { id: true, name: true },
+          })
+        : [];
+      const creatorNameMap = new Map(
+        creators.map((user: any) => [user.id.toString(), user.name]),
+      );
 
       const reportTypeLabels: Record<string, string> = {
         daily: '日报表',
         weekly: '周报表',
         monthly: '月报表',
         semester: '学期报表',
+        term: '学期报表',
+        warning_list: '预警清单',
+        notify_success: '通知送达',
       };
 
       return {
@@ -1135,17 +1186,39 @@ export class ReportsController {
             reportType: reportTypeLabels[item.report_type] || item.report_type,
             date: item.created_at.toLocaleString(),
             status: item.status,
+            creatorName:
+              creatorNameMap.get(item.creator_user_id?.toString()) || '未知用户',
+            isMine: item.creator_user_id === userId,
             fileName: `${reportTypeLabels[item.report_type] || '报表'}-${item.created_at
               .toLocaleString()
               .replace(/[\/:]/g, '-')}.xlsx`,
           })),
-          total: history.length,
+          total: historyTotal,
         },
       };
     } catch (error: any) {
       this.logError(error, 'getExportHistory');
       return { code: 500, message: '获取导出历史失败' };
     }
+  }
+
+  /** 判断当前用户能否访问某个导出任务（本人 / 全校 / 范围内） */
+  private async canAccessExportJob(userId: bigint, job: any): Promise<boolean> {
+    if (!job) return false;
+    if (job.creator_user_id === userId) return true;
+
+    const scope = await this.resolveReportScope(userId);
+    if (scope.type === 'all') return true;
+    if (scope.type === 'none') return false;
+
+    const scopeType = String(job.scope_type || '');
+    const scopeId = job.scope_id as bigint | null;
+    if (!scopeId) return false;
+
+    if (scopeType === 'org') return scope.orgIds.some((id) => id === scopeId);
+    if (scopeType === 'class') return scope.classIds.some((id) => id === scopeId);
+    if (scopeType === 'self') return scope.studentIds.some((id) => id === scopeId);
+    return false;
   }
 
   @Post('delete/:id')
@@ -1161,8 +1234,8 @@ export class ReportsController {
         return { code: 404, message: '报表不存在' };
       }
 
-      if (job.creator_user_id !== userId) {
-        return { code: 403, message: '无权删除他人生成的报表' };
+      if (!(await this.canAccessExportJob(userId, job))) {
+        return { code: 403, message: '无权删除该报表（不在你的数据范围内）' };
       }
 
       await this.prisma.export_jobs.delete({
@@ -1189,8 +1262,8 @@ export class ReportsController {
         return res.status(404).json({ code: 404, message: '报表不存在' });
       }
 
-      if (job.creator_user_id !== userId) {
-        return res.status(403).json({ code: 403, message: '无权下载他人生成的报表' });
+      if (!(await this.canAccessExportJob(userId, job))) {
+        return res.status(403).json({ code: 403, message: '无权下载该报表（不在你的数据范围内）' });
       }
 
       // P1-7：若 worker 已生成真实 xlsx 文件（file_id 已回填），

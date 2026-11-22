@@ -105,6 +105,11 @@
       <div class="table-shell">
       <el-table :data="filteredExportHistory" style="width: 100%">
         <el-table-column prop="reportType" label="报表类型" />
+        <el-table-column prop="creatorName" label="创建人" min-width="190" show-overflow-tooltip>
+          <template #default="scope">
+            {{ scope.row.creatorName || '-' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="date" label="导出时间" />
         <el-table-column prop="status" label="状态">
           <template #default="scope">

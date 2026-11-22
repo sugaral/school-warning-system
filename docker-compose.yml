@@ -104,10 +104,11 @@ services:
     environment:
       TZ: ${TZ:-Asia/Shanghai}
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
-      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
-      MINIO_PORT: ${MINIO_PORT}
+      # 容器内部一律走 compose 服务名；根目录 .env 里放的是宿主机/本地开发用的地址
+      DATABASE_URL: mysql://${MYSQL_USER:-warnuser}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-warnsys}
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
       MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
@@ -156,10 +157,11 @@ services:
       # 设为 8 与压测口径一致（实测 P99 2929ms → 115ms）
       UV_THREADPOOL_SIZE: ${UV_THREADPOOL_SIZE:-8}
       PORT: 3000
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
-      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
-      MINIO_PORT: ${MINIO_PORT}
+      # 容器内部一律走 compose 服务名；根目录 .env 里放的是宿主机/本地开发用的地址
+      DATABASE_URL: mysql://${MYSQL_USER:-warnuser}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-warnsys}
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
       MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
@@ -251,10 +253,11 @@ services:
       TZ: ${TZ:-Asia/Shanghai}
       NODE_ENV: production
       UV_THREADPOOL_SIZE: ${UV_THREADPOOL_SIZE:-8}
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
-      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
-      MINIO_PORT: ${MINIO_PORT}
+      # 容器内部一律走 compose 服务名；根目录 .env 里放的是宿主机/本地开发用的地址
+      DATABASE_URL: mysql://${MYSQL_USER:-warnuser}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-warnsys}
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
       MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}

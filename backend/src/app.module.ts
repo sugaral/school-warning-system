@@ -47,7 +47,10 @@ import { TraceIdMiddleware } from './shared/traceid.middleware';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      // 唯一配置源是仓库根目录的 .env（backend/.env 已废弃，避免两处不一致）。
+      // 容器里由 compose 直接注入环境变量，这里的 ../.env 只对本地启动生效；
+      // .env.local 仍可用于个人临时覆盖。
+      envFilePath: ['.env.local', '.env', '../.env'],
     }),
     LoggerModule.forRoot({
       pinoHttp: {

@@ -1,4 +1,4 @@
-﻿<#
+<#
   学业预警系统 · 一键启动脚本 (Windows PowerShell)
 
   默认模式（混合极速）：Docker 基础依赖 (mysql/redis/minio/minio-init) + 本地后端 + 本地前端
@@ -138,6 +138,23 @@ if (-not (Test-Path '.env')) {
   Write-Step '未找到 .env，从 .env.example 复制生成'
   Copy-Item '.env.example' '.env'
 }
+
+# 唯一配置源是根目录 .env。Prisma CLI 只会读 backend/.env，所以在这里建一个
+# **硬链接**（不是副本）：两边指向同一份内容，改任一处都同步，不会再出现
+# “两份 .env 值不一致”的问题。
+function Ensure-BackendEnvLink {
+  $rootEnv = Join-Path $PSScriptRoot '.env'
+  $backendEnv = Join-Path $PSScriptRoot 'backend\.env'
+  if (-not (Test-Path $rootEnv)) { return }
+  if (Test-Path $backendEnv) { return }
+
+  $null = & cmd /c "mklink /H `"$backendEnv`" `"$rootEnv`"" 2>&1
+  if (-not (Test-Path $backendEnv)) {
+    Copy-Item $rootEnv $backendEnv
+    Write-Warn '无法创建 backend/.env 硬链接，已退化为复制；请勿单独修改该副本。'
+  }
+}
+Ensure-BackendEnvLink
 
 $backendPort = [int](Get-EnvValue 'BACKEND_PORT' '3000')
 $dockerFrontendPort = [int](Get-EnvValue 'FRONTEND_PORT' '8080')
