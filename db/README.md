@@ -5,11 +5,11 @@
 
 | 目录 | 内容 | 来源 |
 |---|---|---|
-| `mysql/warnsys.sql` | 完整逻辑备份（结构 + 数据 + 例程 + 触发器 + 事件），utf8mb4；2026-11-22 重新导出，已剔除旧系统遗留表 | `mysqldump --single-transaction` |
-| `mysql/warnsys.sql.gz` | 同上，gzip 压缩（约 300 KB） | 同上 |
-| `redis/dump.rdb` | Redis RDB 快照，945 个键（会话、缓存、`stream:warning:recalc` 等） | `BGSAVE` 后从容器 `/data` 复制 |
+| `mysql/warnsys.sql` | 完整逻辑备份（结构 + 数据 + 例程 + 触发器 + 事件），utf8mb4；2026-11-24 全量重新导出 | `mysqldump --single-transaction` |
+| `mysql/warnsys.sql.gz` | 同上，gzip 压缩（约 340 KB） | 同上 |
+| `redis/dump.rdb` | Redis RDB 快照（`BGSAVE` 最新导出） | `BGSAVE` 后从容器 `/data` 复制 |
 | `redis/redis-appendonly.tar.gz` | AOF 目录 `appendonlydir/` 打包 | 同上 |
-| `minio/data/` | MinIO 原始数据目录（`warnsys-files`、`warnsys-warning-queue`、`warnsys-warning-dlq` 三个 bucket，含 `.minio.sys` 元数据，72 个文件约 288 KB） | 直接复制容器 `/data` |
+| `minio/data/` | MinIO 原始数据目录（`warnsys-files`、`warnsys-warning-queue`、`warnsys-warning-dlq` 三个 bucket 与 `.minio.sys` 元数据） | 直接复制容器 `/data` |
 
 ## 恢复步骤
 
@@ -40,7 +40,7 @@ UNION ALL SELECT 'attendance_records', COUNT(*) FROM attendance_records
 UNION ALL SELECT 'class_sessions', COUNT(*) FROM class_sessions;
 ```
 
-备份时刻的基线：`users 163`、`students 152`、`permissions 60`、`warnings 61`、`warning_current_states 61`。
+备份时刻的基线（2026-11-24 09:01）：`users 193`、`students 182`、`permissions 60`、`warning_rules 4`、`warnings 274`、`warning_current_states 274`、`attendance_records 851`、`class_sessions 22`。
 
 > 2026-11-22 起，`warnsys` 库只保留本项目 Prisma 的 47 张表（+ `_prisma_migrations`），
 > 原先混在库里的旧系统表（`EDU_*`、`SYS_*`、`DEV_*`、`BIZ_*`、`CLIENT_*`、`AUTH_THIRD_USER`、
