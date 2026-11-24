@@ -375,7 +375,7 @@
                       <span v-else class="sync-status-text">已完成</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="操作" width="140" align="center" fixed="right">
+                  <el-table-column label="操作" width="150" align="center" fixed="right">
                     <template #default="{ row }">
                       <div class="row-actions">
                         <el-button v-if="row.status === 'open'" type="primary" size="small" @click="onAck(row)">

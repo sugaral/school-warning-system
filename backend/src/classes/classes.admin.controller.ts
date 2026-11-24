@@ -1,4 +1,4 @@
-﻿import {
+import {
   Controller,
   Get,
   Post,
@@ -165,13 +165,15 @@ export class ClassesAdminController {
     
     // 应用数据范围过滤
     const dataScope = req?.dataScope;
-    if (dataScope) {
-      if (dataScope.type === 'class' && dataScope.classIds) {
-        where.id = { in: dataScope.classIds.map((id: bigint) => id) };
-      } else if (dataScope.type === 'college' && dataScope.collegeIds) {
-        where.org_id = { in: dataScope.collegeIds.map((id: bigint) => id) };
+    if (dataScope && dataScope.type !== 'all') {
+      if (dataScope.type === 'class') {
+        where.id = { in: dataScope.classIds ?? [] };
+      } else if (dataScope.type === 'college') {
+        where.org_id = { in: dataScope.collegeIds ?? [] };
+      } else if (dataScope.type === 'self') {
+        // self 但没有学生档案（如普通教师）时不能退化为“无过滤”
+        where.id = { in: [] };
       }
-      // type === 'all' 时不追加任何过滤条件
     }
     
     if (keyword) {
