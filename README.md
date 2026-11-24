@@ -9,12 +9,27 @@
 
 > **分支说明**：
 > - `master` 分支仅保留本 `README.md`（含项目说明与按时间戳归档的更新记录）。
-> - `261122` 分支保存截至 `2026-11-22` 的最新完整项目源码、一键启停脚本、全端修复与最新数据库快照。
+> - `261124` 分支保存截至 `2026-11-24` 的最新完整项目源码（含模块精简、小程序同步、报表导出修复、数据范围越权收敛与宽表/构建修复）。
+> - `261122` 分支保存截至 `2026-11-22` 的历史归档版本。
 > - `261121` 分支保存截至 `2026-11-21` 的历史归档版本。
 
 ---
 
 ## 更新记录（按时间戳分类）
+
+### `2026-11-24 21:00` — 功能模块精简（双端同步）、报表导出“生成中”修复与数据范围安全加固
+- **删除 5 个功能模块并同步至后端、管理端前端与微信小程序**（保留数据库表结构以兼容历史快照）：
+  - **课表管理**：删除后端 `backend/src/schedules/` 模块及 `import.service.ts` / `data-scope.interceptor.ts` / `permission-catalog.ts` 中课表相关逻辑；删除管理端 `Schedules.vue`、`MySchedules.vue` 及对应路由菜单与 `api/schedules.ts`；小程序端移除 `pages/schedules/`、`app.json` 与 `custom-tab-bar` 中的「课表」Tab（保留首页 / 我的预警 / 我的 3 个 Tab）及 `utils/request.js` 相关封装。
+  - **高风险干预**：删除后端 `backend/src/warning-cases/` 模块及 `stats`、`warning`、`warnings`、`student-admin`、`vice-dean` 中的案例同步与统计查询；删除管理端 `InterventionCases.vue`、路由菜单、`api/warnings.ts` 案例接口，以及 `WarningStatsDashboard.vue` / `ClassOverview.vue` 中的高风险入口。
+  - **成绩管理**：删除后端 `teaching-admin/grades*`、`students/grades` 接口与 `grade:*` 权限定义；删除管理端 `GradesManage.vue` 及模板配置中的成绩/课表项；小程序端删除 `pages/grades/`、个人中心成绩入口、`summaries` 学期绩点卡片与申诉类型中的「成绩申诉」。
+  - **学期起始设置 & 学籍变更**：删除后端 `teaching-admin/semester-config` 与 `teaching-admin/students*` 接口；删除管理端 `SemesterSettings.vue`、`StudentProfileManage.vue` 及对应菜单路由，`ClassExport.vue` 改为本地推算默认学期起始周。
+- **修复报表导出点击后一直显示“生成中”**（`backend/src/reports/reports.controller.ts`、`export-processor.service.ts`、`admin-frontend/src/pages/Reports.vue`）：
+  - 后端在创建日/周/月/学期导出任务后通过 `triggerExportJob` 即时触发一次生成（最多同步等待 2 秒，超时继续由后台与 `@Cron` 完成），并新增超过 5 分钟僵死 `running` 任务的自动恢复。
+  - 修复 `buildSummaryReport`：按导出参数时间区间（`date` / `startDate`-`endDate` / `month` / `semester`）、状态和学院范围直接分页查询 `warnings` 明细导出 `.xlsx`，不再依赖月度字符串转数字或已移除的成绩汇总表。
+  - 前端修复「生成中」计数逻辑（排除 `failed` 状态），新增存在生成中任务时每 2 秒自动轮询刷新、手动「刷新状态」按钮及失败原因 Tooltip 提示。
+- **合入 `261124` 安全与构建修复**：
+  - 合入 `origin/261124` 的数据范围安全收敛（`student`/`class_monitor` 收敛为 `self`，空范围返回空数组不退化为全校）、宽表操作列与趋势列裁切修复、`start.ps1` UTF-8 BOM 修复及后端 Jest 配置。
+  - 修复 `admin-frontend/vite.config.ts` 中 `unplugin-vue-components` 在生产构建阶段并发写入 `components.d.ts` 导致 Windows 下构建失败的问题（改为仅 `serve` 模式生成声明文件）。
 
 ### `2026-11-22 23:00` — 预警中心与签到统计修复、表格 Tooltip 宽度同步与启停脚本优化
 - **预警中心交互与预警引擎优化**（`admin-frontend/src/pages/Warnings.vue`、`backend/src/warnings/warnings.controller.ts`、`backend/src/warning/`）：
