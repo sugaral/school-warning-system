@@ -81,13 +81,14 @@ for (const prefix of [
   proxyMap[prefix] = apiProxy();
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd());
 
   return {
     plugins: [
       vue(),
       Components({
+        dts: command === 'serve',
         resolvers: [ElementPlusResolver({ importStyle: false })],
       }),
     ],
