@@ -27,10 +27,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { createHash } from 'crypto';
+import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
 import * as XLSX from 'xlsx';
 import { PrismaService } from '../shared/prisma.service';
 import { MinioService } from '../shared/minio.service';
 import { RedisService } from '../shared/redis.service';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const EXPORT_TZ = 'Asia/Shanghai';
 
 export type ReportType =
   | 'daily'
@@ -117,6 +125,19 @@ export class ExportProcessorService {
         lockToken = null;
       }
       if (!locked) return;
+
+      // 恢复超过 5 分钟仍处于 running 的僵死任务，避免异常中断后永久卡在“生成中”
+      const staleBefore = new Date(Date.now() - this.lockTtlMs);
+      await this.prisma.export_jobs.updateMany({
+        where: {
+          status: 'running',
+          updated_at: { lt: staleBefore },
+        },
+        data: {
+          status: 'queued',
+          updated_at: new Date(),
+        },
+      });
 
       const jobs = await this.prisma.export_jobs.findMany({
         where: { status: 'queued' },
@@ -377,113 +398,211 @@ export class ExportProcessorService {
     };
   }
 
-  /** 汇总类报表：直接读三张汇总表（P1-5 落地后已具备数据源） */
+  /** 汇总类报表（日/周/月/学期）：按导出参数区间与筛选条件查询预警明细 */
   private async buildSummaryReport(
     type: ReportType,
     job: any,
     params: Record<string, any>,
   ) {
-    const scopeStudentIds = await this.resolveScopeStudentIds(job);
+    const { start, endExclusive, title } = this.resolveSummaryRange(type, params);
+    const where: any = {
+      created_at: {
+        gte: start,
+        lt: endExclusive,
+      },
+    };
 
-    if (type === 'semester' || type === 'term') {
-      const termCode = params.term_code ? String(params.term_code) : undefined;
-      const list = await this.prisma.term_summaries.findMany({
-        where: {
-          ...(termCode ? { term_code: termCode } : {}),
-          ...(scopeStudentIds ? { student_id: { in: scopeStudentIds } } : {}),
+    const normalizedStatus = String(params.status || '').trim();
+    if (normalizedStatus && normalizedStatus !== 'all' && normalizedStatus !== 'undefined') {
+      where.status = normalizedStatus;
+    }
+
+    this.applyScopeFilter(where, job);
+
+    const rawOrgId = String(params.org_id || '').trim();
+    if (/^\d+$/.test(rawOrgId)) {
+      const selectedOrgId = BigInt(rawOrgId);
+      const scopeType = String(job.scope_type || 'school');
+      const scopeId = job.scope_id as bigint | null;
+      if (scopeType === 'org' && scopeId !== null && scopeId !== selectedOrgId) {
+        where.id = -1n;
+      } else if (!where.org_id) {
+        where.org_id = selectedOrgId;
+      }
+    }
+
+    const warnings: any[] = [];
+    let cursor: bigint | null = null;
+    for (let page = 0; page < Math.ceil(EXPORT_MAX_ROWS / EXPORT_PAGE_SIZE); page++) {
+      const batch: any[] = await this.prisma.warnings.findMany({
+        where: { ...where, ...(cursor ? { id: { gt: cursor } } : {}) },
+        orderBy: { id: 'asc' },
+        take: EXPORT_PAGE_SIZE,
+        select: {
+          id: true,
+          student_id: true,
+          trigger_summary: true,
+          level: true,
+          status: true,
+          created_at: true,
         },
-        orderBy: [{ term_code: 'desc' }, { student_id: 'asc' }],
-        take: EXPORT_MAX_ROWS,
       });
+      if (batch.length === 0) break;
+      warnings.push(...batch);
+      cursor = batch[batch.length - 1].id;
+      if (batch.length < EXPORT_PAGE_SIZE || warnings.length >= EXPORT_MAX_ROWS) break;
+    }
+
+    const studentIds = Array.from(
+      new Set(warnings.map((w) => w.student_id?.toString()).filter(Boolean)),
+    ).map((id) => BigInt(id));
+    const studentMap = new Map<string, any>();
+    for (let i = 0; i < studentIds.length; i += EXPORT_PAGE_SIZE) {
+      const chunk = studentIds.slice(i, i + EXPORT_PAGE_SIZE);
+      const students = await this.prisma.student_profiles.findMany({
+        where: { id: { in: chunk } },
+        select: {
+          id: true,
+          student_no: true,
+          users: { select: { name: true } },
+          classes: {
+            select: {
+              class_name: true,
+              orgs: { select: { name: true } },
+            },
+          },
+        },
+      });
+      for (const s of students) {
+        studentMap.set(s.id.toString(), s);
+      }
+    }
+
+    const levelMap: Record<string, string> = {
+      yellow: '黄色预警',
+      orange: '橙色预警',
+      red: '红色预警',
+      severe: '严重预警',
+    };
+    const statusMap: Record<string, string> = {
+      open: '待处理',
+      acknowledged: '已确认',
+      closed: '已关闭',
+    };
+
+    const rows: ExportRow[] = warnings.map((w) => {
+      const student = studentMap.get(w.student_id?.toString?.() || '');
       return {
-        rows: list.map((t) => ({
-          学生ID: t.student_id.toString(),
-          学期: t.term_code,
-          挂科门数: t.failed_course_count,
-          已修学分: t.earned_credits.toString(),
-          要求学分: t.required_credits.toString(),
-          GPA: t.gpa === null ? '' : t.gpa.toString(),
-          生成时间: this.fmtDateTime(t.generated_at),
-        })),
-        columns: ['学生ID', '学期', '挂科门数', '已修学分', '要求学分', 'GPA', '生成时间'],
-        title: '学期汇总',
+        预警ID: w.id.toString(),
+        学生姓名: student?.users?.name || '未知',
+        学号: student?.student_no || '未知',
+        班级: student?.classes?.class_name || '未知',
+        学院: student?.classes?.orgs?.name || '未知',
+        预警内容: w.trigger_summary || '',
+        预警级别: levelMap[w.level] || w.level || '',
+        状态: statusMap[w.status] || w.status || '',
+        发布时间: w.created_at
+          ? dayjs(w.created_at).tz(EXPORT_TZ).format('YYYY-MM-DD HH:mm:ss')
+          : '',
+      };
+    });
+
+    return {
+      rows,
+      columns: [
+        '预警ID',
+        '学生姓名',
+        '学号',
+        '班级',
+        '学院',
+        '预警内容',
+        '预警级别',
+        '状态',
+        '发布时间',
+      ],
+      title,
+    };
+  }
+
+  private resolveSummaryRange(type: ReportType, params: Record<string, any>) {
+    if (type === 'daily') {
+      const dateStr = String(params.date || '').trim();
+      const start = dateStr
+        ? dayjs.tz(dateStr, EXPORT_TZ).startOf('day')
+        : dayjs().tz(EXPORT_TZ).startOf('day');
+      return {
+        start: start.toDate(),
+        endExclusive: start.add(1, 'day').toDate(),
+        title: `日报表_${start.format('YYYY-MM-DD')}`,
+      };
+    }
+
+    if (type === 'weekly') {
+      const startStr = String(params.startDate || '').trim();
+      const endStr = String(params.endDate || '').trim();
+      const start = startStr
+        ? dayjs.tz(startStr, EXPORT_TZ).startOf('day')
+        : dayjs().tz(EXPORT_TZ).startOf('week');
+      const endExclusive = endStr
+        ? dayjs.tz(endStr, EXPORT_TZ).startOf('day').add(1, 'day')
+        : start.add(7, 'day');
+      return {
+        start: start.toDate(),
+        endExclusive: endExclusive.toDate(),
+        title: `周报表_${start.format('YYYY-MM-DD')}`,
       };
     }
 
     if (type === 'monthly') {
-      const year = Number(params.year) || new Date().getFullYear();
-      const month = Number(params.month) || new Date().getMonth() + 1;
-      const list = await this.prisma.monthly_summaries.findMany({
-        where: {
-          year,
-          month,
-          ...(scopeStudentIds ? { student_id: { in: scopeStudentIds } } : {}),
-        },
-        orderBy: { student_id: 'asc' },
-        take: EXPORT_MAX_ROWS,
-      });
+      const monthStr = String(params.month || '').trim();
+      const start = /^\d{4}-\d{2}$/.test(monthStr)
+        ? dayjs.tz(`${monthStr}-01`, EXPORT_TZ).startOf('month')
+        : dayjs().tz(EXPORT_TZ).startOf('month');
       return {
-        rows: list.map((m) => ({
-          学生ID: m.student_id.toString(),
-          年: m.year,
-          月: m.month,
-          迟到次数: m.late_count,
-          缺勤次数: m.absent_count,
-          作业未交次数: m.homework_not_submit_count,
-          生成时间: this.fmtDateTime(m.generated_at),
-        })),
-        columns: ['学生ID', '年', '月', '迟到次数', '缺勤次数', '作业未交次数', '生成时间'],
-        title: '月度汇总',
+        start: start.toDate(),
+        endExclusive: start.add(1, 'month').toDate(),
+        title: `月报表_${start.format('YYYY-MM')}`,
       };
     }
 
-    // daily / weekly 均读周汇总（daily 粒度另以 daily_records 聚合）
-    if (type === 'daily') {
-      const date = params.date ? String(params.date) : this.fmtDate(new Date());
-      const dayStart = new Date(`${date}T00:00:00`);
-      const dayEnd = new Date(`${date}T23:59:59.999`);
-      const list = await this.prisma.daily_records.findMany({
-        where: {
-          record_date: { gte: dayStart, lte: dayEnd },
-          ...(scopeStudentIds ? { student_id: { in: scopeStudentIds } } : {}),
-        },
-        orderBy: [{ student_id: 'asc' }],
-        take: EXPORT_MAX_ROWS,
-      });
+    // semester / term
+    const semesterStr = String(params.semester || params.term_code || '').trim();
+    const match = /^(\d{4})-(\d{4})-(1|2)$/.exec(semesterStr);
+    if (match) {
+      const startYear = Number(match[1]);
+      const semesterNo = Number(match[3]);
+      const start =
+        semesterNo === 1
+          ? dayjs.tz(`${startYear}-09-01`, EXPORT_TZ).startOf('day')
+          : dayjs.tz(`${startYear + 1}-02-01`, EXPORT_TZ).startOf('day');
+      const endExclusive =
+        semesterNo === 1
+          ? dayjs.tz(`${startYear + 1}-02-01`, EXPORT_TZ).startOf('day')
+          : dayjs.tz(`${startYear + 1}-08-01`, EXPORT_TZ).startOf('day');
       return {
-        rows: list.map((d) => ({
-          学生ID: d.student_id.toString(),
-          日期: this.fmtDate(d.record_date),
-          班级ID: d.class_id.toString(),
-          课程ID: d.course_id?.toString() ?? '',
-          考勤状态: d.attendance_status,
-          作业状态: d.homework_status,
-          课堂表现: d.class_behavior ?? '',
-          备注: d.remarks ?? '',
-        })),
-        columns: ['学生ID', '日期', '班级ID', '课程ID', '考勤状态', '作业状态', '课堂表现', '备注'],
-        title: `日记录_${date}`,
+        start: start.toDate(),
+        endExclusive: endExclusive.toDate(),
+        title: `学期报表_${semesterStr}`,
       };
     }
 
-    // weekly
-    const list = await this.prisma.weekly_summaries.findMany({
-      where: { ...(scopeStudentIds ? { student_id: { in: scopeStudentIds } } : {}) },
-      orderBy: [{ week_start: 'desc' }, { student_id: 'asc' }],
-      take: EXPORT_MAX_ROWS,
-    });
+    const now = dayjs().tz(EXPORT_TZ);
+    const month = now.month() + 1;
+    const year = now.year();
+    const startYear = month >= 8 ? year : year - 1;
+    const semesterNo = month >= 2 && month < 8 ? 2 : 1;
+    const start =
+      semesterNo === 1
+        ? dayjs.tz(`${startYear}-09-01`, EXPORT_TZ).startOf('day')
+        : dayjs.tz(`${startYear + 1}-02-01`, EXPORT_TZ).startOf('day');
+    const endExclusive =
+      semesterNo === 1
+        ? dayjs.tz(`${startYear + 1}-02-01`, EXPORT_TZ).startOf('day')
+        : dayjs.tz(`${startYear + 1}-08-01`, EXPORT_TZ).startOf('day');
     return {
-      rows: list.map((w) => ({
-        学生ID: w.student_id.toString(),
-        周开始: this.fmtDate(w.week_start),
-        周结束: this.fmtDate(w.week_end),
-        迟到次数: w.late_count,
-        缺勤次数: w.absent_count,
-        作业未交次数: w.homework_not_submit_count,
-        生成时间: this.fmtDateTime(w.generated_at),
-      })),
-      columns: ['学生ID', '周开始', '周结束', '迟到次数', '缺勤次数', '作业未交次数', '生成时间'],
-      title: '周汇总',
+      start: start.toDate(),
+      endExclusive: endExclusive.toDate(),
+      title: `学期报表_${startYear}-${startYear + 1}-${semesterNo}`,
     };
   }
 

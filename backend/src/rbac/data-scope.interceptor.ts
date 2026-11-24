@@ -481,43 +481,6 @@ export class DataScopeInterceptor implements NestInterceptor {
         }
 
         // ----------------------------------------------------------------
-        // 排课（schedules）
-        //
-        // 与 session 同理：路由的 `:id` 是**排课 id**，不是班级 id。
-        // 先由排课 id 解析出 class_id，再复用班级/学院/self 的范围判定。
-        // schedules 表本身有 class_id 列，无需二次查 classes。
-        // ----------------------------------------------------------------
-        case 'schedule': {
-          const schedule = await this.prisma.schedules.findUnique({
-            where: { id },
-            select: { class_id: true, course_id: true, teacher_user_id: true },
-          });
-          if (!schedule) return false;
-
-          if (dataScope.type === 'class' && dataScope.classIds) {
-            return dataScope.classIds.some(
-              (cid) => cid.toString() === schedule.class_id.toString(),
-            );
-          }
-          if (dataScope.type === 'self' && dataScope.classIds) {
-            return dataScope.classIds.some(
-              (cid) => cid.toString() === schedule.class_id.toString(),
-            );
-          }
-          if (dataScope.type === 'college' && dataScope.collegeIds) {
-            const classInfo = await this.prisma.classes.findUnique({
-              where: { id: schedule.class_id },
-              select: { org_id: true },
-            });
-            if (!classInfo) return false;
-            return dataScope.collegeIds.some(
-              (oid) => oid.toString() === classInfo.org_id.toString(),
-            );
-          }
-          break;
-        }
-
-        // ----------------------------------------------------------------
         // 签到课次（class_sessions）
         //
         // 为什么需要单独的 entity：

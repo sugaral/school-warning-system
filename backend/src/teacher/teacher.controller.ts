@@ -1771,40 +1771,6 @@ export class TeacherController {
     });
     const qrState = await this.buildQrStateForSession(session);
 
-    try {
-      const [teacher, course] = await Promise.all([
-        this.prisma.users.findUnique({
-          where: { id: userId },
-          select: { name: true },
-        }),
-        this.prisma.courses.findUnique({
-          where: { id: BigInt(dto.course_id) },
-          select: { course_name: true },
-        }),
-      ]);
-
-      const courseName = course?.course_name || '课程';
-      await this.prisma.class_notifications.create({
-        data: {
-          class_id: BigInt(dto.class_id),
-          org_id: (
-            await this.prisma.classes.findUnique({
-              where: { id: BigInt(dto.class_id) },
-              select: { org_id: true },
-            })
-          )?.org_id || BigInt(0),
-          title: `${courseName}已开始`,
-          content: `${courseName}已开始，请前往小程序进行签到。`,
-          publisher_id: userId,
-          publisher_name: teacher?.name || '任课教师',
-        },
-      });
-    } catch (error) {
-      this.logger.warn(
-        `创建签到课次后发送班级通知失败: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-
     return {
       code: 0,
       message: 'ok',

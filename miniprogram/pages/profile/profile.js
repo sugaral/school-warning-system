@@ -9,7 +9,7 @@ Page({
 
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().setData({ selected: 3 });
+      this.getTabBar().setData({ selected: 2 });
     }
     this.loadProfile();
   },
@@ -75,7 +75,6 @@ Page({
   goPassword() { wx.navigateTo({ url: '/pages/change-password/change-password' }); },
   goSummaries() { wx.navigateTo({ url: '/pages/summaries/summaries' }); },
   goAttendance() { wx.navigateTo({ url: '/pages/attendance/attendance' }); },
-  goGrades() { wx.navigateTo({ url: '/pages/grades/grades' }); },
   goTeachers() { wx.navigateTo({ url: '/pages/teachers/teachers' }); },
   goAbout() { wx.navigateTo({ url: '/pages/about/about' }); },
 

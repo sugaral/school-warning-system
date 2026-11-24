@@ -17,7 +17,7 @@
       <view class="about-item">1. 课堂动态二维码签到与近 7 天考勤作业查询</view>
       <view class="about-item">2. 预警实时提醒（站内信+班级公告）、确认与一键申诉</view>
       <view class="about-item">3. 在线请假审批及多图病历证明上传预览</view>
-      <view class="about-item">4. 本班课表学期/周次筛选、个人成绩与学业汇总</view>
+      <view class="about-item">4. 个人周 / 月考勤汇总查询与预警趋势查看</view>
       <view class="about-item">5. 资料维护、邮箱手机核验绑定与跨班换班申请</view>
     </view>
   </view>

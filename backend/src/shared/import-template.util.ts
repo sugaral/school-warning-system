@@ -1,6 +1,6 @@
 import { PrismaService } from './prisma.service';
 
-export type ImportTemplateType = 'grades' | 'course_classes' | 'schedules';
+export type ImportTemplateType = 'course_classes';
 
 export type ImportTemplateField = {
   key: string;
@@ -24,79 +24,6 @@ type ImportTemplateDefinition = {
 };
 
 const IMPORT_TEMPLATE_DEFINITIONS: Record<ImportTemplateType, ImportTemplateDefinition> = {
-  grades: {
-    settingKey: 'grades_import_template',
-    title: '成绩导入模板',
-    fields: [
-      {
-        key: 'student_no',
-        label: '学号',
-        columnName: '学号',
-        enabled: true,
-        required: true,
-        description: '用于唯一识别学生，必填',
-      },
-      {
-        key: 'student_name',
-        label: '姓名',
-        columnName: '姓名',
-        enabled: true,
-        required: false,
-        description: '可选，用于人工核对',
-      },
-      {
-        key: 'class_name',
-        label: '班级',
-        columnName: '班级',
-        enabled: true,
-        required: false,
-        description: '可选，用于人工核对',
-      },
-      {
-        key: 'course_code',
-        label: '课程代码',
-        columnName: '课程代码',
-        enabled: true,
-        required: false,
-        description: '推荐填写，可优先用于匹配课程',
-      },
-      {
-        key: 'course_name',
-        label: '课程名称',
-        columnName: '课程名称',
-        enabled: true,
-        required: true,
-        description: '课程代码未提供时将使用课程名称匹配',
-      },
-      {
-        key: 'term_code',
-        label: '学期',
-        columnName: '学期',
-        enabled: true,
-        required: true,
-        description: '例如 2026-SPRING',
-      },
-      {
-        key: 'score',
-        label: '成绩',
-        columnName: '成绩',
-        enabled: true,
-        required: true,
-        description: '0-100 的数值',
-      },
-    ],
-    validate(fields) {
-      const hasCourseMatcher = fields.some(
-        (field) =>
-          field.enabled === true &&
-          (field.key === 'course_code' || field.key === 'course_name'),
-      );
-
-      if (!hasCourseMatcher) {
-        throw new Error('课程代码和课程名称至少启用一个');
-      }
-    },
-  },
   course_classes: {
     settingKey: 'course_classes_import_template',
     title: '课程与开课班导入模板',
@@ -170,95 +97,6 @@ const IMPORT_TEMPLATE_DEFINITIONS: Record<ImportTemplateType, ImportTemplateDefi
       }
     },
   },
-  schedules: {
-    settingKey: 'schedules_import_template',
-    title: '课表导入模板',
-    fields: [
-      {
-        key: 'org_name',
-        label: '学院',
-        columnName: '学院',
-        enabled: true,
-        required: false,
-        description: '可选，用于限定班级所属学院',
-      },
-      {
-        key: 'term_code',
-        label: '学期',
-        columnName: '学期',
-        enabled: true,
-        required: true,
-        description: '例如 2026-SPRING',
-      },
-      {
-        key: 'course_code',
-        label: '课程代码',
-        columnName: '课程代码',
-        enabled: true,
-        required: false,
-        description: '推荐填写，优先按课程代码匹配课程',
-      },
-      {
-        key: 'course_name',
-        label: '课程名称',
-        columnName: '课程名称',
-        enabled: true,
-        required: false,
-        description: '课程代码缺失时可按课程名称匹配',
-      },
-      {
-        key: 'class_name',
-        label: '班级名称',
-        columnName: '班级名称',
-        enabled: true,
-        required: true,
-        description: '用于匹配班级，必填',
-      },
-      {
-        key: 'teacher_name',
-        label: '教师名称',
-        columnName: '教师名称',
-        enabled: true,
-        required: true,
-        description: '用于匹配教师，必填',
-      },
-      {
-        key: 'session_start',
-        label: '上课开始时间',
-        columnName: '上课开始时间',
-        enabled: true,
-        required: true,
-        description: '建议格式 YYYY/MM/DD HH:mm',
-      },
-      {
-        key: 'session_end',
-        label: '下课时间',
-        columnName: '下课时间',
-        enabled: true,
-        required: true,
-        description: '建议格式 YYYY/MM/DD HH:mm',
-      },
-      {
-        key: 'expire_minutes',
-        label: '过期分钟数',
-        columnName: '过期分钟数',
-        enabled: true,
-        required: true,
-        description: '签到或课表记录的过期分钟数',
-      },
-    ],
-    validate(fields) {
-      const hasCourseMatcher = fields.some(
-        (field) =>
-          field.enabled === true &&
-          (field.key === 'course_code' || field.key === 'course_name'),
-      );
-
-      if (!hasCourseMatcher) {
-        throw new Error('课程代码和课程名称至少启用一个');
-      }
-    },
-  },
 };
 
 function cloneTemplate(template: ImportTemplate): ImportTemplate {
@@ -269,7 +107,7 @@ function cloneTemplate(template: ImportTemplate): ImportTemplate {
 }
 
 function ensureImportTemplateType(type: string): ImportTemplateType {
-  if (type === 'grades' || type === 'course_classes' || type === 'schedules') {
+  if (type === 'course_classes') {
     return type;
   }
   throw new Error('不支持的导入模板类型');
@@ -295,7 +133,7 @@ function validateDuplicateColumnNames(fields: ImportTemplateField[]) {
 }
 
 export function listImportTemplateTypes(): ImportTemplateType[] {
-  return ['grades', 'course_classes', 'schedules'];
+  return ['course_classes'];
 }
 
 export function getImportTemplateDefinition(type: ImportTemplateType) {

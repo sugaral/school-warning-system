@@ -2100,6 +2100,25 @@ export class AuthController {
       };
     }
 
+    const userRoles = await this.prisma.user_roles.findMany({
+      where: { user_id: user.id },
+    });
+    const normalizedRoles = userRoles.map((item) => ({
+      ...item,
+      role: normalizeRoleCode(item.role),
+    }));
+    const hasStaffOrAdminRole = normalizedRoles.some(
+      (item) => item.role && item.role !== 'student' && item.role !== 'class_monitor',
+    );
+    if (user.user_type === 'student' && !hasStaffOrAdminRole) {
+      return {
+        code: 403,
+        message: '学生账号请通过微信小程序登录使用',
+        data: null,
+        trace_id: req.trace_id,
+      };
+    }
+
     let studentProfileId: string | null = null;
     if (user.user_type === 'student') {
       const wxOpenid = dto.wx_code
@@ -2137,17 +2156,10 @@ export class AuthController {
 
     const token = await this.jwtService.signAsync(payload);
 
-    const userRoles = await this.prisma.user_roles.findMany({
-      where: { user_id: user.id },
-    });
     const [roleNameMap, loginPrompt] = await Promise.all([
       this.getRoleNameMap(),
       this.getLoginPromptConfig(),
     ]);
-    const normalizedRoles = userRoles.map((item) => ({
-      ...item,
-      role: normalizeRoleCode(item.role),
-    }));
 
     void this.prisma.security_events.create({
       data: {
@@ -2339,7 +2351,7 @@ export class AuthController {
       let resolvedOrgId: bigint | null = null;
       if (
         roleConfig.userType === 'student' &&
-        (roleCode === 'student' || roleCode === 'class_monitor') &&
+        roleCode === 'student' &&
         /^\d+$/.test(normalizedClassId)
       ) {
         const classInfo = await tx.classes.findUnique({

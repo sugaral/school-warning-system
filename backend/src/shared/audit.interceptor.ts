@@ -152,7 +152,6 @@ export class AuditInterceptor implements NestInterceptor {
     teacher_bindings: 'teacher_bindings',
     attendance: 'class_sessions',
     sessions: 'class_sessions',
-    feedback: 'security_events',
     profile: 'users',
     jobs: 'notification_jobs',
   };

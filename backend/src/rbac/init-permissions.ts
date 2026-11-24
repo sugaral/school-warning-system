@@ -40,22 +40,10 @@ const PERMISSIONS = [
   { code: 'course:update', name: '更新课程', description: '更新课程信息', resource: 'course', action: 'update' },
   { code: 'course:delete', name: '删除课程', description: '删除课程', resource: 'course', action: 'delete' },
 
-  // 课表管理权限
-  { code: 'schedule:read', name: '查看课表', description: '查看课表', resource: 'schedule', action: 'read' },
-  { code: 'schedule:create', name: '创建课表', description: '创建课表', resource: 'schedule', action: 'create' },
-  { code: 'schedule:update', name: '更新课表', description: '更新课表', resource: 'schedule', action: 'update' },
-  { code: 'schedule:delete', name: '删除课表', description: '删除课表', resource: 'schedule', action: 'delete' },
-  { code: 'schedule:import', name: '导入课表', description: '导入课表', resource: 'schedule', action: 'import' },
-
   // 签到管理权限
   { code: 'attendance:read', name: '查看签到', description: '查看签到记录', resource: 'attendance', action: 'read' },
   { code: 'attendance:manage', name: '管理签到', description: '管理签到状态', resource: 'attendance', action: 'manage' },
   { code: 'attendance:checkin', name: '执行签到', description: '学生扫码签到', resource: 'attendance', action: 'checkin' },
-
-  // 成绩管理权限
-  { code: 'grade:read', name: '查看成绩', description: '查看成绩', resource: 'grade', action: 'read' },
-  { code: 'grade:update', name: '更新成绩', description: '修改成绩', resource: 'grade', action: 'update' },
-  { code: 'grade:import', name: '导入成绩', description: '导入成绩', resource: 'grade', action: 'import' },
 
   // 教师管理权限
   { code: 'teacher:read', name: '查看教师', description: '查看教师信息', resource: 'teacher', action: 'read' },
@@ -72,7 +60,6 @@ const PERMISSIONS = [
   // 用户 / 权限管理权限
   { code: 'user:manage', name: '管理用户', description: '管理用户账号', resource: 'user', action: 'manage' },
   { code: 'role:manage', name: '管理角色', description: '管理角色配置', resource: 'role', action: 'manage' },
-  { code: 'role:manage_monitor_titles', name: '管理班干名称', description: '配置班干职位名称选项', resource: 'role', action: 'manage_monitor_titles' },
   { code: 'permission:manage', name: '管理权限', description: '管理权限配置', resource: 'permission', action: 'manage' },
   { code: 'system:config', name: '系统配置', description: '系统配置管理', resource: 'system', action: 'config' },
 
@@ -99,18 +86,13 @@ const PERMISSIONS = [
 const ROLE_PERMISSIONS: Record<string, string[]> = {
   student: [
     'student:read', 'student:preference', 'warning:read', 'warning:acknowledge',
-    'leave:read', 'appeal:read', 'attendance:checkin', 'schedule:read', 'grade:read',
-  ],
-  class_monitor: [
-    'student:read', 'student:preference', 'warning:read', 'warning:acknowledge',
-    'leave:read', 'appeal:read', 'attendance:checkin', 'schedule:read', 'grade:read',
-    'class:read', 'notification:send',
+    'leave:read', 'appeal:read', 'attendance:checkin',
   ],
   head_teacher: [
     'student:read', 'student:update', 'class:read', 'class:manage_students',
     'warning:read', 'warning:close', 'warning:manage',
     'leave:read', 'leave:approve', 'appeal:read', 'appeal:handle',
-    'attendance:read', 'attendance:manage', 'schedule:read',
+    'attendance:read', 'attendance:manage',
     'report:read', 'report:export', 'stats:view',
   ],
   student_admin: [
@@ -124,8 +106,6 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   teaching_admin: [
     'student:read', 'student:export',
     'class:read', 'course:read', 'course:create', 'course:update', 'course:delete',
-    'schedule:read', 'schedule:create', 'schedule:update', 'schedule:delete', 'schedule:import',
-    'grade:read', 'grade:update', 'grade:import',
     'report:read', 'report:export', 'stats:view',
   ],
   vice_dean: [
@@ -138,12 +118,10 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'warning:read', 'warning:close', 'warning:acknowledge', 'warning:manage',
     'leave:read', 'leave:approve', 'appeal:read', 'appeal:handle',
     'course:read', 'course:create', 'course:update', 'course:delete',
-    'schedule:read', 'schedule:create', 'schedule:update', 'schedule:delete', 'schedule:import',
     'attendance:read', 'attendance:manage', 'attendance:checkin',
-    'grade:read', 'grade:update', 'grade:import',
     'teacher:read', 'teacher:create', 'teacher:update', 'teacher:delete',
     'rule:read', 'rule:create', 'rule:update', 'rule:delete',
-    'user:manage', 'role:manage', 'role:manage_monitor_titles', 'permission:manage', 'system:config',
+    'user:manage', 'role:manage', 'permission:manage', 'system:config',
     'notification:read', 'notification:send', 'notification:config',
     'report:read', 'report:export', 'stats:view',
     'audit:view', 'audit:export',

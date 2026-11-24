@@ -24,11 +24,6 @@ import {
   isWeakPassword,
   normalizeMobile,
 } from '../shared/account-security.util';
-import {
-  getClassMonitorPositionOptions,
-  loadRoleCatalog,
-  normalizeRoleCode,
-} from '../shared/role-catalog';
 
 class CreateStudentDto {
   student_no!: string;
@@ -202,82 +197,6 @@ export class StudentsAdminController {
     return '';
   }
 
-  private resolveStudentDisplayPosition(
-    rawPosition: string | null | undefined,
-    hasClassMonitorRole: boolean,
-    defaultClassMonitorPosition: string,
-    classMonitorPositionOptions: string[],
-  ) {
-    const normalized = String(rawPosition || '').trim();
-    if (hasClassMonitorRole) {
-      return normalized || defaultClassMonitorPosition;
-    }
-
-    if (normalized && !classMonitorPositionOptions.includes(normalized)) {
-      return normalized;
-    }
-
-    return '';
-  }
-
-  private async syncStudentMonitorRole(
-    userId: bigint,
-    classId: bigint | null,
-    studentPosition: string | null | undefined,
-  ) {
-    const roleCatalog = await loadRoleCatalog(this.prisma);
-    const positionOptions = getClassMonitorPositionOptions(roleCatalog);
-    const normalizedPosition = String(studentPosition || '').trim();
-    const shouldHaveMonitorRole =
-      !!normalizedPosition && positionOptions.includes(normalizedPosition);
-
-    const existingRole = await this.prisma.user_roles.findFirst({
-      where: {
-        user_id: userId,
-        role: 'class_monitor',
-      },
-      select: {
-        id: true,
-        scope_type: true,
-        scope_id: true,
-      },
-    });
-
-    if (!shouldHaveMonitorRole || !classId) {
-      if (existingRole) {
-        await this.prisma.user_roles.delete({
-          where: { id: existingRole.id },
-        });
-      }
-      return;
-    }
-
-    if (existingRole) {
-      if (
-        existingRole.scope_type !== 'class'
-        || String(existingRole.scope_id || '') !== classId.toString()
-      ) {
-        await this.prisma.user_roles.update({
-          where: { id: existingRole.id },
-          data: {
-            scope_type: 'class',
-            scope_id: classId,
-          },
-        });
-      }
-      return;
-    }
-
-    await this.prisma.user_roles.create({
-      data: {
-        user_id: userId,
-        role: 'class_monitor',
-        scope_type: 'class',
-        scope_id: classId,
-      },
-    });
-  }
-
   // 获取学生列表
   @Get()
   @Permissions('student:read')
@@ -342,10 +261,6 @@ export class StudentsAdminController {
       where.class_id = targetClassId;
     }
 
-    const roleCatalog = await loadRoleCatalog(this.prisma);
-    const classMonitorPositionOptions = getClassMonitorPositionOptions(roleCatalog);
-    const defaultClassMonitorPosition =
-      classMonitorPositionOptions[0] || '班干';
     const canIncludeRegisteredOnlyUsers = !class_id && (!dataScope || dataScope.type === 'all');
     const registeredOnlyWhere: any = {
       user_type: 'student',
@@ -392,32 +307,8 @@ export class StudentsAdminController {
         : Promise.resolve([]),
     ]);
 
-    const allStudentUserIds = [
-      ...students.map((item: any) => item.user_id),
-      ...registeredOnlyUsers.map((item: any) => item.id),
-    ];
-    const allStudentRoles = allStudentUserIds.length
-      ? await this.prisma.user_roles.findMany({
-          where: { user_id: { in: allStudentUserIds } },
-          orderBy: { created_at: 'asc' },
-        })
-      : [];
-    const registeredRoleMap = new Map<string, any[]>();
-    for (const role of allStudentRoles) {
-      const key = role.user_id.toString();
-      if (!registeredRoleMap.has(key)) {
-        registeredRoleMap.set(key, []);
-      }
-      registeredRoleMap.get(key)!.push(role);
-    }
-
     const mergedList = [
-      ...students.map((s: any) => {
-        const roles = registeredRoleMap.get(s.user_id.toString()) || [];
-        const hasClassMonitorRole = roles.some(
-          (role: any) => normalizeRoleCode(role.role) === 'class_monitor',
-        );
-        return {
+      ...students.map((s: any) => ({
         id: s.id.toString(),
         profile_id: s.id.toString(),
         user_id: s.user_id.toString(),
@@ -432,50 +323,31 @@ export class StudentsAdminController {
         email: s.email,
         emergency_contact_name: s.emergency_contact_name,
         emergency_contact_mobile: s.emergency_contact_mobile,
-        student_position: this.resolveStudentDisplayPosition(
-          s.student_position,
-          hasClassMonitorRole,
-          defaultClassMonitorPosition,
-          classMonitorPositionOptions,
-        ),
         wx_openid: s.wx_openid || s.users?.wx_openid || null,
         status: s.status,
         created_at: s.created_at,
         is_registered_only: false,
-        };
-      }),
-      ...registeredOnlyUsers.map((user: any) => {
-        const roles = registeredRoleMap.get(user.id.toString()) || [];
-        const hasClassMonitorRole = roles.some(
-          (role: any) => normalizeRoleCode(role.role) === 'class_monitor',
-        );
-        return {
-          id: `user_${user.id.toString()}`,
-          profile_id: '',
-          user_id: user.id.toString(),
-          student_no: '',
-          account: this.resolveStudentAccount(user, ''),
-          name: user.name,
-          gender: '',
-          class_id: '',
-          org_id: user.org_id?.toString() || '',
-          class_name: '未绑定班级',
-          mobile: this.resolveDisplayMobile(user.mobile),
-          email: user.email,
-          emergency_contact_name: '',
-          emergency_contact_mobile: '',
-          student_position: this.resolveStudentDisplayPosition(
-            '',
-            hasClassMonitorRole,
-            defaultClassMonitorPosition,
-            classMonitorPositionOptions,
-          ),
-          wx_openid: user.wx_openid,
-          status: user.status,
-          created_at: user.created_at,
-          is_registered_only: true,
-        };
-      }),
+      })),
+      ...registeredOnlyUsers.map((user: any) => ({
+        id: `user_${user.id.toString()}`,
+        profile_id: '',
+        user_id: user.id.toString(),
+        student_no: '',
+        account: this.resolveStudentAccount(user, ''),
+        name: user.name,
+        gender: '',
+        class_id: '',
+        org_id: user.org_id?.toString() || '',
+        class_name: '未绑定班级',
+        mobile: this.resolveDisplayMobile(user.mobile),
+        email: user.email,
+        emergency_contact_name: '',
+        emergency_contact_mobile: '',
+        wx_openid: user.wx_openid,
+        status: user.status,
+        created_at: user.created_at,
+        is_registered_only: true,
+      })),
     ]
       .sort(
         (left: any, right: any) =>
@@ -787,12 +659,6 @@ export class StudentsAdminController {
         return createdStudent;
       });
 
-      await this.syncStudentMonitorRole(
-        student.user_id,
-        BigInt(classIdText),
-        studentPosition,
-      );
-
       return {
         code: 0,
         message: '创建成功',
@@ -938,18 +804,6 @@ export class StudentsAdminController {
       );
     }
     await this.prisma.$transaction(txList);
-
-    const nextClassId =
-      dto.class_id !== undefined && String(dto.class_id).trim()
-        ? BigInt(dto.class_id)
-        : student.class_id;
-    const nextStudentPosition =
-      dto.student_position !== undefined ? dto.student_position || null : student.student_position;
-    await this.syncStudentMonitorRole(
-      student.user_id,
-      nextClassId,
-      nextStudentPosition,
-    );
 
     return {
       code: 0,
@@ -1383,12 +1237,6 @@ export class StudentsAdminController {
           }
         });
 
-        await this.syncStudentMonitorRole(
-          user.id,
-          classInfo.id,
-          student.student_position || null,
-        );
-
         results.success++;
         results.students.push({
           student_no: student.student_no,
@@ -1547,12 +1395,6 @@ export class StudentsAdminController {
               scope_id: BigInt(class_id),
             },
           });
-
-          await this.syncStudentMonitorRole(
-            user.id,
-            BigInt(class_id),
-            null,
-          );
 
           results.success += 1;
           results.students.push({ student_no: studentNo, name, password });

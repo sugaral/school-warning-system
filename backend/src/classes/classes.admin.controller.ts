@@ -120,7 +120,6 @@ export class ClassesAdminController {
       leaveCount,
       warningCount,
       warningCaseCount,
-      notificationCount,
       teacherBindingCount,
       dailyRecordCount,
     ] = await Promise.all([
@@ -131,7 +130,6 @@ export class ClassesAdminController {
       this.prisma.leave_requests.count({ where: { class_id: classId } }),
       this.prisma.warnings.count({ where: { class_id: classId } }),
       this.prisma.warning_cases.count({ where: { class_id: classId } }),
-      this.prisma.class_notifications.count({ where: { class_id: classId } }),
       this.prisma.teacher_course_bindings.count({ where: { class_id: classId } }),
       this.prisma.daily_records.count({ where: { class_id: classId } }),
     ]);
@@ -144,7 +142,6 @@ export class ClassesAdminController {
       { label: '条请假记录', count: leaveCount },
       { label: '条预警记录', count: warningCount },
       { label: '条高风险干预记录', count: warningCaseCount },
-      { label: '条班级通知', count: notificationCount },
       { label: '条教师绑定记录', count: teacherBindingCount },
       { label: '条日记录', count: dailyRecordCount },
     ].filter((item) => item.count > 0);

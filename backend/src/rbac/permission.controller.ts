@@ -171,7 +171,6 @@ export class PermissionController {
 
     const PREDEFINED_ROLES = [
       { code: 'student', name: '学生' },
-      { code: 'class_monitor', name: '班干部' },
       { code: 'head_teacher', name: '班主任' },
       { code: 'student_admin', name: '学工管理员' },
       { code: 'teaching_admin', name: '教务管理员' },

@@ -36,7 +36,6 @@
         <div class="user-info">
           <span class="user-label">用户：</span>
           <span class="user-name">{{ currentUser.name }}</span>
-          <el-button link class="feedback-btn" @click="openFeedbackDialog">我要反馈</el-button>
           <el-button link class="logout-btn" @click="logout">退出登录</el-button>
         </div>
       </el-header>
@@ -59,46 +58,18 @@
       </el-main>
     </el-container>
   </el-container>
-
-  <el-dialog v-model="feedbackDialogVisible" title="我要反馈" width="560px">
-    <el-input
-      v-model="feedbackContent"
-      type="textarea"
-      :rows="8"
-      maxlength="2000"
-      show-word-limit
-      placeholder="请输入你的建议、遇到的问题，或希望优化的地方"
-    />
-    <div class="feedback-upload">
-      <MultiImageUploadField
-        v-model="feedbackImageIds"
-        v-model:file-urls="feedbackImageUrls"
-        source="feedback"
-        placeholder="可选上传问题截图"
-      />
-    </div>
-    <template #footer>
-      <el-button @click="closeFeedbackDialog">取消</el-button>
-      <el-button type="primary" :loading="feedbackSubmitting" @click="submitFeedback">
-        提交建议
-      </el-button>
-    </template>
-  </el-dialog>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessageBox } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
-import MultiImageUploadField from '../components/MultiImageUploadField.vue';
-import { submitUserFeedback } from '../api';
 import { api } from '../api/http';
 import { roleMenuConfig } from '../config/menus';
 import {
   clearBindingStateCache,
   getHeadTeacherBoundState,
   getStudentAdminBoundState,
-  getStudentBoundState,
   getTeacherBindingState,
 } from '../lib/binding';
 import { escapeHtml } from '../lib/format';
@@ -109,17 +80,10 @@ const LOGIN_PROMPT_SESSION_KEY = 'admin_login_prompt';
 
 const currentUser = ref<any>({ name: '加载中...' });
 const userType = ref('');
-const feedbackDialogVisible = ref(false);
-const feedbackSubmitting = ref(false);
-const feedbackContent = ref('');
-const feedbackImageIds = ref<string[]>([]);
-const feedbackImageUrls = ref<string[]>([]);
 
 const activeMenu = computed(() => route.path);
 
 const currentTitle = computed(() => {
-  if (userType.value === 'student') return '学生端';
-  if (userType.value === 'class_monitor') return '班干端';
   if (userType.value === 'head_teacher') return '班主任端';
   if (userType.value === 'student_admin') return '学工管理员端';
   if (userType.value === 'dean' || userType.value === 'teaching_admin') return '教务管理员端';
@@ -169,13 +133,6 @@ const currentMenus = computed(() => {
   if (userType.value === 'student_admin') {
     if (getStudentAdminBoundState() === true) {
       return orderedBaseMenus.filter((menu) => menu.path !== '/student-admin-bind-org');
-    }
-    return orderedBaseMenus;
-  }
-
-  if (userType.value === 'student' || userType.value === 'class_monitor') {
-    if (getStudentBoundState() === true) {
-      return orderedBaseMenus.filter((menu) => menu.path !== '/bind-class');
     }
     return orderedBaseMenus;
   }
@@ -260,55 +217,13 @@ const showPendingLoginPrompt = async () => {
   }
 };
 
-const openFeedbackDialog = () => {
-  feedbackDialogVisible.value = true;
-};
-
-const closeFeedbackDialog = () => {
-  feedbackDialogVisible.value = false;
-  feedbackContent.value = '';
-  feedbackImageIds.value = [];
-  feedbackImageUrls.value = [];
-};
-
-const submitFeedback = async () => {
-  const content = feedbackContent.value.trim();
-  if (!content) {
-    ElMessage.warning('请先填写建议内容');
-    return;
-  }
-
-  feedbackSubmitting.value = true;
-  try {
-    const resp = await submitUserFeedback({
-      content,
-      source: 'admin-frontend',
-      page_path: route.fullPath,
-      page_title: String(currentPageName.value || currentTitle.value || ''),
-      image_file_id: feedbackImageIds.value[0] || undefined,
-      image_file_ids: feedbackImageIds.value.length ? feedbackImageIds.value : undefined,
-    });
-    if (resp.code !== 0) {
-      throw new Error(resp.message || '提交建议失败');
-    }
-    ElMessage.success('建议已发送到管理端，等待认领');
-    closeFeedbackDialog();
-  } catch (error: any) {
-    ElMessage.error(error?.message || '提交建议失败');
-  } finally {
-    feedbackSubmitting.value = false;
-  }
-};
-
 const inferUserTypeFromRoles = (rolesFull: any[]) => {
-  if (rolesFull.find((role) => role.role === 'class_monitor')) return 'class_monitor';
   if (rolesFull.find((role) => role.role === 'head_teacher')) return 'head_teacher';
   if (rolesFull.find((role) => role.role === 'student_admin')) return 'student_admin';
   if (rolesFull.find((role) => role.role === 'dean' || role.role === 'teaching_admin')) return 'teaching_admin';
   if (rolesFull.find((role) => role.role === 'vice_dean')) return 'vice_dean';
   if (rolesFull.find((role) => role.role === 'sys_admin')) return 'sys_admin';
   if (rolesFull.find((role) => role.role === 'teacher')) return 'teacher';
-  if (rolesFull.find((role) => role.role === 'student')) return 'student';
   return '';
 };
 
@@ -657,7 +572,6 @@ onMounted(() => {
   color: #122536;
 }
 
-.feedback-btn,
 .logout-btn {
   padding: 10px 12px;
   border-radius: 12px;
@@ -666,14 +580,9 @@ onMounted(() => {
   transition: all 0.2s ease;
 }
 
-.feedback-btn:hover,
 .logout-btn:hover {
   background: rgba(255, 255, 255, 0.78);
   color: #0f766e;
-}
-
-.feedback-upload {
-  margin-top: 16px;
 }
 
 .user-info :deep(.el-button + .el-button) {

@@ -270,11 +270,6 @@ const api = {
   weekly: () => request({ url: '/student/weekly' }),
   summaries: (params) => request({ url: '/student/summaries', data: params || {} }),
   courses: () => request({ url: '/student/courses' }),
-  grades: (params) => request({ url: '/student/grades', data: params || {} }),
-
-  // --- 课表与校历 ---
-  schedulesView: (params) => request({ url: '/schedules/view', data: params || {} }),
-  semesterConfig: () => request({ url: '/schedules/semester-config' }),
 
   // --- 预警 ---
   warnings: (params) => request({ url: '/student/warnings', data: params || {} }),
@@ -289,14 +284,11 @@ const api = {
   createClassChange: (data) =>
     request({ url: '/student/class-change-requests', method: 'POST', data }),
 
-  // --- 站内个人消息 & 班级公告 ---
+  // --- 站内个人消息 ---
   inbox: (params) => request({ url: '/student/inbox', data: params || {} }),
   inboxUnreadCount: () => request({ url: '/student/inbox/unread-count', silent: true }),
   readInbox: (id) => request({ url: '/student/inbox/' + id + '/read', method: 'POST', silent: true }),
   readAllInbox: () => request({ url: '/student/inbox/read-all', method: 'POST' }),
-  notifications: (params) => request({ url: '/student/notifications', data: params || {} }),
-  readNotification: (id) =>
-    request({ url: '/student/notifications/' + id + '/read', method: 'POST', silent: true }),
 
   // --- 偏好（渠道 + 静默免打扰时段） ---
   preferences: () => request({ url: '/student/preferences' }),

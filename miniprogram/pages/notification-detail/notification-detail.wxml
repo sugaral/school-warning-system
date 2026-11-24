@@ -1,17 +1,9 @@
 <view class="page">
   <view class="card" wx:if="{{detail}}">
-    <view class="detail-head" wx:if="{{source === 'inbox'}}">
+    <view class="detail-head">
       <text class="tag {{detail.typeClass}}">{{detail.type_label || detail.type || '站内消息'}}</text>
       <text class="detail-time">{{detail.createdText}}</text>
     </view>
-
-    <block wx:else>
-      <view class="detail-title">{{detail.title || '班级公告'}}</view>
-      <view class="detail-meta">
-        <text>发布人：{{detail.publisher_name || '-'}}</text>
-        <text>{{detail.createdText}}</text>
-      </view>
-    </block>
 
     <view class="detail-body">{{detail.content || '-'}}</view>
   </view>

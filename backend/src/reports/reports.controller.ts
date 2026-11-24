@@ -20,6 +20,7 @@ import { Permissions } from '../rbac/permission.decorator';
 import { PermissionGuard } from '../rbac/permission.guard';
 import { ConfigService } from '../config/config.service';
 import { MinioService } from '../shared/minio.service';
+import { ExportProcessorService } from './export-processor.service';
 import {
   getAcademicWeekInfo,
   getAcademicWeekInfoByNumber,
@@ -88,6 +89,7 @@ export class ReportsController {
     private readonly configService: ConfigService,
     private readonly logger: PinoLogger,
     private readonly minio: MinioService,
+    private readonly exportProcessor: ExportProcessorService,
   ) {
     this.logger.setContext('ReportsController');
   }
@@ -286,6 +288,31 @@ export class ReportsController {
         updated_at: new Date(),
       },
     });
+  }
+
+  /**
+   * 立即触发一次导出生成，最多同步等待 2 秒。
+   * 若 2 秒内完成（常见于常规数据量），请求直接返回 completed；
+   * 若超过 2 秒则后台继续执行，配合前端轮询和 @Cron 兜底避免阻塞接口。
+   */
+  private async triggerExportJob(exportJob: any) {
+    const processPromise = this.exportProcessor.processOne(exportJob).catch((err) => {
+      this.logger.warn(
+        `[导出] 即时触发失败，等待定时任务重试：id=${exportJob.id.toString()} err=${err?.message || err}`,
+      );
+      return null;
+    });
+
+    await Promise.race([
+      processPromise,
+      new Promise<void>((resolve) => setTimeout(resolve, 2000)),
+    ]);
+
+    const latest = await this.prisma.export_jobs.findUnique({
+      where: { id: exportJob.id },
+      select: { status: true },
+    });
+    return latest?.status || exportJob.status;
   }
 
   private buildWarningWhere(
@@ -963,13 +990,14 @@ export class ReportsController {
         { date: range.startLabel, status: normalizedStatus || 'all', org_id: normalizedOrgId?.toString() || '' },
         scope,
       );
+      const currentStatus = await this.triggerExportJob(exportJob);
 
       return {
         code: 0,
         message: 'ok',
         data: {
           export_job_id: exportJob.id.toString(),
-          status: exportJob.status,
+          status: currentStatus,
         },
       };
     } catch (error: any) {
@@ -1011,13 +1039,14 @@ export class ReportsController {
         },
         scope,
       );
+      const currentStatus = await this.triggerExportJob(exportJob);
 
       return {
         code: 0,
         message: 'ok',
         data: {
           export_job_id: exportJob.id.toString(),
-          status: exportJob.status,
+          status: currentStatus,
         },
       };
     } catch (error: any) {
@@ -1052,13 +1081,14 @@ export class ReportsController {
         { month: range.monthLabel, status: normalizedStatus || 'all', org_id: normalizedOrgId?.toString() || '' },
         scope,
       );
+      const currentStatus = await this.triggerExportJob(exportJob);
 
       return {
         code: 0,
         message: 'ok',
         data: {
           export_job_id: exportJob.id.toString(),
-          status: exportJob.status,
+          status: currentStatus,
         },
       };
     } catch (error: any) {
@@ -1093,13 +1123,14 @@ export class ReportsController {
         { semester: range.semesterLabel, status: normalizedStatus || 'all', org_id: normalizedOrgId?.toString() || '' },
         scope,
       );
+      const currentStatus = await this.triggerExportJob(exportJob);
 
       return {
         code: 0,
         message: 'ok',
         data: {
           export_job_id: exportJob.id.toString(),
-          status: exportJob.status,
+          status: currentStatus,
         },
       };
     } catch (error: any) {
@@ -1186,6 +1217,7 @@ export class ReportsController {
             reportType: reportTypeLabels[item.report_type] || item.report_type,
             date: item.created_at.toLocaleString(),
             status: item.status,
+            errorMsg: item.error_msg || '',
             creatorName:
               creatorNameMap.get(item.creator_user_id?.toString()) || '未知用户',
             isMine: item.creator_user_id === userId,

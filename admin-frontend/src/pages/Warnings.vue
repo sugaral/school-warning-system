@@ -405,6 +405,7 @@
 
 <script setup lang="ts">
 import { computed, onActivated, onMounted, reactive, ref } from 'vue';
+import { useRoute } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { takePreloadedValue } from '../preload-cache';
 import {
@@ -430,6 +431,7 @@ import { formatDateTime } from '../lib/format';
 
 const STUDENTS_PAGE_SIZE = 500;
 
+const route = useRoute();
 const orgList = ref<any[]>([]);
 const classList = ref<any[]>([]);
 const majorList = ref<string[]>([]);
@@ -1043,7 +1045,21 @@ const formatCompactTime = (value: any) => {
 onMounted(async () => {
   loadCurrentRoles();
   await loadOrgs();
+  const routeOrgId = String(route.query.org_id || '').trim();
+  const routeClassId = String(route.query.class_id || '').trim();
+  if (!isHeadTeacherView.value && routeOrgId) {
+    query.orgId = routeOrgId;
+  }
   await loadClasses();
+  if (routeClassId) {
+    query.classId = routeClassId;
+    if (!query.orgId && !isHeadTeacherView.value) {
+      const matchedClass = classList.value.find((item: any) => String(item.id) === routeClassId);
+      if (matchedClass?.org_id) {
+        query.orgId = String(matchedClass.org_id);
+      }
+    }
+  }
   await loadStudents({ loadDetail: true, force: true });
 });
 

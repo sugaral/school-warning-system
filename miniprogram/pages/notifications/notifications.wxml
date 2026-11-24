@@ -1,78 +1,35 @@
 <view class="page">
-  <!-- 双通道切换：个人站内消息 + 班级公告 -->
-  <view class="segmented">
-    <view
-      class="glass-bubble"
-      style="width: calc((100% - 12rpx) / 2); transform: translateX({{activeTab === 'class' ? 100 : 0}}%);"
-    ></view>
-    <view class="seg-item {{activeTab === 'inbox' ? 'active' : ''}}" bindtap="switchTab" data-tab="inbox">
-      <text>个人消息</text>
-      <text class="seg-badge" wx:if="{{unreadCount > 0}}">{{unreadCount > 99 ? '99+' : unreadCount}}</text>
+  <!-- 个人站内消息 -->
+  <view class="inbox-toolbar">
+    <view class="glass-track glass-track-compact" style="flex:1;min-width:0;margin-bottom:0">
+      <view
+        class="glass-bubble"
+        style="width: calc((100% - 12rpx) / 3); transform: translateX({{inboxFilter === 'unread' ? 100 : (inboxFilter === 'read' ? 200 : 0)}}%);"
+      ></view>
+      <view class="glass-item {{inboxFilter === 'all' ? 'active' : ''}}" bindtap="setInboxFilter" data-filter="all">全部</view>
+      <view class="glass-item {{inboxFilter === 'unread' ? 'active' : ''}}" bindtap="setInboxFilter" data-filter="unread">未读</view>
+      <view class="glass-item {{inboxFilter === 'read' ? 'active' : ''}}" bindtap="setInboxFilter" data-filter="read">已读</view>
     </view>
-    <view class="seg-item {{activeTab === 'class' ? 'active' : ''}}" bindtap="switchTab" data-tab="class">
-      <text>班级公告</text>
-      <text class="seg-badge" wx:if="{{classUnreadCount > 0}}">{{classUnreadCount > 99 ? '99+' : classUnreadCount}}</text>
-    </view>
+    <button class="btn btn-ghost btn-sm" wx:if="{{unreadCount > 0}}" bindtap="onMarkAllRead">
+      全部已读
+    </button>
   </view>
 
-  <!-- 页签1：个人站内信 -->
-  <block wx:if="{{activeTab === 'inbox'}}">
-    <view class="inbox-toolbar">
-      <view class="glass-track glass-track-compact" style="flex:1;min-width:0;margin-bottom:0">
-        <view
-          class="glass-bubble"
-          style="width: calc((100% - 12rpx) / 3); transform: translateX({{inboxFilter === 'unread' ? 100 : (inboxFilter === 'read' ? 200 : 0)}}%);"
-        ></view>
-        <view class="glass-item {{inboxFilter === 'all' ? 'active' : ''}}" bindtap="setInboxFilter" data-filter="all">全部</view>
-        <view class="glass-item {{inboxFilter === 'unread' ? 'active' : ''}}" bindtap="setInboxFilter" data-filter="unread">未读</view>
-        <view class="glass-item {{inboxFilter === 'read' ? 'active' : ''}}" bindtap="setInboxFilter" data-filter="read">已读</view>
+  <block wx:if="{{inboxList.length > 0}}">
+    <view
+      class="card msg-card {{!item.is_read ? 'msg-unread' : ''}}"
+      wx:for="{{inboxList}}"
+      wx:key="id"
+      bindtap="goInboxDetail"
+      data-index="{{index}}"
+    >
+      <view class="msg-head">
+        <text class="tag {{item.typeClass}}">{{item.type_label || item.type}}</text>
+        <text class="msg-time">{{item.createdText}}</text>
+        <text class="tag {{item.is_read ? 'tag-plain' : 'tag-danger'}}">{{item.is_read ? '已读' : '未读'}}</text>
       </view>
-      <button class="btn btn-ghost btn-sm" wx:if="{{unreadCount > 0}}" bindtap="onMarkAllRead">
-        全部已读
-      </button>
+      <view class="msg-body">{{item.content}}</view>
     </view>
-
-    <block wx:if="{{inboxList.length > 0}}">
-      <view
-        class="card msg-card {{!item.is_read ? 'msg-unread' : ''}}"
-        wx:for="{{inboxList}}"
-        wx:key="id"
-        bindtap="goInboxDetail"
-        data-index="{{index}}"
-      >
-        <view class="msg-head">
-          <text class="tag {{item.typeClass}}">{{item.type_label || item.type}}</text>
-          <text class="msg-time">{{item.createdText}}</text>
-          <text class="tag {{item.is_read ? 'tag-plain' : 'tag-danger'}}">{{item.is_read ? '已读' : '未读'}}</text>
-        </view>
-        <view class="msg-body">{{item.content}}</view>
-      </view>
-    </block>
-    <view class="card empty" wx:else>{{inboxLoading ? '加载个人消息中...' : '暂无个人消息'}}</view>
   </block>
-
-  <!-- 页签2：班级公告 -->
-  <block wx:else>
-    <block wx:if="{{classList.length > 0}}">
-      <view
-        class="card msg-card {{!item.is_read ? 'msg-unread' : ''}}"
-        wx:for="{{classList}}"
-        wx:key="id"
-        bindtap="goClassDetail"
-        data-index="{{index}}"
-      >
-        <view class="msg-head">
-          <text class="notice-title">{{item.title}}</text>
-          <text class="tag {{item.is_read ? 'tag-plain' : 'tag-warn'}}">{{item.is_read ? '已读' : '新公告'}}</text>
-        </view>
-        <view class="msg-body">{{item.content}}</view>
-        <view class="msg-foot">
-          <text>发布人：{{item.publisher_name || '-'}}</text>
-          <text>{{item.createdText}}</text>
-        </view>
-      </view>
-      <view class="load-more" wx:if="{{classHasMore}}">上拉加载更多</view>
-    </block>
-    <view class="card empty" wx:else>{{classLoading ? '加载班级公告中...' : '暂无班级公告'}}</view>
-  </block>
+  <view class="card empty" wx:else>{{inboxLoading ? '加载个人消息中...' : '暂无个人消息'}}</view>
 </view>

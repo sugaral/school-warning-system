@@ -6,7 +6,7 @@
       :closable="false"
       show-icon
       class="intro-alert"
-      description="统一维护成绩、课程与开课班、课表三类 CSV 导入表头。相关导入页面会按这里配置的列名读取文件内容。"
+      description="维护课程与开课班 CSV 导入表头。相关导入页面会按这里配置的列名读取文件内容。"
     />
 
     <el-tabs v-model="activeType" class="template-tabs">
@@ -88,36 +88,22 @@ type ImportTemplate = {
 
 const templateTabs = [
   {
-    type: 'grades' as const,
-    label: '成绩导入',
-    description: '适用于教务管理员成绩导入与模板下载。',
-  },
-  {
     type: 'course_classes' as const,
     label: '课程与开课班导入',
     description: '适用于课程与开课班页面的 CSV 导入。',
   },
-  {
-    type: 'schedules' as const,
-    label: '课表导入',
-    description: '适用于课表管理页面的 CSV 导入。',
-  },
 ];
 
-const activeType = ref<AdminImportTemplateType>('grades');
+const activeType = ref<AdminImportTemplateType>('course_classes');
 const loading = ref(false);
 const savingType = ref<AdminImportTemplateType | ''>('');
 
 const editableTemplates = reactive<Record<AdminImportTemplateType, ImportTemplate>>({
-  grades: { delimiter: ',', fields: [] },
   course_classes: { delimiter: ',', fields: [] },
-  schedules: { delimiter: ',', fields: [] },
 });
 
 const originalTemplates = reactive<Record<AdminImportTemplateType, ImportTemplate>>({
-  grades: { delimiter: ',', fields: [] },
   course_classes: { delimiter: ',', fields: [] },
-  schedules: { delimiter: ',', fields: [] },
 });
 
 const cloneTemplate = (template?: Partial<ImportTemplate>): ImportTemplate => ({
@@ -154,24 +140,9 @@ const buildSampleValue = (type: AdminImportTemplateType, key: string) => {
   };
 
   const byType: Record<AdminImportTemplateType, Record<string, string>> = {
-    grades: {
-      student_no: '20250001',
-      student_name: '张三',
-      class_name: '计算机 2025-1 班',
-      course_code: 'CS101',
-      course_name: '高等数学',
-      term_code: `${currentYear}-${currentYear + 1}-1`,
-      score: '85',
-    },
     course_classes: {
       ...common,
       credit: '3',
-    },
-    schedules: {
-      ...common,
-      session_start: `${currentYear}/09/01 08:00`,
-      session_end: `${currentYear}/09/01 09:40`,
-      expire_minutes: '15',
     },
   };
 
@@ -204,7 +175,7 @@ const validateTemplate = (type: AdminImportTemplateType, template: ImportTemplat
     throw new Error('启用字段的 CSV 列名不能重复');
   }
 
-  if (type !== 'grades' && type !== 'course_classes' && type !== 'schedules') {
+  if (type !== 'course_classes') {
     return;
   }
 

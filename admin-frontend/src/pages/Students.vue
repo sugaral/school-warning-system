@@ -106,11 +106,6 @@
               <el-tag v-if="row.is_registered_only" size="small" type="warning" class="row-tag">仅注册</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="student_position" label="职位" width="120">
-            <template #default="{ row }">
-              {{ row.student_position || '-' }}
-            </template>
-          </el-table-column>
           <el-table-column prop="mobile" label="手机号" width="170">
             <template #default="{ row }">
               <span class="mobile-cell">{{ row.mobile || '-' }}</span>
@@ -203,17 +198,17 @@
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="班级" prop="class_id">
-              <el-select v-model="form.class_id" style="width: 100%" :disabled="(isHeadTeacher && isEdit) || !form.org_id">
+              <el-select v-model="form.class_id" style="width: 100%" :disabled="!form.org_id">
                 <el-option v-for="item in formClassOptions" :key="item.id" :label="item.class_name" :value="item.id" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="职位">
-              <el-select v-model="form.student_position" placeholder="选择职位" style="width: 100%">
-                <el-option label="学生" value="" />
-                <el-option v-for="position in studentPositionOptions" :key="position" :label="position" :value="position" />
-              </el-select>
+            <el-form-item label="状态">
+              <el-radio-group v-model="form.status">
+                <el-radio value="active">正常</el-radio>
+                <el-radio value="inactive">停用</el-radio>
+              </el-radio-group>
             </el-form-item>
           </el-col>
         </el-row>
@@ -221,12 +216,12 @@
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="手机号">
-              <el-input v-model="form.mobile" :disabled="isHeadTeacher && isEdit" />
+              <el-input v-model="form.mobile" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="邮箱">
-              <el-input v-model="form.email" :disabled="isHeadTeacher && isEdit" />
+              <el-input v-model="form.email" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -234,23 +229,12 @@
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="紧急联系人">
-              <el-input v-model="form.emergency_contact_name" placeholder="姓名" :disabled="isHeadTeacher && isEdit" />
+              <el-input v-model="form.emergency_contact_name" placeholder="姓名" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="紧急电话">
-              <el-input v-model="form.emergency_contact_mobile" placeholder="电话" :disabled="isHeadTeacher && isEdit" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="状态">
-              <el-radio-group v-model="form.status" :disabled="isHeadTeacher && isEdit">
-                <el-radio value="active">正常</el-radio>
-                <el-radio value="inactive">停用</el-radio>
-              </el-radio-group>
+              <el-input v-model="form.emergency_contact_mobile" placeholder="电话" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -323,13 +307,10 @@ import {
   updateStudent,
 } from '../api';
 
-const DEFAULT_CLASS_MONITOR_POSITIONS = ['班干', '班长', '副班长', '团支书', '副团支书', '班主任助理'];
-
 const students = ref<any[]>([]);
 const selectedStudents = ref<any[]>([]);
 const allClasses = ref<any[]>([]);
 const orgList = ref<any[]>([]);
-const roleOptions = ref<any[]>([]);
 const loading = ref(false);
 const submitting = ref(false);
 const page = ref(1);
@@ -357,7 +338,6 @@ const form = reactive({
   gender: '',
   org_id: '',
   class_id: '',
-  student_position: '',
   mobile: '',
   email: '',
   emergency_contact_name: '',
@@ -383,17 +363,16 @@ const rules = {
 };
 
 const isHeadTeacher = computed(() => currentRoles.value.includes('head_teacher'));
-const canEditStudents = computed(() => currentRoles.value.includes('sys_admin') || currentRoles.value.includes('student_admin') || isHeadTeacher.value);
-const canCreateStudents = computed(() => currentRoles.value.includes('sys_admin') || currentRoles.value.includes('student_admin'));
+const canEditStudents = computed(() => currentRoles.value.includes('sys_admin') || currentRoles.value.includes('student_admin'));
+const canCreateStudents = computed(() => canEditStudents.value);
 const canImportStudents = computed(() => canCreateStudents.value);
 const canBatchCreateStudents = computed(() => canCreateStudents.value);
 const canDeleteStudents = computed(() => currentRoles.value.includes('sys_admin'));
-const canUnbindWechat = computed(() => canEditStudents.value);
-const canLoadRoleOptions = computed(() => currentRoles.value.includes('sys_admin') || currentRoles.value.includes('student_admin'));
+const canUnbindWechat = computed(() => canEditStudents.value || isHeadTeacher.value);
 const canLoadAccountConfig = computed(() => currentRoles.value.includes('sys_admin'));
 const pageTitle = computed(() => (isHeadTeacher.value ? '本班学生' : '学生管理'));
-const pageTip = computed(() => (isHeadTeacher.value ? '仅显示班主任权限范围内的学生，可直接修改学生身份。' : ''));
-const editDialogTitle = computed(() => (isHeadTeacher.value && isEdit.value ? '修改学生身份' : isEdit.value ? '编辑学生' : '添加学生'));
+const pageTip = computed(() => (isHeadTeacher.value ? '仅显示班主任权限范围内的本班学生，支持协助解绑微信。' : ''));
+const editDialogTitle = computed(() => (isEdit.value ? '编辑学生' : '添加学生'));
 const actionColumnWidth = computed(() => (canDeleteStudents.value ? 240 : canUnbindWechat.value ? 180 : 130));
 const formClassOptions = computed(() => (!form.org_id ? [] : allClasses.value.filter((item: any) => String(item.org_id) === String(form.org_id))));
 const batchClassOptions = computed(() => (!batchForm.org_id ? [] : allClasses.value.filter((item: any) => String(item.org_id) === String(batchForm.org_id))));
@@ -402,11 +381,6 @@ const registeredOnlyCount = computed(() => students.value.filter((item: any) => 
 const unboundClassCount = computed(() =>
   students.value.filter((item: any) => !item.class_name || item.is_registered_only).length,
 );
-const studentPositionOptions = computed(() => {
-  const classMonitorRole = roleOptions.value.find((item: any) => item.code === 'class_monitor');
-  const options = Array.isArray(classMonitorRole?.student_position_options) ? classMonitorRole.student_position_options : [];
-  return options.length > 0 ? options : DEFAULT_CLASS_MONITOR_POSITIONS;
-});
 
 const loadCurrentRoles = () => {
   try {
@@ -459,15 +433,6 @@ const loadOrgs = async () => {
   }
 };
 
-const loadRoleOptions = async () => {
-  if (!canLoadRoleOptions.value) {
-    roleOptions.value = [];
-    return;
-  }
-  const resp = await api.get('/admin/roles');
-  roleOptions.value = Array.isArray(resp.data?.data) ? resp.data.data : [];
-};
-
 const loadAccountConfig = async () => {
   if (!canLoadAccountConfig.value) return;
   const resp = await api.get('/admin/config');
@@ -505,7 +470,6 @@ const resetForm = () => {
   form.gender = '';
   form.org_id = '';
   form.class_id = '';
-  form.student_position = '';
   form.mobile = '';
   form.email = '';
   form.emergency_contact_name = '';
@@ -534,7 +498,6 @@ const editStudent = (row: any) => {
   form.gender = row.gender || '';
   form.org_id = row.org_id || allClasses.value.find((item: any) => String(item.id) === String(row.class_id))?.org_id || '';
   form.class_id = row.class_id || '';
-  form.student_position = row.student_position || '';
   form.mobile = row.mobile || '';
   form.email = row.email || '';
   form.emergency_contact_name = row.emergency_contact_name || '';
@@ -548,25 +511,26 @@ const submitForm = async () => {
     ElMessage.warning('当前无权新增学生');
     return;
   }
-  const valid = isHeadTeacher.value && isEdit.value ? true : await formRef.value?.validate().catch(() => false);
+  if (isEdit.value && !canEditStudents.value) {
+    ElMessage.warning('当前无权编辑学生');
+    return;
+  }
+  const valid = await formRef.value?.validate().catch(() => false);
   if (!valid) return;
 
   submitting.value = true;
   try {
-    const payload = isHeadTeacher.value && isEdit.value
-      ? { student_position: form.student_position }
-      : {
-          student_no: form.student_no,
-          name: form.name,
-          gender: form.gender,
-          class_id: form.class_id,
-          student_position: form.student_position,
-          mobile: form.mobile,
-          email: form.email,
-          emergency_contact_name: form.emergency_contact_name,
-          emergency_contact_mobile: form.emergency_contact_mobile,
-          status: form.status,
-        };
+    const payload = {
+      student_no: form.student_no,
+      name: form.name,
+      gender: form.gender,
+      class_id: form.class_id,
+      mobile: form.mobile,
+      email: form.email,
+      emergency_contact_name: form.emergency_contact_name,
+      emergency_contact_mobile: form.emergency_contact_mobile,
+      status: form.status,
+    };
     const resp = isEdit.value ? await updateStudent(form.profile_id || form.id, payload) : await createStudent(payload);
     if (resp.code !== 0) {
       ElMessage.error(resp.message || '保存失败');
@@ -860,7 +824,6 @@ const loadDashboardData = async () => {
     loadStudents(),
     loadClasses(),
     loadOrgs(),
-    canLoadRoleOptions.value ? loadRoleOptions() : Promise.resolve(),
   ]);
   if (canLoadAccountConfig.value) {
     await loadAccountConfig();

@@ -12,7 +12,13 @@ export async function getDashboardSummary() {
   return data;
 }
 
-export type AdminImportTemplateType = 'grades' | 'course_classes' | 'schedules';
+// 统一预警统计概览（全校/学院模式自适应）
+export async function getWarningStatsOverview(params?: { range?: 'semester' | '30d' | '7d' }) {
+  const { data } = await api.get<ApiResponse<any>>('/admin/stats/overview', { params });
+  return data;
+}
+
+export type AdminImportTemplateType = 'course_classes';
 
 // 审计日志
 export async function getOperationLogs(params: {
@@ -92,64 +98,6 @@ export async function batchDeleteSecurityEvents(ids: string[]) {
   return data;
 }
 
-// 反馈
-export async function submitUserFeedback(payload: {
-  content: string;
-  source?: string;
-  page_path?: string;
-  page_title?: string;
-  image_file_id?: string;
-  image_file_ids?: string[];
-}) {
-  const submitPaths = [
-    '/admin/feedback/submit',
-    '/api/admin/feedback/submit',
-    '/feedback',
-  ];
-  let lastError: any = null;
-
-  for (const path of submitPaths) {
-    try {
-      const { data } = await api.post<ApiResponse<{ id: string }>>(path, payload);
-      return data;
-    } catch (error: any) {
-      lastError = error;
-      const status = Number(error?.response?.status || 0);
-      if (status !== 404 && status !== 405) {
-        throw error;
-      }
-    }
-  }
-
-  throw lastError || new Error('提交建议失败');
-}
-
-export async function getAdminFeedbacks(params?: {
-  page?: number;
-  pageSize?: number;
-  source?: string;
-  status?: string;
-}) {
-  const { data } = await api.get<ApiResponse<any>>('/admin/feedback', { params });
-  return data;
-}
-
-export async function getAdminFeedbackDetail(id: string) {
-  const { data } = await api.get<ApiResponse<any>>(`/admin/feedback/${id}`);
-  return data;
-}
-
-export async function handleAdminFeedback(
-  id: string,
-  payload: {
-    status: 'pending' | 'claimed' | 'resolved';
-    handle_note?: string;
-  },
-) {
-  const { data } = await api.post<ApiResponse<any>>(`/admin/feedback/${id}/handle`, payload);
-  return data;
-}
-
 // 导入模板配置
 export async function getAdminImportTemplates() {
   const { data } = await api.get<ApiResponse<Record<AdminImportTemplateType, any>>>(
@@ -174,25 +122,7 @@ export async function setAdminImportTemplate(
   return data;
 }
 
-export async function setTeachingAdminGradeImportTemplate(payload: {
-  fields: Array<{
-    key: string;
-    label?: string;
-    columnName: string;
-    enabled?: boolean;
-    required?: boolean;
-  }>;
-}) {
-  const { data } = await api.post<ApiResponse<any>>('/teaching-admin/grades/import-template', payload);
-  return data;
-}
-
-// 教务管理员 - 统计和学院
-export async function getTeachingAdminSchoolStats() {
-  const { data } = await api.get<ApiResponse<any>>('/teaching-admin/school-stats');
-  return data;
-}
-
+// 教务管理员 - 学院与班级
 export async function getTeachingAdminOrgs() {
   const { data } = await api.get<ApiResponse<any[]>>('/teaching-admin/orgs');
   return data;
@@ -205,75 +135,11 @@ export async function getTeachingAdminClasses(params?: {
   return data;
 }
 
-// 教务管理员 - 成绩
-export async function getTeachingAdminGrades(params: {
-  keyword?: string;
-  class_id?: string;
-  course_id?: string;
-  term_code?: string;
-  page?: number;
-  pageSize?: number;
-}) {
-  const { data } = await api.get<ApiResponse<any>>('/teaching-admin/grades', { params });
-  return data;
-}
-
-export async function createTeachingAdminGrade(payload: {
-  student_id: string;
-  course_id: string;
-  term_code: string;
-  score: number;
-  pass_status?: string;
-}) {
-  const { data } = await api.post<ApiResponse<any>>('/teaching-admin/grades', payload);
-  return data;
-}
-
-export async function updateTeachingAdminGrade(id: string, score: number) {
-  const { data } = await api.put<ApiResponse<any>>(`/teaching-admin/grades/${id}`, { score });
-  return data;
-}
-
-export async function deleteTeachingAdminGrade(id: string) {
-  const { data } = await api.delete<ApiResponse<any>>(`/teaching-admin/grades/${id}`);
-  return data;
-}
-
 export async function getTeachingAdminCourses(params?: {
   keyword?: string;
   org_id?: string;
 }) {
   const { data } = await api.get<ApiResponse<any[]>>('/teaching-admin/courses', { params });
-  return data;
-}
-
-export async function getTeachingAdminGradesStats(params?: {
-  class_id?: string;
-  course_id?: string;
-  term_code?: string;
-}) {
-  const { data } = await api.get<ApiResponse<any>>('/teaching-admin/grades/stats', { params });
-  return data;
-}
-
-export async function exportTeachingAdminGrades(params?: {
-  class_id?: string;
-  course_id?: string;
-  term_code?: string;
-}) {
-  const { data } = await api.get<ApiResponse<any[]>>('/teaching-admin/grades/export', { params });
-  return data;
-}
-
-export async function getTeachingAdminGradeImportTemplate() {
-  const { data } = await api.get<ApiResponse<any>>('/teaching-admin/grades/import-template');
-  return data;
-}
-
-export async function importTeachingAdminGrades(payload: {
-  rows: Array<Record<string, any>>;
-}) {
-  const { data } = await api.post<ApiResponse<any>>('/teaching-admin/grades/import', payload);
   return data;
 }
 

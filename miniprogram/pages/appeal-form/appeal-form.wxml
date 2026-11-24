@@ -12,7 +12,7 @@
       <view class="glass-track glass-track-compact" style="margin-bottom:0">
         <view
           class="glass-bubble"
-          style="width: calc((100% - 12rpx) / 4); transform: translateX({{form.appeal_type === '考勤申诉' ? 100 : (form.appeal_type === '成绩申诉' ? 200 : (form.appeal_type === '其他申诉' ? 300 : 0))}}%);"
+          style="width: calc((100% - 12rpx) / 3); transform: translateX({{form.appeal_type === '考勤申诉' ? 100 : (form.appeal_type === '其他申诉' ? 200 : 0)}}%);"
         ></view>
         <view
           wx:for="{{appealTypes}}"

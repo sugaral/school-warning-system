@@ -167,11 +167,6 @@ export async function studentAdminBindOrg(orgId: string) {
   return data;
 }
 
-export async function getStudentAdminDashboard() {
-  const { data } = await api.get<ApiResponse<any>>('/student-admin/dashboard');
-  return data;
-}
-
 // 签到审批
 export async function listSpecialApprovals() {
   const { data } = await api.get<ApiResponse<{ list: any[] }>>('/vice-dean/special-approvals');

@@ -12,10 +12,8 @@
     "pages/appeal-form/appeal-form",
     "pages/notifications/notifications",
     "pages/notification-detail/notification-detail",
-    "pages/schedules/schedules",
     "pages/attendance/attendance",
     "pages/checkin/checkin",
-    "pages/grades/grades",
     "pages/summaries/summaries",
     "pages/profile/profile",
     "pages/profile-edit/profile-edit",
@@ -41,7 +39,6 @@
     "list": [
       { "pagePath": "pages/index/index", "text": "首页" },
       { "pagePath": "pages/warnings/warnings", "text": "我的预警" },
-      { "pagePath": "pages/schedules/schedules", "text": "课表" },
       { "pagePath": "pages/profile/profile", "text": "我的" }
     ]
   },

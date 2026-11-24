@@ -43,24 +43,7 @@
     <view class="empty" wx:if="{{!loading && monthly.length === 0}}" style="padding:36rpx 0">暂无月汇总</view>
   </view>
 
-  <view class="card">
-    <view class="card-title">学期学分与绩点汇总</view>
-    <block wx:for="{{term}}" wx:key="term_code">
-      <view class="period-head">{{item.term_code}}</view>
-      <view class="row">
-        <text class="row-label">挂科门数</text>
-        <text class="row-value" style="color:{{item.failed_course_count > 0 ? '#c04a52' : '#3f8a5d'}}">
-          {{item.failed_course_count}}
-        </text>
-      </view>
-      <view class="row"><text class="row-label">已修学分</text><text class="row-value">{{item.earned_credits}}</text></view>
-      <view class="row"><text class="row-label">要求学分</text><text class="row-value">{{item.required_credits}}</text></view>
-      <view class="row"><text class="row-label">平均绩点 GPA</text><text class="row-value">{{item.gpa || '—'}}</text></view>
-    </block>
-    <view class="empty" wx:if="{{!loading && term.length === 0}}" style="padding:36rpx 0">暂无学期汇总</view>
-  </view>
-
   <view class="hint-text" style="padding:0 12rpx">
-    汇总快照由系统定期根据考勤记录与成绩库自动更新，可帮助提前掌握学期学业风险。
+    汇总快照由系统定期根据考勤记录自动更新，可帮助提前掌握学业出勤风险。
   </view>
 </view>

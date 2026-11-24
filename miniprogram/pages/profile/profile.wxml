@@ -7,7 +7,6 @@
       <view class="info">
         <view class="name-row">
           <text class="name">{{student.name || '同学'}}</text>
-          <text class="pos-pill" wx:if="{{student.student_position}}">{{student.student_position}}</text>
         </view>
         <view class="sub">学号：{{student.student_no || '-'}}</view>
         <view class="sub">
@@ -39,9 +38,8 @@
     <view class="card-title">学业与事务</view>
     <view class="row" bindtap="goLeaves"><text class="row-label">请假申请与记录</text><text class="row-arrow">></text></view>
     <view class="row" bindtap="goAppeals"><text class="row-label">申诉发起与进度</text><text class="row-arrow">></text></view>
-    <view class="row" bindtap="goNotifications"><text class="row-label">站内消息与公告</text><text class="row-arrow">></text></view>
-    <view class="row" bindtap="goGrades"><text class="row-label">我的课程成绩</text><text class="row-arrow">></text></view>
-    <view class="row" bindtap="goSummaries"><text class="row-label">周 / 月 / 学期汇总</text><text class="row-arrow">></text></view>
+    <view class="row" bindtap="goNotifications"><text class="row-label">站内消息</text><text class="row-arrow">></text></view>
+    <view class="row" bindtap="goSummaries"><text class="row-label">周 / 月考勤汇总</text><text class="row-arrow">></text></view>
     <view class="row" bindtap="goAttendance"><text class="row-label">近 7 天考勤记录</text><text class="row-arrow">></text></view>
     <view class="row" bindtap="goTeachers"><text class="row-label">本班班主任与任课老师</text><text class="row-arrow">></text></view>
   </view>

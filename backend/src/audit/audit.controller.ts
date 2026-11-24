@@ -53,8 +53,6 @@ export class AuditController {
     config: '系统配置',
     notification: '通知',
     notifications: '通知',
-    feedback: '反馈',
-    feedbacks: '反馈',
     audit: '审计',
     report: '报表',
     reports: '报表',

@@ -6,5 +6,4 @@ export * from './api/students';
 export * from './api/teachers';
 export * from './api/classes';
 export * from './api/attendance';
-export * from './api/schedules';
 export * from './api/system';

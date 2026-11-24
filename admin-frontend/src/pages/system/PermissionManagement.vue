@@ -241,7 +241,6 @@ const RESOURCE_LABELS: Record<string, string> = {
   grade: '成绩',
   rule: '规则',
   file: '文件',
-  feedback: '反馈',
 };
 
 const USER_TYPE_LABELS: Record<string, string> = {
@@ -259,7 +258,6 @@ const ROLE_LABELS: Record<string, string> = {
   teacher: '教师',
   head_teacher: '班主任',
   counselor: '辅导员',
-  class_monitor: '班长',
   student: '学生',
 };
 

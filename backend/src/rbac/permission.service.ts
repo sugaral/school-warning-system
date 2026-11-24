@@ -3,17 +3,6 @@ import { PrismaService } from '../shared/prisma.service';
 import { PERMISSION_CATALOG, ROLE_PERMISSIONS } from './permission-catalog';
 const L1_CACHE_TTL_MS = 30_000;
 
-const CLASS_MONITOR_TITLE_PERMISSION = {
-  code: 'role:manage_monitor_titles',
-  name: '管理班干名称',
-  description: '配置班干职位名称选项',
-  resource: 'role',
-  action: 'manage_monitor_titles',
-} as const;
-
-const CLASS_MONITOR_TITLE_PERMISSION_ROLES = ['sys_admin'] as const;
-
-
 @Injectable()
 export class PermissionService implements OnModuleInit {
   private readonly logger = new Logger(PermissionService.name);
@@ -104,18 +93,6 @@ export class PermissionService implements OnModuleInit {
             data: missing.map((permissionId) => ({ role, permission_id: permissionId })),
           });
         }
-      }
-
-      // 3) 保证 role:manage_monitor_titles 仅授予 sys_admin
-      //    （沿用原有收敛逻辑，避免该权限被越权分配）
-      const monitorTitleId = codeToId.get(CLASS_MONITOR_TITLE_PERMISSION.code);
-      if (monitorTitleId !== undefined) {
-        await this.prisma.role_permissions.deleteMany({
-          where: {
-            permission_id: monitorTitleId,
-            role: { notIn: [...CLASS_MONITOR_TITLE_PERMISSION_ROLES] },
-          },
-        });
       }
 
       this.logger.log(

@@ -123,10 +123,6 @@
               <el-icon><Edit /></el-icon>
               生成签到
             </el-button>
-            <el-button type="danger" class="action-btn" @click="goToInterventions">
-              <el-icon><Bell /></el-icon>
-              高风险干预
-            </el-button>
             <el-button type="success" class="action-btn" @click="goToApprovals">
               <el-icon><Document /></el-icon>
               处理审批
@@ -301,10 +297,6 @@ const goToWarnings = () => {
 
 const goToApprovals = () => {
   router.push('/approvals');
-};
-
-const goToInterventions = () => {
-  router.push('/intervention-cases');
 };
 
 const goToExport = () => {

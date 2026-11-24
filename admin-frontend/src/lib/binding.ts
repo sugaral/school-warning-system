@@ -1,4 +1,3 @@
-const STUDENT_BOUND_KEY = 'student_is_bound';
 const HEAD_TEACHER_BOUND_KEY = 'head_teacher_is_bound';
 const STUDENT_ADMIN_BOUND_KEY = 'student_admin_is_bound';
 const TEACHER_BOUND_ORG_KEY = 'teacher_has_bound_org';
@@ -28,20 +27,11 @@ function writeBoolean(key: string, value: NullableBoolean) {
 
 export function clearBindingStateCache() {
   [
-    STUDENT_BOUND_KEY,
     HEAD_TEACHER_BOUND_KEY,
     STUDENT_ADMIN_BOUND_KEY,
     TEACHER_BOUND_ORG_KEY,
     TEACHER_BOUND_COURSES_KEY,
   ].forEach((key) => localStorage.removeItem(key));
-}
-
-export function getStudentBoundState(): NullableBoolean {
-  return readBoolean(STUDENT_BOUND_KEY);
-}
-
-export function setStudentBoundState(value: NullableBoolean) {
-  writeBoolean(STUDENT_BOUND_KEY, value);
 }
 
 export function getHeadTeacherBoundState(): NullableBoolean {

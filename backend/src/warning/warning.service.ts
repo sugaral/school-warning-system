@@ -15,7 +15,6 @@ import {
   NotificationCenterService,
 } from '../shared/notification-center.service';
 import { renderTemplate } from '../shared/template.util';
-import { WarningCasesService } from '../warning-cases/warning-cases.service';
 import {
   getAcademicWeekInfo,
   resolveSemesterStartDate,
@@ -207,11 +206,6 @@ type WarningPostCommitTask =
       warningWindow: string;
       absentCount: number;
       triggerSummary: string;
-    }
-  | {
-      type: 'warning_case_sync';
-      studentId: bigint;
-      student: StudentContext;
     };
 
 type WarningEmailConfig = {
@@ -284,7 +278,6 @@ export class WarningService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
-    private readonly warningCasesService: WarningCasesService,
     private readonly systemConfigService: SystemConfigService,
     private readonly warningSnapshotService: WarningSnapshotService,
     private readonly warningProcessingService: WarningProcessingService,
@@ -625,8 +618,6 @@ export class WarningService {
         warningsGenerated += Number(cumulativeCreated || 0);
         postCommitTasks.push(...cumulativePostCommitTasks);
       }
-
-      this.queueWarningCaseSync(postCommitTasks, student);
     });
 
     if (!lockResult.locked) {
@@ -1442,7 +1433,6 @@ export class WarningService {
           await this.cleanupStudentDuplicateWarnings(tx, student.id);
         },
       );
-      this.queueWarningCaseSync(postCommitTasks, student);
     });
 
     if (!lockResult.locked) {
@@ -1487,10 +1477,6 @@ export class WarningService {
         }
         if (task.type === 'absent_threshold_email') {
           await this.sendAbsentThresholdEmail(task);
-          continue;
-        }
-        if (task.type === 'warning_case_sync') {
-          await this.runAsyncWarningCaseSync(task);
           continue;
         }
       } catch (error: any) {
@@ -3119,38 +3105,6 @@ export class WarningService {
       absentCount: input.absentCount,
       triggerSummary: input.triggerSummary,
     });
-  }
-
-  private queueWarningCaseSync(tasks: WarningPostCommitTask[], student: StudentContext) {
-    if (tasks.some((task) => task.type === 'warning_case_sync' && task.studentId.toString() === student.id.toString())) {
-      return;
-    }
-
-    tasks.push({
-      type: 'warning_case_sync',
-      studentId: student.id,
-      student,
-    });
-  }
-
-  private async runAsyncWarningCaseSync(
-    task: Extract<WarningPostCommitTask, { type: 'warning_case_sync' }>,
-  ) {
-    await this.warningProcessingService.markStudentProcessing(
-      task.studentId,
-      '正在完善预警相关信息',
-    );
-
-    try {
-      await this.warningCasesService.syncStudentCase(this.prisma, task.student);
-      await this.warningProcessingService.clearStudentProcessing(task.studentId);
-    } catch (error: any) {
-      await this.warningProcessingService.markStudentFailed(
-        task.studentId,
-        '完善预警相关信息失败',
-      );
-      throw error;
-    }
   }
 
   private toBoolean(value: unknown, fallback: boolean) {

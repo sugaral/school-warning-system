@@ -40,7 +40,7 @@
       <el-table-column label="操作" width="300" fixed="right">
         <template #default="{ row }">
           <el-button size="small" @click="viewRole(row)">查看</el-button>
-          <el-button v-if="canEditRole(row)" size="small" type="primary" @click="editRole(row)">
+          <el-button v-if="canManageAllRoles" size="small" type="primary" @click="editRole(row)">
             编辑
           </el-button>
           <el-button
@@ -102,31 +102,6 @@
             :disabled="!canManageAllRoles"
           />
         </el-form-item>
-        <el-form-item v-if="editForm.code === 'class_monitor'" label="班干名称">
-          <div class="position-editor">
-            <div class="position-tags">
-              <el-tag
-                v-for="position in editForm.student_position_options"
-                :key="position"
-                :closable="canManageMonitorTitles"
-                @close="removeStudentPosition(position)"
-              >
-                {{ position }}
-              </el-tag>
-            </div>
-            <div class="position-input-row">
-              <el-input
-                v-model.trim="newStudentPosition"
-                placeholder="输入新的班干名称，如：学习委员"
-                :disabled="!canManageMonitorTitles"
-                @keyup.enter="addStudentPosition"
-              />
-              <el-button type="primary" :disabled="!canManageMonitorTitles" @click="addStudentPosition">
-                添加
-              </el-button>
-            </div>
-          </div>
-        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="editDialogVisible = false">取消</el-button>
@@ -182,7 +157,6 @@ interface RoleItem {
   name: string;
   description?: string;
   default_scope?: string;
-  student_position_options?: string[];
 }
 
 interface PermissionItem {
@@ -212,9 +186,7 @@ const editForm = ref({
   code: '',
   name: '',
   description: '',
-  student_position_options: [] as string[],
 });
-const newStudentPosition = ref('');
 
 const editRules: FormRules = {
   name: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
@@ -235,14 +207,6 @@ const isSystemAdmin = computed(() => currentUserRoles.value.includes('sys_admin'
 const canManageAllRoles = computed(
   () => isSystemAdmin.value || currentPermissionCodes.value.includes('role:manage'),
 );
-const canManageMonitorTitles = computed(
-  () =>
-    canManageAllRoles.value
-    || currentPermissionCodes.value.includes('role:manage_monitor_titles'),
-);
-
-const canEditRole = (role: RoleItem) =>
-  canManageAllRoles.value || (canManageMonitorTitles.value && role.code === 'class_monitor');
 
 const filteredRolesList = computed(() => {
   const keyword = searchKeyword.value.trim().toLowerCase();
@@ -300,9 +264,6 @@ const fetchRoles = async () => {
           name: role.name,
           description: role.description || '',
           default_scope: role.default_scope,
-          student_position_options: Array.isArray(role.student_position_options)
-            ? role.student_position_options
-            : [],
         }))
       : [];
   } catch (error) {
@@ -342,37 +303,8 @@ const editRole = (role: RoleItem) => {
     code: role.code,
     name: role.name,
     description: role.description || '',
-    student_position_options: Array.isArray(role.student_position_options)
-      ? [...role.student_position_options]
-      : [],
   };
-  newStudentPosition.value = '';
   editDialogVisible.value = true;
-};
-
-const addStudentPosition = () => {
-  if (!canManageMonitorTitles.value) {
-    return;
-  }
-
-  const value = newStudentPosition.value.trim();
-  if (!value) {
-    return;
-  }
-  if (!editForm.value.student_position_options.includes(value)) {
-    editForm.value.student_position_options.push(value);
-  }
-  newStudentPosition.value = '';
-};
-
-const removeStudentPosition = (value: string) => {
-  if (!canManageMonitorTitles.value) {
-    return;
-  }
-
-  editForm.value.student_position_options = editForm.value.student_position_options.filter(
-    (item) => item !== value,
-  );
 };
 
 const saveRole = async () => {
@@ -391,10 +323,6 @@ const saveRole = async () => {
     await api.put(`/admin/roles/${currentRole.value.code}`, {
       name: editForm.value.name.trim(),
       description: editForm.value.description.trim(),
-      student_position_options:
-        editForm.value.code === 'class_monitor'
-          ? editForm.value.student_position_options
-          : undefined,
     });
     ElMessage.success('角色更新成功');
     editDialogVisible.value = false;
@@ -529,23 +457,5 @@ onMounted(async () => {
 
 .permission-grid :deep(.el-checkbox) {
   margin-right: 0;
-}
-
-.position-editor {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.position-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.position-input-row {
-  display: flex;
-  gap: 8px;
 }
 </style>

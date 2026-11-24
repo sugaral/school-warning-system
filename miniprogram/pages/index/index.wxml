@@ -24,11 +24,11 @@
       <text class="tag tag-warn">立即绑定</text>
     </view>
     <view class="hint-text" style="margin-top:0;color:#854d0e">
-      绑定后即可查看本班课表、班主任/授课老师，并发起请假与查看班级公告。
+      绑定后即可查看班主任/授课老师，并发起请假与接收站内预警消息。
     </view>
   </view>
 
-  <!-- 未读站内消息 & 班级公告提醒 -->
+  <!-- 未读站内消息提醒 -->
   <view class="card card-tint" bindtap="goNotifications">
     <view class="card-title" style="margin-bottom:14rpx">
       <text>消息中心</text>
@@ -38,10 +38,6 @@
       <view class="msg-chip">
         <text class="msg-chip-label">个人站内消息</text>
         <text class="msg-chip-num">{{messageSummary.inboxUnread}}</text>
-      </view>
-      <view class="msg-chip">
-        <text class="msg-chip-label">班级公告未读</text>
-        <text class="msg-chip-num">{{messageSummary.classUnread}}</text>
       </view>
     </view>
   </view>

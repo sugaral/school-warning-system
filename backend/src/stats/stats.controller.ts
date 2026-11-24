@@ -4,13 +4,14 @@ import { PrismaService } from '../shared/prisma.service';
 import { AuthGuard } from '../shared/auth.guard';
 import { Permissions } from '../rbac/permission.decorator';
 import { PermissionGuard } from '../rbac/permission.guard';
-import { WarningCasesService } from '../warning-cases/warning-cases.service';
 import { ConfigService } from '../config/config.service';
 import {
   buildAcademicWeeksFromStart,
+  formatDateOnly,
   getAcademicWeekInfo,
   resolveSemesterStartDate,
   resolveSemesterTotalWeeks,
+  startOfDay,
 } from '../shared/academic-calendar.util';
 import { getHeadTeacherClassScopeIds } from '../shared/head-teacher-scope.util';
 
@@ -40,7 +41,6 @@ export class StatsController {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly warningCasesService: WarningCasesService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -171,19 +171,6 @@ export class StatsController {
 
   private buildStudentWhere(scope: ScopeFilter) {
     const where: any = { status: 'active' };
-    if (scope.classIds.length > 0) {
-      where.class_id = { in: scope.classIds };
-    } else if (scope.orgIds.length > 0) {
-      where.org_id = { in: scope.orgIds };
-    }
-    return where;
-  }
-
-  private buildCaseWhere(scope: ScopeFilter, activeOnly = true) {
-    const where: any = {};
-    if (activeOnly) {
-      where.is_active = true;
-    }
     if (scope.classIds.length > 0) {
       where.class_id = { in: scope.classIds };
     } else if (scope.orgIds.length > 0) {
@@ -571,6 +558,444 @@ export class StatsController {
     return result;
   }
 
+  @Get('overview')
+  @Permissions('stats:view')
+  async getOverview(@Query('range') range = 'semester', @Req() req: any) {
+    const userId = BigInt(req.user.sub);
+    const normalizedRange = (['semester', '30d', '7d'].includes(String(range || '').trim())
+      ? String(range).trim()
+      : 'semester') as 'semester' | '30d' | '7d';
+
+    const userRoles = await this.prisma.user_roles.findMany({
+      where: { user_id: userId },
+      select: { role: true, scope_id: true },
+    });
+    const roleCodes = userRoles.map((item: any) => item.role);
+    const isSchoolViewer =
+      roleCodes.includes('sys_admin') ||
+      roleCodes.includes('teaching_admin') ||
+      roleCodes.includes('dean');
+
+    let mode: 'school' | 'college' = 'school';
+    let scopedOrgId: bigint | null = null;
+    let scopedClassIds: bigint[] = [];
+
+    if (!isSchoolViewer) {
+      if (roleCodes.includes('student_admin')) {
+        const scopedRole = userRoles.find((item: any) => item.role === 'student_admin' && item.scope_id);
+        if (!scopedRole?.scope_id) {
+          return {
+            code: 400,
+            message: '请先绑定学院',
+            data: null,
+            trace_id: req.trace_id,
+          };
+        }
+        mode = 'college';
+        scopedOrgId = scopedRole.scope_id;
+      } else if (roleCodes.includes('vice_dean')) {
+        const scopedRole = userRoles.find((item: any) => item.role === 'vice_dean' && item.scope_id);
+        if (scopedRole?.scope_id) {
+          mode = 'college';
+          scopedOrgId = scopedRole.scope_id;
+        }
+      } else if (roleCodes.includes('head_teacher')) {
+        mode = 'college';
+        scopedClassIds = await getHeadTeacherClassScopeIds(this.prisma, userId, { activeOnly: true });
+      }
+    }
+
+    const cacheKey = `stats:overview:${mode}:${scopedOrgId?.toString() || (scopedClassIds.length > 0 ? scopedClassIds.map((id) => id.toString()).join(',') : 'all')}:${normalizedRange}`;
+
+    const data = await this.getCachedPayload(
+      cacheKey,
+      async () => {
+        const now = new Date();
+        const teachingConfig = await this.configService.getSectionConfig('teaching', {});
+        const semesterStartDate = resolveSemesterStartDate(teachingConfig?.semesterStartDate, now);
+        const semesterTotalWeeks = resolveSemesterTotalWeeks(teachingConfig?.semesterTotalWeeks);
+
+        let startDate: Date;
+        let rangeLabel: string;
+        const trendLabels: string[] = [];
+        const bucketKeys: string[] = [];
+
+        if (normalizedRange === 'semester') {
+          const currentWeek = getAcademicWeekInfo(now, semesterStartDate).weekNumber;
+          const visibleWeekCount = Math.max(1, Math.min(currentWeek, semesterTotalWeeks));
+          const weeks = buildAcademicWeeksFromStart(semesterStartDate, visibleWeekCount);
+          startDate = weeks[0]?.weekStart || semesterStartDate;
+          rangeLabel = `本学期（第1周~第${visibleWeekCount}周）`;
+          weeks.forEach((week) => {
+            bucketKeys.push(String(week.weekNumber));
+            trendLabels.push(week.weekLabel);
+          });
+        } else {
+          const dayCount = normalizedRange === '7d' ? 7 : 30;
+          const todayStart = startOfDay(now);
+          startDate = new Date(todayStart.getTime() - (dayCount - 1) * 24 * 60 * 60 * 1000);
+          rangeLabel = normalizedRange === '7d' ? '近 7 天' : '近 30 天';
+          for (let index = 0; index < dayCount; index += 1) {
+            const day = new Date(startDate.getTime() + index * 24 * 60 * 60 * 1000);
+            const fullDate = formatDateOnly(day);
+            bucketKeys.push(fullDate);
+            trendLabels.push(fullDate.slice(5));
+          }
+        }
+
+        const warningWhere: any = { created_at: { gte: startDate } };
+        const studentWhere: any = { status: 'active' };
+        if (scopedOrgId) {
+          warningWhere.org_id = scopedOrgId;
+          studentWhere.org_id = scopedOrgId;
+        } else if (scopedClassIds.length > 0) {
+          const classIn = { in: scopedClassIds };
+          warningWhere.class_id = classIn;
+          studentWhere.class_id = classIn;
+        }
+
+        const [periodWarnings, totalStudents] = await Promise.all([
+          this.prisma.warnings.findMany({
+            where: warningWhere,
+            select: {
+              student_id: true,
+              class_id: true,
+              org_id: true,
+              level: true,
+              status: true,
+              created_at: true,
+              closed_at: true,
+            },
+            orderBy: { created_at: 'asc' },
+          }),
+          this.prisma.student_profiles.count({ where: studentWhere }),
+        ]);
+        const highRiskCases = 0;
+
+        type UnitAccumulator = {
+          id: string;
+          name: string;
+          major?: string;
+          studentCount: number;
+          warnedStudents: Set<string>;
+          totalWarnings: number;
+          seriousCount: number;
+          generalCount: number;
+          closedCount: number;
+        };
+
+        const unitMap = new Map<string, UnitAccumulator>();
+        let orgName = '';
+
+        if (mode === 'school') {
+          const [activeOrgs, studentGroups] = await Promise.all([
+            this.prisma.orgs.findMany({
+              where: { status: 'active' },
+              select: { id: true, name: true },
+              orderBy: { id: 'asc' },
+            }),
+            this.prisma.student_profiles.groupBy({
+              by: ['org_id'],
+              where: studentWhere,
+              _count: { id: true },
+            }),
+          ]);
+
+          activeOrgs.forEach((org: { id: bigint; name: string }) => {
+            unitMap.set(org.id.toString(), {
+              id: org.id.toString(),
+              name: org.name,
+              studentCount: 0,
+              warnedStudents: new Set<string>(),
+              totalWarnings: 0,
+              seriousCount: 0,
+              generalCount: 0,
+              closedCount: 0,
+            });
+          });
+
+          const missingOrgIds = Array.from(
+            new Set([
+              ...studentGroups.map((g: any) => g.org_id?.toString()).filter(Boolean),
+              ...periodWarnings.map((w: any) => w.org_id?.toString()).filter(Boolean),
+            ]),
+          ).filter((id) => !unitMap.has(id) && /^\d+$/.test(id) && BigInt(id) > 0n);
+
+          if (missingOrgIds.length > 0) {
+            const extraOrgs = await this.prisma.orgs.findMany({
+              where: { id: { in: missingOrgIds.map((id) => BigInt(id)) } },
+              select: { id: true, name: true },
+            });
+            extraOrgs.forEach((org: { id: bigint; name: string }) => {
+              unitMap.set(org.id.toString(), {
+                id: org.id.toString(),
+                name: org.name,
+                studentCount: 0,
+                warnedStudents: new Set<string>(),
+                totalWarnings: 0,
+                seriousCount: 0,
+                generalCount: 0,
+                closedCount: 0,
+              });
+            });
+          }
+
+          studentGroups.forEach((group: any) => {
+            const key = group.org_id ? group.org_id.toString() : '0';
+            const unit = unitMap.get(key);
+            if (unit) {
+              unit.studentCount += Number(group._count?.id || 0);
+            }
+          });
+        } else {
+          const [orgRow, activeClasses, studentGroups] = await Promise.all([
+            scopedOrgId
+              ? this.prisma.orgs.findUnique({
+                  where: { id: scopedOrgId },
+                  select: { id: true, name: true },
+                })
+              : Promise.resolve(null),
+            this.prisma.classes.findMany({
+              where: {
+                status: 'active',
+                ...(scopedOrgId ? { org_id: scopedOrgId } : {}),
+                ...(scopedClassIds.length > 0 ? { id: { in: scopedClassIds } } : {}),
+              },
+              select: { id: true, class_name: true, major: true },
+              orderBy: { id: 'asc' },
+            }),
+            this.prisma.student_profiles.groupBy({
+              by: ['class_id'],
+              where: studentWhere,
+              _count: { id: true },
+            }),
+          ]);
+
+          orgName = orgRow?.name || '';
+
+          activeClasses.forEach((cls: { id: bigint; class_name: string; major: string | null }) => {
+            unitMap.set(cls.id.toString(), {
+              id: cls.id.toString(),
+              name: cls.class_name,
+              major: cls.major || '',
+              studentCount: 0,
+              warnedStudents: new Set<string>(),
+              totalWarnings: 0,
+              seriousCount: 0,
+              generalCount: 0,
+              closedCount: 0,
+            });
+          });
+
+          const missingClassIds = Array.from(
+            new Set([
+              ...studentGroups.map((g: any) => g.class_id?.toString()).filter(Boolean),
+              ...periodWarnings.map((w: any) => w.class_id?.toString()).filter(Boolean),
+            ]),
+          ).filter((id) => !unitMap.has(id) && /^\d+$/.test(id) && BigInt(id) > 0n);
+
+          if (missingClassIds.length > 0) {
+            const extraClasses = await this.prisma.classes.findMany({
+              where: { id: { in: missingClassIds.map((id) => BigInt(id)) } },
+              select: { id: true, class_name: true, major: true },
+            });
+            extraClasses.forEach((cls: { id: bigint; class_name: string; major: string | null }) => {
+              unitMap.set(cls.id.toString(), {
+                id: cls.id.toString(),
+                name: cls.class_name,
+                major: cls.major || '',
+                studentCount: 0,
+                warnedStudents: new Set<string>(),
+                totalWarnings: 0,
+                seriousCount: 0,
+                generalCount: 0,
+                closedCount: 0,
+              });
+            });
+          }
+
+          studentGroups.forEach((group: any) => {
+            const key = group.class_id ? group.class_id.toString() : '0';
+            const unit = unitMap.get(key);
+            if (unit) {
+              unit.studentCount += Number(group._count?.id || 0);
+            }
+          });
+        }
+
+        const levelDistribution = {
+          yellow: 0,
+          orange: 0,
+          red: 0,
+          severe: 0,
+          total: 0,
+        };
+
+        const trendMap = new Map<string, { created: number; serious: number; closed: number }>();
+        bucketKeys.forEach((key) => {
+          trendMap.set(key, { created: 0, serious: 0, closed: 0 });
+        });
+
+        const warnedStudentSet = new Set<string>();
+        let closedWarnings = 0;
+        let responseHoursSum = 0;
+        let responseHoursCount = 0;
+
+        periodWarnings.forEach((warning: any) => {
+          const level = String(warning.level || '').trim().toLowerCase();
+          const status = String(warning.status || '').trim().toLowerCase();
+          const isClosed = status === 'closed';
+          const isSerious = ['red', 'severe', 'high', 'critical'].includes(level);
+
+          levelDistribution.total += 1;
+          if (level === 'red' || level === 'high') {
+            levelDistribution.red += 1;
+          } else if (level === 'severe' || level === 'critical') {
+            levelDistribution.severe += 1;
+          } else if (level === 'orange') {
+            levelDistribution.orange += 1;
+          } else {
+            levelDistribution.yellow += 1;
+          }
+
+          const studentKey = warning.student_id.toString();
+          warnedStudentSet.add(studentKey);
+
+          if (isClosed) {
+            closedWarnings += 1;
+            if (warning.closed_at) {
+              const hours =
+                (new Date(warning.closed_at).getTime() - new Date(warning.created_at).getTime()) /
+                (1000 * 60 * 60);
+              if (Number.isFinite(hours) && hours >= 0) {
+                responseHoursSum += hours;
+                responseHoursCount += 1;
+              }
+            }
+          }
+
+          let bucketKey: string;
+          if (normalizedRange === 'semester') {
+            const weekNum = Math.min(
+              bucketKeys.length,
+              Math.max(1, getAcademicWeekInfo(new Date(warning.created_at), semesterStartDate).weekNumber),
+            );
+            bucketKey = String(weekNum);
+          } else {
+            const dateKey = formatDateOnly(new Date(warning.created_at));
+            bucketKey = trendMap.has(dateKey) ? dateKey : bucketKeys[bucketKeys.length - 1];
+          }
+          const bucket = trendMap.get(bucketKey);
+          if (bucket) {
+            bucket.created += 1;
+            if (isSerious) bucket.serious += 1;
+            if (isClosed) bucket.closed += 1;
+          }
+
+          const rawUnitId = mode === 'school' ? warning.org_id : warning.class_id;
+          const unitId = rawUnitId !== null && rawUnitId !== undefined ? rawUnitId.toString() : '0';
+          let unit = unitMap.get(unitId);
+          if (!unit) {
+            unit = {
+              id: unitId,
+              name: mode === 'school' ? '未归属学院' : '未分班',
+              ...(mode === 'college' ? { major: '' } : {}),
+              studentCount: 0,
+              warnedStudents: new Set<string>(),
+              totalWarnings: 0,
+              seriousCount: 0,
+              generalCount: 0,
+              closedCount: 0,
+            };
+            unitMap.set(unitId, unit);
+          }
+          unit.totalWarnings += 1;
+          unit.warnedStudents.add(studentKey);
+          if (isSerious) {
+            unit.seriousCount += 1;
+          } else {
+            unit.generalCount += 1;
+          }
+          if (isClosed) {
+            unit.closedCount += 1;
+          }
+        });
+
+        const totalWarnings = levelDistribution.total;
+        const openWarnings = totalWarnings - closedWarnings;
+        const warnedStudents = warnedStudentSet.size;
+        const warningRate =
+          totalStudents > 0 ? Math.min(100, Math.round((warnedStudents / totalStudents) * 1000) / 10) : 0;
+        const closureRate =
+          totalWarnings > 0 ? Math.round((closedWarnings / totalWarnings) * 1000) / 10 : 0;
+        const avgResponseDays =
+          responseHoursCount > 0 ? Math.round((responseHoursSum / responseHoursCount / 24) * 10) / 10 : 0;
+
+        const unitStats = Array.from(unitMap.values())
+          .map((unit) => ({
+            id: unit.id,
+            name: unit.name,
+            ...(mode === 'college' ? { major: unit.major || '' } : {}),
+            studentCount: unit.studentCount,
+            warnedStudentCount: unit.warnedStudents.size,
+            totalWarnings: unit.totalWarnings,
+            seriousCount: unit.seriousCount,
+            generalCount: unit.generalCount,
+            closedCount: unit.closedCount,
+            closureRate:
+              unit.totalWarnings > 0
+                ? Math.round((unit.closedCount / unit.totalWarnings) * 1000) / 10
+                : 0,
+            warningRate:
+              unit.studentCount > 0
+                ? Math.min(100, Math.round((unit.warnedStudents.size / unit.studentCount) * 1000) / 10)
+                : 0,
+          }))
+          .sort((a, b) => b.totalWarnings - a.totalWarnings || b.studentCount - a.studentCount);
+
+        return {
+          scope: {
+            mode,
+            title: mode === 'school' ? '全校预警统计' : `学院预警统计${orgName ? ` · ${orgName}` : ''}`,
+            unitLabel: mode === 'school' ? '学院' : '班级',
+            range: normalizedRange,
+            rangeLabel,
+            orgId: scopedOrgId ? scopedOrgId.toString() : '',
+            orgName,
+          },
+          kpis: {
+            totalStudents,
+            unitCount: unitStats.length,
+            warnedStudents,
+            warningRate,
+            totalWarnings,
+            openWarnings,
+            closedWarnings,
+            closureRate,
+            highRiskCases,
+            avgResponseDays,
+          },
+          levelDistribution,
+          trend: {
+            labels: trendLabels,
+            created: bucketKeys.map((key) => trendMap.get(key)?.created || 0),
+            serious: bucketKeys.map((key) => trendMap.get(key)?.serious || 0),
+            closed: bucketKeys.map((key) => trendMap.get(key)?.closed || 0),
+          },
+          unitStats,
+        };
+      },
+      30,
+    );
+
+    return {
+      code: 0,
+      message: 'ok',
+      data,
+      trace_id: req.trace_id,
+    };
+  }
+
   @Get()
   @Permissions('stats:view')
   async getStats() {
@@ -845,17 +1270,8 @@ export class StatsController {
     const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
     const twelveMonthsAgo = new Date(Date.now() - 360 * 24 * 60 * 60 * 1000);
     const trendWindow = this.getTrendWindow(timeRange);
-    const caseWhere = this.buildCaseWhere(scope, true);
-    const previousCaseWhere = this.buildCaseWhere(scope, false);
 
-    await this.warningCasesService.reconcileActiveCases({
-      roles: [],
-      userId,
-      orgScopeIds: scope.orgIds,
-      classScopeIds: scope.classIds,
-    });
-
-    const [currentWarningGroups, previousWarningGroups, trendWarnings, activeCases, previousCaseCount] =
+    const [currentWarningGroups, previousWarningGroups, trendWarnings] =
       await Promise.all([
         this.prisma.warnings.groupBy({
           by: ['org_id', 'level', 'status'],
@@ -887,20 +1303,6 @@ export class StatsController {
             status: true,
           },
         }),
-        this.prisma.warning_cases.findMany({
-          where: caseWhere,
-          orderBy: [{ risk_score: 'desc' }, { handling_priority: 'desc' }, { updated_at: 'desc' }],
-          take: 10,
-        }),
-        this.prisma.warning_cases.count({
-          where: {
-            ...previousCaseWhere,
-            created_at: {
-              gte: twelveMonthsAgo,
-              lt: sixMonthsAgo,
-            },
-          },
-        }),
       ]);
 
     const summary = this.summarizeGroupedWarnings(currentWarningGroups as any);
@@ -930,54 +1332,7 @@ export class StatsController {
       })),
     );
 
-    const studentIds = [...new Set(activeCases.map((item: any) => item.student_id?.toString()).filter(Boolean))].map((item: any) => BigInt(item));
-    const orgIds = [...new Set(activeCases.map((item: any) => item.org_id?.toString()).filter(Boolean))].map((item: any) => BigInt(item));
-    const [students, caseOrgs] = await Promise.all([
-      studentIds.length > 0
-        ? this.prisma.student_profiles.findMany({
-            where: { id: { in: studentIds } },
-            include: { users: true },
-          })
-        : Promise.resolve([]),
-      orgIds.length > 0
-        ? this.prisma.orgs.findMany({
-            where: { id: { in: orgIds } },
-            select: { id: true, name: true },
-          })
-        : Promise.resolve([]),
-    ]);
-
-    const studentMap = new Map(students.map((item: any) => [item.id.toString(), item]));
-    const orgMap = new Map(caseOrgs.map((item: any) => [item.id.toString(), item]));
-    const statusLabels: Record<string, string> = {
-      pending_assignment: '待分配',
-      pending_intervention: '待干预',
-      in_progress: '处理中',
-      completed: '处理完成',
-      resolved: '已解除',
-    };
-    const statusTypes: Record<string, string> = {
-      pending_assignment: 'danger',
-      pending_intervention: 'warning',
-      in_progress: 'info',
-      completed: 'success',
-      resolved: 'info',
-    };
-
-    const studentsList = activeCases.map((item: any) => {
-      const student = studentMap.get(item.student_id.toString()) as any;
-      const org = orgMap.get(item.org_id.toString()) as any;
-      return {
-        id: student?.student_no || '',
-        name: student?.users?.name || '未知学生',
-        department: org?.name || '未知学院',
-        riskScore: Number(item.risk_score || 0),
-        warningCount: Number((item.warning_summary_json as any)?.active_warning_count || 0),
-        lastWarning: item.latest_warning_at ? new Date(item.latest_warning_at).toISOString().split('T')[0].replace(/-/g, '/') : '',
-        status: statusLabels[item.status] || item.status,
-        statusType: statusTypes[item.status] || 'info',
-      };
-    });
+    const studentsList: any[] = [];
 
     return {
       code: 0,
@@ -989,13 +1344,13 @@ export class StatsController {
           yellowWarnings: summary.generalWarnings,
           resolvedWarnings: summary.resolvedWarnings,
           pendingWarnings: summary.pendingWarnings,
-          highRiskCount: activeCases.length,
+          highRiskCount: 0,
           totalGrowth: this.calculateGrowth(summary.totalWarnings, previousSummary.totalWarnings),
           redGrowth: this.calculateGrowth(summary.seriousWarnings, previousSummary.seriousWarnings),
           yellowGrowth: this.calculateGrowth(summary.generalWarnings, previousSummary.generalWarnings),
           resolvedGrowth: this.calculateGrowth(summary.resolvedWarnings, previousSummary.resolvedWarnings),
           pendingGrowth: this.calculateGrowth(summary.pendingWarnings, previousSummary.pendingWarnings),
-          highRiskGrowth: this.calculateGrowth(activeCases.length, previousCaseCount),
+          highRiskGrowth: 0,
         },
         trend,
         students: studentsList,

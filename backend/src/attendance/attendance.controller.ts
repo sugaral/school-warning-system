@@ -2789,39 +2789,6 @@ export class AttendanceController {
       await this.attendanceSnapshotService.refreshSessions([session.id]);
       const qrState = await this.buildQrStateForSession(session);
 
-      try {
-        const [publisher, course, classInfo] = await Promise.all([
-          this.prisma.users.findUnique({
-            where: { id: BigInt(req.user.sub) },
-            select: { name: true },
-          }),
-          this.prisma.courses.findUnique({
-            where: { id: BigInt(dto.course_id) },
-            select: { course_name: true },
-          }),
-          this.prisma.classes.findUnique({
-            where: { id: BigInt(dto.class_id) },
-            select: { org_id: true },
-          }),
-        ]);
-
-        const courseName = course?.course_name || '课程';
-        await this.prisma.class_notifications.create({
-          data: {
-            class_id: BigInt(dto.class_id),
-            org_id: classInfo?.org_id || BigInt(0),
-            title: `${courseName}已开始`,
-            content: `${courseName}已开始，请前往小程序进行签到。`,
-            publisher_id: BigInt(req.user.sub),
-            publisher_name: publisher?.name || '管理员',
-          },
-        });
-      } catch (notificationError) {
-        this.logger.warn(
-          `创建签到课次后发送班级通知失败: ${notificationError instanceof Error ? notificationError.message : String(notificationError)}`,
-        );
-      }
-
       return {
         code: 0,
         message: 'ok',

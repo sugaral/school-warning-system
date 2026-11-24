@@ -4,7 +4,6 @@ Page({
   data: {
     weekly: [],
     monthly: [],
-    term: [],
     loading: true,
   },
 
@@ -31,7 +30,6 @@ Page({
       this.setData({
         weekly,
         monthly,
-        term: (data && data.term) || [],
         loading: false,
       });
     } catch (e) {

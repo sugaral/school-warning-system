@@ -397,31 +397,10 @@ export class ViceDeanController {
                 : {}),
             },
           }),
-          ...(changeData.class_id
-            ? [
-                this.prisma.user_roles.updateMany({
-                  where: {
-                    user_id: profile.user_id,
-                    role: 'class_monitor',
-                  },
-                  data: {
-                    scope_type: 'class',
-                    scope_id: BigInt(changeData.class_id),
-                  },
-                }),
-              ]
-            : []),
           this.prisma.warnings.updateMany({
             where: { student_id: profile.id },
             data: {
               class_id: profile.class_id,
-              org_id: profile.org_id || BigInt(0),
-            },
-          }),
-          this.prisma.warning_cases.updateMany({
-            where: { student_id: profile.id, is_active: true },
-            data: {
-              class_id: profile.class_id || BigInt(0),
               org_id: profile.org_id || BigInt(0),
             },
           }),
@@ -455,24 +434,7 @@ export class ViceDeanController {
           where: { id: updatedProfile.user_id },
           data: { org_id: targetOrgId },
         }),
-        this.prisma.user_roles.updateMany({
-          where: {
-            user_id: updatedProfile.user_id,
-            role: 'class_monitor',
-          },
-          data: {
-            scope_type: 'class',
-            scope_id: targetClassId,
-          },
-        }),
         this.prisma.warnings.updateMany({
-          where: { student_id: updatedProfile.id },
-          data: {
-            class_id: targetClassId,
-            org_id: targetOrgId,
-          },
-        }),
-        this.prisma.warning_cases.updateMany({
           where: { student_id: updatedProfile.id },
           data: {
             class_id: targetClassId,
@@ -490,21 +452,6 @@ export class ViceDeanController {
           },
         }),
       ]);
-
-      await this.prisma.warning_cases.updateMany({
-        where: {
-          student_id: updatedProfile.id,
-          is_active: true,
-        },
-        data: {
-          handler_user_id: targetClass?.counselor_user_id || null,
-          assigned_at: targetClass?.counselor_user_id ? new Date() : null,
-          accepted_at: null,
-          status: targetClass?.counselor_user_id
-            ? 'pending_intervention'
-            : 'pending_assignment',
-        },
-      });
     }
 
     if (changeRequest.target_type === 'teacher_org_change') {

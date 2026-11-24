@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../shared/prisma.service';
-import { WarningCasesService } from '../warning-cases/warning-cases.service';
 import { WarningProcessingService } from './warning-processing.service';
 import { WarningSnapshotService } from './warning-snapshot.service';
 import { WarningRecalcTarget } from './warning.types';
@@ -25,7 +24,6 @@ export class SessionWarningGenerationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly warningSnapshotService: WarningSnapshotService,
-    private readonly warningCasesService: WarningCasesService,
     private readonly warningProcessingService: WarningProcessingService,
   ) {}
 
@@ -345,15 +343,6 @@ export class SessionWarningGenerationService {
     });
 
     await this.warningSnapshotService.refreshStudents(studentIds);
-    await Promise.all(
-      studentIds.map((studentId) =>
-        this.warningProcessingService.markStudentProcessing(
-          studentId,
-          '正在完善预警相关信息',
-        ),
-      ),
-    );
-    await this.warningCasesService.syncStudentsByIds(studentIds);
     await Promise.all(
       studentIds.map((studentId) =>
         this.warningProcessingService.clearStudentProcessing(studentId),

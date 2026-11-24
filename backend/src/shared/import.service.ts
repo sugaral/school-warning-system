@@ -25,7 +25,7 @@ import * as XLSX from 'xlsx';
 import { PrismaService } from './prisma.service';
 import { parseDateCell, formatDateTime } from './date-cell.util';
 
-export type ImportBizType = 'students' | 'courses' | 'schedules';
+export type ImportBizType = 'students' | 'courses';
 export type OnDuplicate = 'skip' | 'update' | 'fail';
 
 export interface ImportRowError {
@@ -83,16 +83,6 @@ const COLUMN_SPECS: Record<ImportBizType, ColumnSpec[]> = {
     { field: 'class_name', aliases: ['class_name', '班级', '班级名称'] },
     { field: 'teacher_name', aliases: ['teacher_name', '教师', '教师姓名'] },
     { field: 'term_code', aliases: ['term_code', '学期'] },
-  ],
-  schedules: [
-    { field: 'term_code', aliases: ['term_code', '学期'], required: true },
-    { field: 'course_code', aliases: ['course_code', '课程代码'], required: true },
-    { field: 'class_name', aliases: ['class_name', '班级'], required: true },
-    // schedules.teacher_user_id 在 schema 中为非空，因此教师必须能解析出来
-    { field: 'teacher_name', aliases: ['teacher_name', '教师'], required: true },
-    { field: 'session_start', aliases: ['session_start', '上课时间', '开始时间'], required: true, isDate: true },
-    { field: 'session_end', aliases: ['session_end', '下课时间', '结束时间'], isDate: true },
-    { field: 'expire_minutes', aliases: ['expire_minutes', '签到有效分钟'], isNumeric: true },
   ],
 };
 
@@ -535,43 +525,6 @@ export class ImportService {
           course_code: created.course_code,
           course_name: created.course_name,
           org_id: created.org_id,
-        });
-      }
-      return 'success';
-    }
-
-    if (bizType === 'schedules') {
-      const course = lookups.courseByCode.get(String(row.course_code || '').trim());
-      if (!course) {
-        errors.push({ row: sheetRow, column: 'course_code', message: `课程代码不存在："${row.course_code}"（不会自动创建）` });
-        return 'failed';
-      }
-      const cls = lookups.classByName.get(String(row.class_name || '').trim());
-      if (!cls) {
-        errors.push({ row: sheetRow, column: 'class_name', message: `班级不存在："${row.class_name}"（不会自动创建）` });
-        return 'failed';
-      }
-      // schedules.teacher_user_id 非空，必须解析出教师
-      const teacherId = lookups.teacherByName.get(String(row.teacher_name || '').trim());
-      if (!teacherId) {
-        errors.push({ row: sheetRow, column: 'teacher_name', message: `教师不存在："${row.teacher_name}"（不会自动创建）` });
-        return 'failed';
-      }
-      if (!dryRun) {
-        await this.prisma.schedules.create({
-          data: {
-            term_code: String(row.term_code).trim(),
-            course_id: course.id,
-            class_id: cls.id,
-            teacher_user_id: teacherId,
-            session_start: row.session_start as Date,
-            session_end: (row.session_end as Date) ?? (row.session_start as Date),
-            expire_minutes:
-              row.expire_minutes === null || row.expire_minutes === undefined
-                ? 15
-                : row.expire_minutes,
-            status: 'active',
-          },
         });
       }
       return 'success';

@@ -28,18 +28,6 @@ function buildWarningIcon(color) {
   );
 }
 
-function buildScheduleIcon(color) {
-  return svgDataUri(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="' +
-      color +
-      '" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
-      '<rect x="3" y="4.5" width="18" height="16.5" rx="3.5"/>' +
-      '<path d="M8 2.5v3.5M16 2.5v3.5M3 9.5h18"/>' +
-      '<path d="M8 14h3M8 17.5h6"/>' +
-      '</svg>',
-  );
-}
-
 function buildProfileIcon(color) {
   return svgDataUri(
     '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="' +
@@ -66,12 +54,6 @@ Component({
         text: '我的预警',
         icon: buildWarningIcon('#6f6875'),
         selectedIcon: buildWarningIcon('#2f7a53'),
-      },
-      {
-        pagePath: '/pages/schedules/schedules',
-        text: '课表',
-        icon: buildScheduleIcon('#6f6875'),
-        selectedIcon: buildScheduleIcon('#2f7a53'),
       },
       {
         pagePath: '/pages/profile/profile',

@@ -3,39 +3,18 @@ const { INBOX_TYPE_CLASS, formatDateTime } = require('../../utils/format');
 
 Page({
   data: {
-    activeTab: 'inbox', // 'inbox' | 'class'
     inboxFilter: 'all', // 'all' | 'unread' | 'read'
     inboxList: [],
     unreadCount: 0,
     inboxLoading: true,
-
-    classList: [],
-    classUnreadCount: 0,
-    classPage: 1,
-    classHasMore: false,
-    classLoading: false,
   },
 
   onShow() {
     this.loadInbox();
-    this.loadClassNotices(true);
   },
 
   onPullDownRefresh() {
-    const task =
-      this.data.activeTab === 'inbox' ? this.loadInbox() : this.loadClassNotices(true);
-    task.then(() => wx.stopPullDownRefresh());
-  },
-
-  onReachBottom() {
-    if (this.data.activeTab === 'class' && this.data.classHasMore && !this.data.classLoading) {
-      this.setData({ classPage: this.data.classPage + 1 }, () => this.loadClassNotices(false));
-    }
-  },
-
-  switchTab(e) {
-    const tab = e.currentTarget.dataset.tab;
-    this.setData({ activeTab: tab });
+    this.loadInbox().then(() => wx.stopPullDownRefresh());
   },
 
   setInboxFilter(e) {
@@ -78,34 +57,6 @@ Page({
     }
   },
 
-  async loadClassNotices(reset) {
-    if (reset) this.setData({ classPage: 1 });
-    this.setData({ classLoading: true });
-    try {
-      const data = await api.notifications({ page: this.data.classPage, pageSize: 30 });
-      const rawList = Array.isArray(data) ? data : (data && data.list) || [];
-      const total = (data && data.total) || rawList.length;
-      const mapped = rawList.map((item) => ({
-        ...item,
-        is_read: Boolean(item.is_read),
-        createdText: formatDateTime(item.created_at),
-      }));
-      const merged = reset ? mapped : this.data.classList.concat(mapped);
-      const classUnreadCount =
-        data && typeof data.unread === 'number'
-          ? Number(data.unread)
-          : merged.filter((x) => !x.is_read).length;
-      this.setData({
-        classList: merged,
-        classUnreadCount,
-        classHasMore: merged.length < total,
-        classLoading: false,
-      });
-    } catch (e) {
-      this.setData({ classLoading: false });
-    }
-  },
-
   goInboxDetail(e) {
     const idx = Number(e.currentTarget.dataset.index);
     const item = this.data.inboxList[idx];
@@ -117,20 +68,6 @@ Page({
     const payload = encodeURIComponent(JSON.stringify(item));
     wx.navigateTo({
       url: '/pages/notification-detail/notification-detail?source=inbox&id=' + item.id + '&payload=' + payload,
-    });
-  },
-
-  goClassDetail(e) {
-    const idx = Number(e.currentTarget.dataset.index);
-    const item = this.data.classList[idx];
-    if (!item) return;
-
-    if (!item.is_read) {
-      api.readNotification(item.id).catch(() => {});
-    }
-    const payload = encodeURIComponent(JSON.stringify(item));
-    wx.navigateTo({
-      url: '/pages/notification-detail/notification-detail?source=class&id=' + item.id + '&payload=' + payload,
     });
   },
 });

@@ -261,7 +261,6 @@ const roleForm = ref({
 // 预定义角色
 const predefinedRoles = ref([
   { code: 'student', name: '学生' },
-  { code: 'class_monitor', name: '班干' },
   { code: 'head_teacher', name: '班主任' },
   { code: 'student_admin', name: '学工管理员' },
   { code: 'teaching_admin', name: '教务管理员' },

@@ -23,7 +23,6 @@ import { StudentsModule } from './students/students.module';
 import { ClassesModule } from './classes/classes.module';
 import { OrgsModule } from './orgs/orgs.module';
 import { TeachersModule } from './teachers/teachers.module';
-import { SchedulesModule } from './schedules/schedules.module';
 import { CourseClassesModule } from './course-classes/course-classes.module';
 import { WarningModule } from './warning/warning.module';
 import { RbacModule } from './rbac/rbac.module';
@@ -35,11 +34,9 @@ import { SystemConfigModule } from './config/config.module';
 import { CoursesModule } from './courses/courses.module';
 import { TeachingAdminModule } from './teaching-admin/teaching-admin.module';
 import { StudentAdminModule } from './student-admin/student-admin.module';
-import { ClassMonitorModule } from './class-monitor/class-monitor.module';
 import { TeacherModule } from './teacher/teacher.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { ViceDeanModule } from './vice-dean/vice-dean.module';
-import { WarningCasesModule } from './warning-cases/warning-cases.module';
 import { FilesController } from './files.controller';
 import { TraceIdMiddleware } from './shared/traceid.middleware';
 
@@ -117,7 +114,6 @@ import { TraceIdMiddleware } from './shared/traceid.middleware';
     ClassesModule,
     OrgsModule,
     TeachersModule,
-    SchedulesModule,
     CourseClassesModule,
     WarningModule,
     UsersModule,
@@ -128,10 +124,8 @@ import { TraceIdMiddleware } from './shared/traceid.middleware';
     CoursesModule,
     TeachingAdminModule,
     StudentAdminModule,
-    ClassMonitorModule,
     TeacherModule,
     ViceDeanModule,
-    WarningCasesModule,
     SchedulerModule,
   ],
   controllers: [HealthController, FilesController],

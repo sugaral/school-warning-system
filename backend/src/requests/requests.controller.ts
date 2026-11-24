@@ -348,7 +348,7 @@ export class RequestsController {
         trace_id: req.trace_id,
       };
     }
-    if (roleCodes.includes('student') || roleCodes.includes('class_monitor')) {
+    if (roleCodes.includes('student')) {
       const selfProfile = await this.getSelfStudentProfile(userId);
       if (!selfProfile) {
         return {
@@ -443,7 +443,7 @@ export class RequestsController {
     if (classId) where.class_id = BigInt(classId);
     if (status) where.status = status;
 
-    if (roleCodes.includes('student') || roleCodes.includes('class_monitor')) {
+    if (roleCodes.includes('student')) {
       const selfProfile = await this.getSelfStudentProfile(userId);
       if (!selfProfile) {
         return {
@@ -664,7 +664,7 @@ export class RequestsController {
         trace_id: req.trace_id,
       };
     }
-    if (roleCodes.includes('student') || roleCodes.includes('class_monitor')) {
+    if (roleCodes.includes('student')) {
       const selfProfile = await this.getSelfStudentProfile(userId);
       if (!selfProfile || String(dto.student_id || '') !== selfProfile.id.toString()) {
         return {
@@ -730,7 +730,7 @@ export class RequestsController {
     if (studentId) where.student_id = BigInt(studentId);
     if (status) where.status = status;
 
-    if (roleCodes.includes('student') || roleCodes.includes('class_monitor')) {
+    if (roleCodes.includes('student')) {
       const selfProfile = await this.getSelfStudentProfile(userId);
       if (!selfProfile) {
         return {
@@ -1025,7 +1025,7 @@ export class RequestsController {
         trace_id: req.trace_id,
       };
     }
-    if (roleCodes.includes('student') || roleCodes.includes('class_monitor')) {
+    if (roleCodes.includes('student')) {
       const selfProfile = await this.getSelfStudentProfile(userId);
       if (!selfProfile || String(dto.student_id || '') !== selfProfile.id.toString()) {
         return {
@@ -1097,7 +1097,7 @@ export class RequestsController {
     if (studentId) where.student_id = BigInt(studentId);
     if (status) where.status = status;
 
-    if (roleCodes.includes('student') || roleCodes.includes('class_monitor')) {
+    if (roleCodes.includes('student')) {
       const selfProfile = await this.getSelfStudentProfile(userId);
       if (!selfProfile) {
         return {

@@ -1178,73 +1178,8 @@ export class StudentAdminController {
       }),
     ]);
 
-    const [activeHighRiskCount, activeHighRiskCases] = await Promise.all([
-      this.prisma.warning_cases.count({
-        where: {
-          org_id: orgId,
-          is_active: true,
-          status: { not: 'resolved' },
-        },
-      }),
-      this.prisma.warning_cases.findMany({
-        where: {
-          org_id: orgId,
-          is_active: true,
-          status: { not: 'resolved' },
-        },
-        orderBy: [{ risk_score: 'desc' }, { updated_at: 'desc' }],
-        take: 10,
-        select: {
-          student_id: true,
-          latest_warning_at: true,
-          risk_score: true,
-          status: true,
-          warning_summary_json: true,
-        },
-      }),
-    ]);
-
-    const caseStatusTextMap: Record<string, string> = {
-      pending_assignment: '待分配',
-      pending_intervention: '待干预',
-      in_progress: '处理中',
-      completed: '处理完成',
-      resolved: '已解除',
-    };
-    const caseStatusTypeMap: Record<string, string> = {
-      pending_assignment: 'danger',
-      pending_intervention: 'warning',
-      in_progress: 'info',
-      completed: 'success',
-      resolved: 'info',
-    };
-
-    const highRiskStudentIds = activeHighRiskCases.map((item: any) => item.student_id);
-    const students = highRiskStudentIds.length
-      ? await this.prisma.student_profiles.findMany({
-          where: { id: { in: highRiskStudentIds } },
-          include: { users: true, classes: true },
-        })
-      : [];
-
-    const studentMap = new Map(students.map((s: any) => [s.id.toString(), s]));
-
-    const highRiskStudents = activeHighRiskCases.map((item: any) => {
-      const student = studentMap.get(item.student_id.toString()) as any;
-      const warningSummary = (item.warning_summary_json as any) || {};
-      return {
-        student_id: item.student_id,
-        created_at: item.latest_warning_at,
-        user_id: student?.user_id,
-        student_no: student?.student_no,
-        student_name: student?.users?.name,
-        class_name: student?.classes?.class_name,
-        risk_score: Number(item.risk_score || 0),
-        warning_count: Number(warningSummary.active_warning_count || 0),
-        status: caseStatusTextMap[item.status] || item.status || '待关注',
-        status_type: caseStatusTypeMap[item.status] || 'info',
-      };
-    });
+    const activeHighRiskCount = 0;
+    const highRiskStudents: any[] = [];
 
     const classMap = new Map();
     classes.forEach((cls: any) => {
@@ -1326,17 +1261,7 @@ export class StudentAdminController {
       return Math.round(((current - previous) / previous) * 1000) / 10;
     };
 
-    const prevHighRiskCount = await this.prisma.warning_cases.count({
-      where: {
-        org_id: orgId,
-        is_active: true,
-        status: { not: 'resolved' },
-        created_at: {
-          gte: twelveMonthsAgo,
-          lt: sixMonthsAgo,
-        },
-      },
-    });
+    const prevHighRiskCount = 0;
 
     const totalGrowth = calculateGrowth(allWarnings, prevAllWarnings);
     const redGrowth = calculateGrowth(redWarnings, prevRedWarnings);

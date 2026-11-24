@@ -61,25 +61,3 @@ export async function exportStudentAccounts(classId?: string) {
   const { data } = await api.get<ApiResponse<any>>('/admin/students/export-accounts', { params });
   return data;
 }
-
-export async function getTeachingAdminStudents(params: {
-  keyword?: string;
-  class_id?: string;
-  org_id?: string;
-  page?: number;
-  pageSize?: number;
-}) {
-  const { data } = await api.get<ApiResponse<any>>('/teaching-admin/students', { params });
-  return data;
-}
-
-export async function updateTeachingAdminStudentProfile(id: string, payload: {
-  class_id?: string;
-  major_id?: string;
-  major?: string;
-  enroll_year?: number;
-  status?: string;
-}) {
-  const { data } = await api.put<ApiResponse<any>>(`/teaching-admin/students/${id}`, payload);
-  return data;
-}

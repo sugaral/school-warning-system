@@ -151,7 +151,6 @@ import {
   generateDailyReport,
   generateMonthlyReport,
   generateWeeklyReport,
-  getSchedulesSemesterConfig,
 } from '../../api';
 
 type ExportMode = 'day' | 'week' | 'month';
@@ -221,25 +220,26 @@ const buildFileName = (payload: any) => {
   return `本班预警月导出-${payload.month || selectedMonth.value}.csv`;
 };
 
-const loadSemesterConfig = async () => {
-  try {
-    const response = await getSchedulesSemesterConfig();
-    if (response.code === 0 && response.data) {
-      semesterStartDate.value =
-        response.data.semester_start_date || response.data.default_semester_start_date || semesterStartDate.value;
-      semesterTotalWeeks.value = Number(
-        response.data.semester_total_weeks || response.data.default_semester_total_weeks || 20,
-      );
-    }
-  } catch (error) {
-    console.error('加载学期配置失败:', error);
-  } finally {
-    const safeWeek = Math.min(
-      Math.max(1, currentWeekNumber.value),
-      Math.max(1, semesterTotalWeeks.value),
-    );
-    selectedWeekNumber.value = safeWeek;
-  }
+const resolveDefaultSemesterStart = () => {
+  const now = dayjs();
+  const month = now.month() + 1;
+  const year = now.year();
+  const anchor = month >= 8
+    ? `${year}-09-01`
+    : month >= 2
+      ? `${year}-02-01`
+      : `${year - 1}-09-01`;
+  return getMonday(anchor).format('YYYY-MM-DD');
+};
+
+const loadSemesterConfig = () => {
+  semesterStartDate.value = resolveDefaultSemesterStart();
+  semesterTotalWeeks.value = 20;
+  const safeWeek = Math.min(
+    Math.max(1, currentWeekNumber.value),
+    Math.max(1, semesterTotalWeeks.value),
+  );
+  selectedWeekNumber.value = safeWeek;
 };
 
 const handleGenerate = async () => {
@@ -297,8 +297,8 @@ watch(mode, () => {
   latestExportJobId.value = '';
 });
 
-onMounted(async () => {
-  await loadSemesterConfig();
+onMounted(() => {
+  loadSemesterConfig();
 });
 </script>
 

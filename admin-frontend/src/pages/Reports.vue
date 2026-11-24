@@ -100,7 +100,10 @@
           <span class="reports-section-heading__title">导出历史</span>
           <p class="reports-section-heading__desc">生成完成后可直接下载，未完成的记录会保留在列表中继续追踪。</p>
         </div>
-        <el-tag type="primary" effect="plain">共 {{ filteredHistoryCount }} 条</el-tag>
+        <div style="display: flex; align-items: center; gap: 10px">
+          <el-button size="small" @click="loadHistory">刷新状态</el-button>
+          <el-tag type="primary" effect="plain">共 {{ filteredHistoryCount }} 条</el-tag>
+        </div>
       </div>
       <div class="table-shell">
       <el-table :data="filteredExportHistory" style="width: 100%">
@@ -113,7 +116,17 @@
         <el-table-column prop="date" label="导出时间" />
         <el-table-column prop="status" label="状态">
           <template #default="scope">
-            <el-tag :type="isReportDone(scope.row.status) ? 'success' : (isReportFailed(scope.row.status) ? 'danger' : 'warning')">
+            <el-tooltip
+              v-if="isReportFailed(scope.row.status) && scope.row.errorMsg"
+              :content="scope.row.errorMsg"
+              placement="top"
+            >
+              <el-tag type="danger">生成失败</el-tag>
+            </el-tooltip>
+            <el-tag
+              v-else
+              :type="isReportDone(scope.row.status) ? 'success' : (isReportFailed(scope.row.status) ? 'danger' : 'warning')"
+            >
               {{ isReportDone(scope.row.status) ? '已完成' : (isReportFailed(scope.row.status) ? '生成失败' : '生成中') }}
             </el-tag>
           </template>
@@ -151,7 +164,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, onActivated, onDeactivated, onUnmounted } from 'vue';
 import { Document } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { 
@@ -198,10 +211,31 @@ const completedHistoryCount = computed(
 );
 
 const pendingHistoryCount = computed(
-  () => exportHistory.value.filter((item: any) => !isReportDone(item.status)).length,
+  () => exportHistory.value.filter((item: any) => !isReportDone(item.status) && !isReportFailed(item.status)).length,
 );
 
 const filteredHistoryCount = computed(() => filteredExportHistory.value.length);
+
+let pollTimer: number | null = null;
+
+const stopPolling = () => {
+  if (pollTimer !== null) {
+    window.clearInterval(pollTimer);
+    pollTimer = null;
+  }
+};
+
+const syncPolling = () => {
+  if (pendingHistoryCount.value > 0) {
+    if (pollTimer === null) {
+      pollTimer = window.setInterval(() => {
+        void loadHistory();
+      }, 2000);
+    }
+  } else {
+    stopPolling();
+  }
+};
 
 const reportStatusLabel = computed(() => {
   const map: Record<string, string> = {
@@ -222,6 +256,7 @@ const loadHistory = async () => {
         ...h,
         // 如果后端返回的是短日期，这里可能需要处理，但 getExportHistory 已经处理了
       }));
+      syncPolling();
     }
   } catch(e) {
     console.warn('Failed to load history', e);
@@ -263,6 +298,18 @@ onMounted(() => {
   loadOrgs();
 })
 
+onActivated(() => {
+  loadHistory();
+})
+
+onDeactivated(() => {
+  stopPolling();
+})
+
+onUnmounted(() => {
+  stopPolling();
+})
+
 const generateReport = async (type: string) => {
   ElMessage.info(`正在生成${type === 'daily' ? '日' : type === 'weekly' ? '周' : type === 'monthly' ? '月' : '学期'}报表...`);
   try {
@@ -273,8 +320,10 @@ const generateReport = async (type: string) => {
     else if (type === 'semester') res = await generateSemesterReport(undefined, filterStatus.value, selectedOrgId.value || undefined);
     
     if(res && res.code === 0) {
-      ElMessage.success('报表生成成功！');
-      loadHistory();
+      const done = isReportDone(res.data?.status);
+      ElMessage.success(done ? '报表已生成，可直接下载！' : '导出任务已提交，正在后台生成...');
+      await loadHistory();
+      syncPolling();
     } else {
       ElMessage.error(res?.message || '报表生成失败');
     }

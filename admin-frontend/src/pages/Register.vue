@@ -3,7 +3,7 @@
     <el-card class="register-card" v-loading="loadingPage">
       <div class="register-header">
         <h2>用户注册</h2>
-        <p>支持学生、班干部以及其他开放注册角色。账号可使用邮箱、学号、工号或英文账号。</p>
+        <p>仅面向教职工及开放注册的管理角色，学生请使用微信小程序。账号可使用邮箱、工号或英文账号。</p>
       </div>
 
       <el-alert
@@ -173,7 +173,9 @@ const loadRegisterMeta = async () => {
       throw new Error(rolesResp.message || '获取注册角色失败');
     }
 
-    allRoles.value = Array.isArray(rolesResp.data) ? rolesResp.data : [];
+    allRoles.value = (Array.isArray(rolesResp.data) ? rolesResp.data : []).filter(
+      (role: RegisterRole) => role.code !== 'student' && role.code !== 'class_monitor',
+    );
     if (!form.role && allRoles.value.length > 0) {
       form.role = allRoles.value[0].code;
     }

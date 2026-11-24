@@ -32,7 +32,6 @@ Page({
     trend: [],
     messageSummary: {
       inboxUnread: 0,
-      classUnread: 0,
       totalUnread: 0,
     },
   },
@@ -192,23 +191,13 @@ Page({
 
   async loadMessages() {
     try {
-      const [inboxRes, classRes] = await Promise.all([
-        api.inboxUnreadCount().catch(() => ({ unread: 0 })),
-        api.notifications({ page: 1, pageSize: 50 }).catch(() => ({ list: [] })),
-      ]);
-
+      const inboxRes = await api.inboxUnreadCount().catch(() => ({ unread: 0 }));
       const inboxUnread = Number((inboxRes && inboxRes.unread) || 0);
-      const classList = Array.isArray(classRes) ? classRes : (classRes && classRes.list) || [];
-      const classUnread =
-        classRes && typeof classRes.unread === 'number'
-          ? Number(classRes.unread)
-          : classList.filter((item) => item && item.is_read === false).length;
 
       this.setData({
         messageSummary: {
           inboxUnread,
-          classUnread,
-          totalUnread: inboxUnread + classUnread,
+          totalUnread: inboxUnread,
         },
       });
     } catch (e) {
@@ -222,9 +211,6 @@ Page({
   },
   goWarnings() {
     wx.switchTab({ url: '/pages/warnings/warnings' });
-  },
-  goSchedules() {
-    wx.switchTab({ url: '/pages/schedules/schedules' });
   },
   goCheckin() {
     wx.scanCode({
@@ -260,9 +246,6 @@ Page({
   },
   goNotifications() {
     wx.navigateTo({ url: '/pages/notifications/notifications' });
-  },
-  goGrades() {
-    wx.navigateTo({ url: '/pages/grades/grades' });
   },
   goSummaries() {
     wx.navigateTo({ url: '/pages/summaries/summaries' });

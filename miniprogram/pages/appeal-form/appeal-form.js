@@ -3,7 +3,7 @@ const { chooseAndUploadImages } = require('../../utils/media');
 
 Page({
   data: {
-    appealTypes: ['预警申诉', '考勤申诉', '成绩申诉', '其他申诉'],
+    appealTypes: ['预警申诉', '考勤申诉', '其他申诉'],
     form: {
       appeal_type: '预警申诉',
       related_type: '',

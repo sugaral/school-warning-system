@@ -13,7 +13,6 @@ import { PrismaService } from '../shared/prisma.service';
 import { AuthGuard } from '../shared/auth.guard';
 import { PermissionGuard } from '../rbac/permission.guard';
 import { DataScope, Permissions } from '../rbac/permission.decorator';
-import { WarningCasesService } from '../warning-cases/warning-cases.service';
 import { WarningSnapshotService } from '../warning/warning-snapshot.service';
 import { WarningService } from '../warning/warning.service';
 import { serializeForAudit } from '../shared/json.util';
@@ -38,7 +37,6 @@ class ClearWarningsDto {
 export class WarningsAdminController {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly warningCasesService: WarningCasesService,
     private readonly warningSnapshotService: WarningSnapshotService,
     private readonly warningService: WarningService,
   ) {}
@@ -197,7 +195,6 @@ export class WarningsAdminController {
       }
       await this.deleteWarningRelations(tx, [warningId]);
     });
-    await this.warningCasesService.syncStudentsByIds([warning.student_id]);
     await this.warningSnapshotService.refreshStudents([warning.student_id]);
 
     const actorUserId = BigInt(req.user?.userId || req.user?.sub || 0);
@@ -282,7 +279,6 @@ export class WarningsAdminController {
       }
       return { deletedCount };
     });
-    await this.warningCasesService.syncStudentsByIds(affectedStudentIds);
     await this.warningSnapshotService.refreshStudents(affectedStudentIds);
 
     const actorUserId = BigInt(req.user?.userId || req.user?.sub || 0);
@@ -422,7 +418,6 @@ export class WarningsAdminController {
     }
 
     const affectedStudentIdList = Array.from(affectedStudentIds).map((id) => BigInt(id));
-    await this.warningCasesService.syncStudentsByIds(affectedStudentIdList);
     await this.warningSnapshotService.refreshStudents(affectedStudentIdList);
 
     const deletedCount = deletedCurrentCount + deletedHistoryCount;

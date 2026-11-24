@@ -8,19 +8,9 @@ type RoleCatalogDraft = {
   user_type: string;
   register_scope: string;
   registerable: boolean;
-  student_position_options?: string[];
 };
 
 export type RoleCatalogItem = RoleCatalogDraft;
-
-const DEFAULT_CLASS_MONITOR_POSITION_OPTIONS = [
-  '班干',
-  '班长',
-  '副班长',
-  '团支书',
-  '副团支书',
-  '班主任助理',
-];
 
 type RegisterableRole = {
   code: string;
@@ -31,14 +21,12 @@ type RegisterableRole = {
 };
 
 export const ROLE_ALIAS_MAP: Record<string, string> = {
-  monitor: 'class_monitor',
   dean: 'teaching_admin',
   admin: 'sys_admin',
 };
 
 const FALLBACK_USER_TYPE_BY_ROLE: Record<string, string> = {
   student: 'student',
-  class_monitor: 'student',
   head_teacher: 'teacher',
   student_admin: 'staff',
   teaching_admin: 'teacher',
@@ -54,7 +42,6 @@ const FALLBACK_SCOPE_BY_ROLE: Record<string, string> = {
   head_teacher: 'class',
   vice_dean: 'org',
   student_admin: 'org',
-  class_monitor: 'class',
   student: 'self',
 };
 
@@ -65,7 +52,6 @@ const FALLBACK_REGISTER_SCOPE_BY_ROLE: Record<string, string> = {
   head_teacher: 'class',
   vice_dean: 'college',
   student_admin: 'college',
-  class_monitor: 'class',
   student: 'self',
 };
 
@@ -78,16 +64,6 @@ export const DEFAULT_ROLE_CATALOG: RoleCatalogItem[] = [
     user_type: 'student',
     register_scope: 'self',
     registerable: true,
-  },
-  {
-    code: 'class_monitor',
-    name: '班干',
-    description: '拥有班级级别的学生协助权限',
-    default_scope: 'class',
-    user_type: 'student',
-    register_scope: 'class',
-    registerable: true,
-    student_position_options: [...DEFAULT_CLASS_MONITOR_POSITION_OPTIONS],
   },
   {
     code: 'head_teacher',
@@ -173,20 +149,6 @@ function normalizeString(value: unknown): string {
   return String(value || '').trim();
 }
 
-function normalizeStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return Array.from(
-    new Set(
-      value
-        .map((item) => normalizeString(item))
-        .filter(Boolean),
-    ),
-  );
-}
-
 function normalizeRoleEntry(input: unknown): RoleCatalogItem | null {
   if (!input || typeof input !== 'object') {
     return null;
@@ -194,7 +156,7 @@ function normalizeRoleEntry(input: unknown): RoleCatalogItem | null {
 
   const raw = input as Record<string, unknown>;
   const code = normalizeRoleCode(normalizeString(raw.code));
-  if (!code) {
+  if (!code || code === 'class_monitor') {
     return null;
   }
 
@@ -214,9 +176,6 @@ function normalizeRoleEntry(input: unknown): RoleCatalogItem | null {
     normalizeString(raw.register_scope) ||
     normalizeString(raw.registerScope) ||
     fallbackRegisterScope;
-  const studentPositionOptions = normalizeStringArray(
-    raw.student_position_options ?? raw.studentPositionOptions,
-  );
 
   return {
     code,
@@ -226,12 +185,6 @@ function normalizeRoleEntry(input: unknown): RoleCatalogItem | null {
     user_type: userType,
     register_scope: registerScope,
     registerable: normalizeBoolean(raw.registerable, true),
-    student_position_options:
-      code === 'class_monitor'
-        ? studentPositionOptions.length > 0
-          ? studentPositionOptions
-          : [...DEFAULT_CLASS_MONITOR_POSITION_OPTIONS]
-        : studentPositionOptions,
   };
 }
 
@@ -251,6 +204,9 @@ function mergeRoleCatalogWithDefaults(items: RoleCatalogItem[]): RoleCatalogItem
   }
 
   for (const item of items) {
+    if (item.code === 'class_monitor') {
+      continue;
+    }
     const current = merged.get(item.code);
     merged.set(item.code, {
       ...(current || {}),
@@ -270,16 +226,6 @@ function mergeRoleCatalogWithDefaults(items: RoleCatalogItem[]): RoleCatalogItem
         typeof item.registerable === 'boolean'
           ? item.registerable
           : current?.registerable ?? true,
-      student_position_options:
-        item.code === 'class_monitor'
-          ? normalizeStringArray(
-              item.student_position_options ??
-                current?.student_position_options ??
-                DEFAULT_CLASS_MONITOR_POSITION_OPTIONS,
-            )
-          : normalizeStringArray(
-              item.student_position_options ?? current?.student_position_options ?? [],
-            ),
     });
   }
 
@@ -298,14 +244,6 @@ export function toRoleNameMap(roles: RoleCatalogItem[]): Record<string, string> 
     },
     {} as Record<string, string>,
   );
-}
-
-export function getClassMonitorPositionOptions(roles: RoleCatalogItem[]): string[] {
-  const role = roles.find((item) => item.code === 'class_monitor');
-  const options = normalizeStringArray(
-    role?.student_position_options ?? DEFAULT_CLASS_MONITOR_POSITION_OPTIONS,
-  );
-  return options.length > 0 ? options : [...DEFAULT_CLASS_MONITOR_POSITION_OPTIONS];
 }
 
 export function toRegisterableRoles(roles: RoleCatalogItem[]): RegisterableRole[] {

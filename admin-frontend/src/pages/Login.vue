@@ -28,8 +28,8 @@
               <p class="eyebrow">WARNSYS ADMIN</p>
               <h2>账号登录</h2>
               <p class="login-desc">
-                仅支持账号登录，不支持邮箱直接登录。学生请填写学号；如启用二次验证，
-                还需完成图形验证码或邮箱验证码校验。
+                仅支持教职工与管理员账号登录，不支持邮箱直接登录，学生请使用微信小程序登录；
+                如启用二次验证，还需完成图形验证码或邮箱验证码校验。
               </p>
             </div>
 
@@ -44,7 +44,7 @@
                       name="username"
                       autocomplete="username"
                       type="text"
-                      placeholder="请输入学号"
+                      placeholder="请输入账号或工号"
                       @input="handleAccountChange"
                     />
                   </label>
@@ -401,7 +401,6 @@ import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'v
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import {
-  api,
   getLoginCaptcha,
   getLoginSecurityConfig,
   getPasswordRecoveryOptions,
@@ -418,7 +417,6 @@ import {
   clearBindingStateCache,
   setHeadTeacherBoundState,
   setStudentAdminBoundState,
-  setStudentBoundState,
   setTeacherBindingState,
 } from '../lib/binding';
 
@@ -560,10 +558,10 @@ const orbitHighlights: OrbitHighlight[] = [
   {
     index: '04',
     position: 'middle-left',
-    eyebrow: 'Feedback Loop',
-    title: '反馈闭环',
-    description: '问题提交、认领、跟进与回执形成可追踪的后台链路。',
-    tag: 'Claim and track',
+    eyebrow: 'Intervention',
+    title: '干预闭环',
+    description: '高风险学生自动汇总成干预工单，指派、跟进与解除全程留痕。',
+    tag: 'Case workflow',
     style: '--orbit-angle: 180deg; --delay: 0.46s; --scatter-x: -500px; --scatter-y: -24px; --scatter-rotate: -16deg;',
   },
   {
@@ -1875,6 +1873,18 @@ const onSubmit = async () => {
     if (resp.code !== 0) {
       throw new Error(resp.message || '登录失败');
     }
+    const roles = Array.isArray(resp.data.roles) ? resp.data.roles.map((item: any) => item.role) : [];
+    const staffOrAdminRoles = roles.filter(
+      (role: string) => role && role !== 'student' && role !== 'class_monitor',
+    );
+    const isPureStudent =
+      (resp.data.user?.user_type === 'student' || (resp.data as any).user_type === 'student') &&
+      staffOrAdminRoles.length === 0;
+    if (isPureStudent) {
+      ElMessage.warning('学生账号请使用微信小程序登录使用');
+      return;
+    }
+
     clearEmailChallengeState();
     clearBindingStateCache();
     localStorage.setItem('admin_token', resp.data.token);
@@ -1882,7 +1892,6 @@ const onSubmit = async () => {
       localStorage.setItem('admin_user', JSON.stringify(resp.data.user));
     }
     if (resp.data.roles) {
-      const roles = resp.data.roles.map((item: any) => item.role);
       localStorage.setItem('admin_roles', JSON.stringify(roles));
       localStorage.setItem('admin_roles_full', JSON.stringify(resp.data.roles));
       if (!roles.includes('teacher')) {
@@ -1894,25 +1903,11 @@ const onSubmit = async () => {
       if (!roles.includes('student_admin')) {
         setStudentAdminBoundState(null);
       }
-      if (!roles.includes('student') && !roles.includes('class_monitor')) {
-        setStudentBoundState(null);
-      }
     }
     if (resp.data.role_names) {
       localStorage.setItem('admin_role_names', JSON.stringify(resp.data.role_names));
     }
-    if (resp.data.user?.user_type === 'student' || resp.data.user_type === 'student') {
-      const studentId = String(resp.data.student_id || '').trim();
-      if (studentId) {
-        localStorage.setItem('student_id', studentId);
-      } else {
-        localStorage.removeItem('student_id');
-        setStudentBoundState(false);
-      }
-    } else {
-      localStorage.removeItem('student_id');
-      setStudentBoundState(null);
-    }
+    localStorage.removeItem('student_id');
     ElMessage.success('登录成功');
     if (resp.data.login_prompt?.content) {
       sessionStorage.setItem(
@@ -1956,24 +1951,6 @@ const getRedirectPath = async (roles: any[]): Promise<string> => {
   setStudentAdminBoundState(studentAdminRole ? Boolean(studentAdminRole.scope_id) : null);
   if (studentAdminRole && !studentAdminRole.scope_id) {
     return '/student-admin-bind-org';
-  }
-
-  if (roleCodes.includes('class_monitor')) {
-    const studentId = localStorage.getItem('student_id');
-    if (!studentId) {
-      return '/bind-class';
-    }
-    const isBound = await checkStudentBound();
-    return isBound ? '/class-overview' : '/bind-class';
-  }
-
-  if (roleCodes.includes('student')) {
-    const studentId = localStorage.getItem('student_id');
-    if (!studentId) {
-      return '/bind-class';
-    }
-    const isBound = await checkStudentBound();
-    return isBound ? '/my-warnings' : '/bind-class';
   }
 
   if (roleCodes.includes('head_teacher')) {
@@ -2031,21 +2008,6 @@ const getRedirectPath = async (roles: any[]): Promise<string> => {
     return '/orgs';
   }
   return '/warnings';
-};
-
-const checkStudentBound = async () => {
-  try {
-    const response = await api.get('/student/profile');
-    const isBound = response.data.code === 0 && !!response.data.data?.is_bound;
-    setStudentBoundState(isBound);
-    return isBound;
-  } catch (error: any) {
-    if (error?.response?.status !== 404) {
-      console.error('Failed to check student binding state', error);
-    }
-    setStudentBoundState(false);
-    return false;
-  }
 };
 
 const goToRegister = () => {

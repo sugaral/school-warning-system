@@ -154,7 +154,7 @@
 
         <el-card v-else-if="activeSection === 'special'" class="section-card">
           <template #header><span>特殊审批</span></template>
-          <el-alert title="成绩修正、学籍变更、学生换班和教师学院变更统一进入这里。" type="info" :closable="false" class="page-alert" />
+          <el-alert title="学生换班和教师学院变更统一进入这里。" type="info" :closable="false" class="page-alert" />
           <div class="table-shell">
             <el-table :data="specialApprovalItems" v-loading="loading" stripe>
               <el-table-column label="申请类型" width="160">

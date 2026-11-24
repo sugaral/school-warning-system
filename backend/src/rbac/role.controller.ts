@@ -12,7 +12,6 @@ import {
 import { AuthGuard } from '../shared/auth.guard';
 import { PrismaService } from '../shared/prisma.service';
 import {
-  getClassMonitorPositionOptions,
   loadRoleCatalog,
   normalizeRoleCode,
   saveRoleCatalog,
@@ -41,7 +40,6 @@ class AssignPermissionDto {
 class UpdateRoleDto {
   name!: string;
   description!: string;
-  student_position_options?: string[];
 }
 
 @Controller('admin/roles')
@@ -52,16 +50,6 @@ export class RoleController {
     private readonly prisma: PrismaService,
   ) {}
 
-  private normalizeStudentPositionOptions(value: unknown) {
-    return Array.from(
-      new Set(
-        (Array.isArray(value) ? value : [])
-          .map((item) => String(item || '').trim())
-          .filter(Boolean),
-      ),
-    );
-  }
-
   private toRoleResponse(role: any) {
     return {
       code: role.code,
@@ -71,77 +59,7 @@ export class RoleController {
       user_type: role.user_type,
       register_scope: role.register_scope,
       registerable: role.registerable !== false,
-      student_position_options: role.student_position_options || [],
     };
-  }
-
-  private async getRoleAccess(userId: bigint) {
-    const userRoles = await this.prisma.user_roles.findMany({
-      where: { user_id: userId },
-      select: { role: true },
-    });
-    const roleCodes = userRoles.map((item: any) => item.role);
-    const isSysAdmin = roleCodes.includes('sys_admin');
-    if (isSysAdmin) {
-      return {
-        canManageAllRoles: true,
-        canManageMonitorTitles: true,
-      };
-    }
-
-    const permissions = await this.permissionService.getUserPermissions(userId);
-    const canManageAllRoles = permissions.includes('role:manage');
-    const canManageMonitorTitles =
-      canManageAllRoles || permissions.includes('role:manage_monitor_titles');
-
-    return {
-      canManageAllRoles,
-      canManageMonitorTitles,
-    };
-  }
-
-  private async getStudentProfileByUserId(userId: bigint) {
-    return this.prisma.student_profiles.findUnique({
-      where: { user_id: userId },
-      select: {
-        id: true,
-        class_id: true,
-        student_position: true,
-      },
-    });
-  }
-
-  private async syncClassMonitorStudentPosition(userId: bigint) {
-    const studentProfile = await this.getStudentProfileByUserId(userId);
-    if (!studentProfile) {
-      return;
-    }
-
-    const userRoles = await this.prisma.user_roles.findMany({
-      where: { user_id: userId, role: 'class_monitor' },
-      select: { id: true },
-    });
-    const roleCatalog = await loadRoleCatalog(this.prisma);
-    const positionOptions = getClassMonitorPositionOptions(roleCatalog);
-    const defaultPosition = positionOptions[0] || '班干';
-    const currentPosition = String(studentProfile.student_position || '').trim();
-
-    if (userRoles.length > 0) {
-      if (!currentPosition) {
-        await this.prisma.student_profiles.update({
-          where: { id: studentProfile.id },
-          data: { student_position: defaultPosition },
-        });
-      }
-      return;
-    }
-
-    if (!currentPosition || positionOptions.includes(currentPosition)) {
-      await this.prisma.student_profiles.update({
-        where: { id: studentProfile.id },
-        data: { student_position: null },
-      });
-    }
   }
 
   private async ensureTeacherCompanionRole(userId: bigint) {
@@ -168,40 +86,24 @@ export class RoleController {
   }
 
   @Get()
-  @Permissions('role:manage', 'role:manage_monitor_titles')
-  async getAllRoles(@Req() req: any) {
-    const access = await this.getRoleAccess(BigInt(req.user.userId));
+  @Permissions('role:manage')
+  async getAllRoles() {
     const roles = await loadRoleCatalog(this.prisma);
-    const visibleRoles = access.canManageAllRoles
-      ? roles
-      : roles.filter((role: any) => role.code === 'class_monitor');
 
     return {
       code: 0,
       message: 'ok',
-      data: visibleRoles.map((role: any) => this.toRoleResponse(role)),
+      data: roles.map((role: any) => this.toRoleResponse(role)),
     };
   }
 
   @Put(':code')
-  @Permissions('role:manage', 'role:manage_monitor_titles')
+  @Permissions('role:manage')
   async updateRole(
-    @Req() req: any,
     @Param('code') code: string,
     @Body() dto: UpdateRoleDto,
   ) {
     const normalizedCode = normalizeRoleCode(code);
-    const access = await this.getRoleAccess(BigInt(req.user.userId));
-    if (!access.canManageAllRoles) {
-      if (!access.canManageMonitorTitles || normalizedCode !== 'class_monitor') {
-        return {
-          code: 403,
-          message: 'Forbidden',
-          data: null,
-        };
-      }
-    }
-
     const roles = await loadRoleCatalog(this.prisma);
     const roleIndex = roles.findIndex((item: any) => item.code === normalizedCode);
     if (roleIndex === -1) {
@@ -212,22 +114,10 @@ export class RoleController {
       };
     }
 
-    const normalizedPositionOptions = this.normalizeStudentPositionOptions(
-      dto.student_position_options,
-    );
     roles[roleIndex] = {
       ...roles[roleIndex],
-      ...(access.canManageAllRoles
-        ? {
-            name: dto.name,
-            description: dto.description,
-          }
-        : {}),
-      ...(normalizedCode === 'class_monitor'
-        ? {
-            student_position_options: normalizedPositionOptions,
-          }
-        : {}),
+      name: dto.name,
+      description: dto.description,
     };
     const savedRoles = await saveRoleCatalog(this.prisma, roles);
     const updatedRole = savedRoles.find((item: any) => item.code === normalizedCode);
@@ -240,7 +130,6 @@ export class RoleController {
         name: updatedRole?.name || roles[roleIndex].name,
         description: updatedRole?.description || roles[roleIndex].description,
         default_scope: updatedRole?.default_scope,
-        student_position_options: updatedRole?.student_position_options || [],
       },
     };
   }
@@ -350,12 +239,6 @@ export class RoleController {
     }
     if (normalizedRole === 'student_admin' && dto.org_id) {
       actualScopeId = dto.org_id;
-    }
-    if (normalizedRole === 'class_monitor' && !actualScopeId) {
-      const studentProfile = await this.getStudentProfileByUserId(BigInt(dto.user_id));
-      if (studentProfile?.class_id) {
-        actualScopeId = studentProfile.class_id.toString();
-      }
     }
 
     const existing = await this.prisma.user_roles.findFirst({
@@ -487,10 +370,6 @@ export class RoleController {
       await this.ensureTeacherCompanionRole(BigInt(dto.user_id));
     }
 
-    if (normalizedRole === 'class_monitor') {
-      await this.syncClassMonitorStudentPosition(BigInt(dto.user_id));
-    }
-
     return {
       code: 0,
       message: 'Role assigned successfully',
@@ -531,10 +410,6 @@ export class RoleController {
     await this.prisma.user_roles.delete({
       where: { id: BigInt(userRoleId) },
     });
-
-    if (existing?.role === 'class_monitor') {
-      await this.syncClassMonitorStudentPosition(existing.user_id);
-    }
 
     return {
       code: 0,
