@@ -1,4 +1,4 @@
-﻿import {
+import {
   Controller,
   Get,
   Post,
@@ -295,21 +295,13 @@ export class StudentsAdminController {
     const take = Math.min(100, Math.max(1, parseInt(String(pageSize || '20'), 10) || 20));
     const skip = (parsedPage - 1) * take;
 
-    const where: any = {};
-    
-    // 应用数据范围过滤
     const dataScope = req?.dataScope;
-    if (dataScope) {
-      if (dataScope.type === 'self' && dataScope.studentIds) {
-        where.id = { in: dataScope.studentIds.map((id: bigint) => id) };
-      } else if (dataScope.type === 'class' && dataScope.classIds) {
-        where.class_id = { in: dataScope.classIds.map((id: bigint) => id) };
-      } else if (dataScope.type === 'college' && dataScope.collegeIds) {
-        where.org_id = { in: dataScope.collegeIds.map((id: bigint) => id) };
-      }
-      // type === 'all' 时不追加任何过滤条件
-    }
-    
+    const where: any = Object.assign(
+      {},
+      this.buildStudentScopeWhere(dataScope),
+    );
+
+    // keyword / class_id 等筛选条件只做交集，不允许覆盖范围条件
     if (keyword) {
       where.OR = [
         { student_no: { contains: keyword } },
@@ -1191,19 +1183,27 @@ export class StudentsAdminController {
 
     const dataScope = req?.dataScope;
     if (dataScope && dataScope.type !== 'all') {
-      if (dataScope.type === 'class' && dataScope.classIds?.length) {
-        andConditions.push({ id: { in: dataScope.classIds.map((id: bigint) => id) } });
-      } else if (dataScope.type === 'college' && dataScope.collegeIds?.length) {
-        andConditions.push({ org_id: { in: dataScope.collegeIds.map((id: bigint) => id) } });
-      } else if (dataScope.type === 'self' && dataScope.studentIds?.length) {
-        const students = await this.prisma.student_profiles.findMany({
-          where: { id: { in: dataScope.studentIds.map((id: bigint) => id) } },
-          select: { class_id: true },
+      if (dataScope.type === 'class') {
+        andConditions.push({
+          id: { in: dataScope.classIds?.length ? dataScope.classIds : [BigInt(-1)] },
         });
-        const classIds = Array.from(new Set(students.map((item: any) => item.class_id.toString()))).map((id) =>
-          BigInt(id),
-        );
-        andConditions.push({ id: { in: classIds } });
+      } else if (dataScope.type === 'college') {
+        andConditions.push({
+          org_id: { in: dataScope.collegeIds?.length ? dataScope.collegeIds : [BigInt(-1)] },
+        });
+      } else if (dataScope.type === 'self') {
+        const studentIds = dataScope.studentIds?.length ? dataScope.studentIds : [];
+        let classIds: bigint[] = [];
+        if (studentIds.length > 0) {
+          const students = await this.prisma.student_profiles.findMany({
+            where: { id: { in: studentIds.map((id: bigint) => id) } },
+            select: { class_id: true },
+          });
+          classIds = Array.from(
+            new Set(students.map((item: any) => item.class_id.toString())),
+          ).map((id) => BigInt(id));
+        }
+        andConditions.push({ id: { in: classIds.length ? classIds : [BigInt(-1)] } });
       }
     }
 

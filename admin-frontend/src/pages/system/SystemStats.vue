@@ -133,7 +133,7 @@
               <el-table-column prop="avgResponse" label="平均响应" min-width="120" sortable>
                 <template #default="{ row }">{{ row.avgResponse }} 天</template>
               </el-table-column>
-              <el-table-column prop="trendPoints" label="趋势" min-width="130">
+              <el-table-column prop="trendPoints" label="趋势" width="180">
                 <template #default="{ row }">
                   <svg class="trend-svg" viewBox="0 0 80 40">
                     <polyline
@@ -145,7 +145,7 @@
                   </svg>
                 </template>
               </el-table-column>
-              <el-table-column prop="status" label="状态" min-width="100">
+              <el-table-column prop="status" label="状态" min-width="130">
                 <template #default="{ row }">
                   <el-tag :type="row.status === '达标' ? 'success' : 'warning'" size="small">
                     {{ row.status }}

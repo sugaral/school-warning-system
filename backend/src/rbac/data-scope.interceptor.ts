@@ -11,6 +11,7 @@ import { PinoLogger } from 'nestjs-pino';
 import { PrismaService } from '../shared/prisma.service';
 import { DATA_SCOPE_KEY, DataScopeOptions } from './permission.decorator';
 import { PermissionService } from './permission.service';
+import { normalizeRoleCode } from '../shared/role-catalog';
 
 type DataScopeType = 'all' | 'college' | 'class' | 'self';
 
@@ -151,6 +152,29 @@ export class DataScopeInterceptor implements NestInterceptor {
       return next.handle();
     }
 
+    // 纯学生侧账号（student / class_monitor）的 user_roles.scope_type 记录的是
+    // “所在班级”，但这只是学生的班级归属，不代表可以查看全班数据。若沿用
+    // class 范围，学生 token 调用 /admin/students 会拿到同班 30+ 人的姓名、
+    // 手机号与 wx_openid。这里统一收敛为 self。
+    const normalizedRoleCodes = userRoles.map((role: { role: string }) =>
+      normalizeRoleCode(role.role),
+    );
+    const isStudentSideOnly =
+      normalizedRoleCodes.length > 0 &&
+      normalizedRoleCodes.every(
+        (role: string) => role === 'student' || role === 'class_monitor',
+      );
+    if (isStudentSideOnly) {
+      const studentId = await this.getStudentIdByUserId(userIdBigInt);
+      request.dataScope = {
+        type: 'self',
+        studentIds: studentId ? [studentId] : [],
+      } as RequestDataScope;
+      this.primeCache(this.buildDataScopeCacheKey(userIdBigInt), request.dataScope);
+      await this.assertScopedResourceAccess(request, dataScopeOptions);
+      return next.handle();
+    }
+
     const scopeIds = {
       college: [] as bigint[],
       class: [] as bigint[],
@@ -215,9 +239,12 @@ export class DataScopeInterceptor implements NestInterceptor {
           : collegeIds.length > 0
             ? 'college'
             : 'self',
-      collegeIds: collegeIds.length > 0 ? collegeIds : undefined,
-      classIds: classIds.length > 0 ? classIds : undefined,
-      studentIds: studentIds.length > 0 ? studentIds : undefined,
+      collegeIds: collegeIds.length > 0 ? collegeIds : [],
+      classIds: classIds.length > 0 ? classIds : [],
+      // 保留空数组而不是 undefined：控制器里的 `if (dataScope.studentIds)`
+      // 会把 undefined 当成“未设置范围”从而跳过过滤（教师 800 曾因此拿到
+      // 全校 152 名学生）。空数组会让 `in: []` 明确返回 0 行。
+      studentIds: studentIds.length > 0 ? studentIds : [],
     } as RequestDataScope;
     this.primeCache(this.buildDataScopeCacheKey(userIdBigInt), request.dataScope);
 

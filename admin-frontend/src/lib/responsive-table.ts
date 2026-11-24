@@ -534,12 +534,71 @@ function measureStructuredCellContent(
     };
   }
 
+  // 图表/进度条/图片等非文本内容：按实际渲染宽度测量，避免“趋势”列
+  // 被压到 85px 而 100px 的 sparkline 溢出裁切。
+  const mediaNodes = Array.from(
+    inner.querySelectorAll('svg, canvas, .trend-svg, .el-progress, .el-image'),
+  ).filter((node): node is Element => node instanceof Element);
+  if (mediaNodes.length > 0) {
+    const mediaWidth = mediaNodes.reduce((max, node) => {
+      const rectWidth = Math.ceil(node.getBoundingClientRect().width || 0);
+      return Math.max(max, rectWidth);
+    }, 0);
+    const renderedWidth = Math.ceil(headerCells[colIdx]?.getBoundingClientRect().width || 0);
+    const declaredWidth = readDeclaredColumnWidth(table, colIdx);
+    return {
+      // el-table 会在列宽上再扣掉 td/.cell 的水平内边距，媒体内容（如
+      // 固定 100px 的 sparkline）需要额外留出这部分空间，否则仍会被裁。
+      width: Math.max(mediaWidth + padX + 54, renderedWidth + 40, declaredWidth, 160),
+      kind: 'tooltip' as const,
+    };
+  }
+
   const hasTooltip = inner.classList.contains('el-tooltip') || Boolean(inner.querySelector('.el-tooltip'));
   const text = (inner.textContent || '').replace(/\s+/g, ' ').trim();
   return {
     width: measureBody(text) + padX + 14,
     kind: hasTooltip ? ('tooltip' as const) : ('text' as const),
   };
+}
+
+function resetAppliedColumnWidths(table: HTMLElement) {
+  table.querySelectorAll('colgroup > col').forEach((col) => {
+    if (!(col instanceof HTMLElement)) {
+      return;
+    }
+    col.removeAttribute('width');
+    col.style.width = '';
+    col.style.minWidth = '';
+    col.style.maxWidth = '';
+  });
+
+  getLeafHeaderCells(table).forEach((cell) => {
+    cell.style.width = '';
+    cell.style.minWidth = '';
+    cell.style.maxWidth = '';
+  });
+
+  table.querySelectorAll('.el-table__header, .el-table__body').forEach((innerTable) => {
+    if (innerTable instanceof HTMLTableElement) {
+      innerTable.style.width = '';
+    }
+  });
+
+  delete table.dataset.wsColumnWidths;
+}
+
+function readDeclaredColumnWidth(table: HTMLElement, columnIndex: number) {
+  const headerTable = table.querySelector(
+    '.el-table__header-wrapper table',
+  ) as HTMLTableElement | null;
+  if (!headerTable) {
+    return 0;
+  }
+  const cols = Array.from(headerTable.querySelectorAll('colgroup > col'));
+  const raw = cols[columnIndex]?.getAttribute('width');
+  const numeric = Number(raw);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
 }
 
 function autoFitTableColumns(table: HTMLElement, headers: HeaderMeta[]) {
@@ -563,6 +622,16 @@ function autoFitTableColumns(table: HTMLElement, headers: HeaderMeta[]) {
   });
 
   const sampleRows = bodyRows.slice(0, 25);
+
+  // 空表时不能按表头写死列宽：否则数据到达后一旦总宽超过可视区，
+  // 下面的 overflow 分支会直接 return，空表那套窄列宽会永久残留，
+  // “操作”列被 .cell 的 overflow:hidden 裁掉，按钮无法点击。
+  if (bodyRows.length === 0) {
+    resetAppliedColumnWidths(table);
+    delete table.dataset.wsAutoFitSig;
+    return;
+  }
+
   const bodyWrapper = table.querySelector('.el-table__body-wrapper') as HTMLElement | null;
   const viewportWidth = Math.max(
     0,
@@ -644,7 +713,11 @@ function autoFitTableColumns(table: HTMLElement, headers: HeaderMeta[]) {
     columnKinds[colIdx] = kind;
     const rawNeeded = Math.max(headerNeeded, maxContentWidth);
     if (kind === 'actions') {
-      return Math.min(360, rawNeeded);
+      // 按钮文字的 canvas 测量比真实 DOM 略窄（字体回退/字重差异），
+      // “确认 删除”实测会差 7~10px；额外留 16px 余量，且不小于声明列宽。
+      const renderedWidth = Math.ceil(headerCells[colIdx]?.getBoundingClientRect().width || 0);
+      const declaredWidth = readDeclaredColumnWidth(table, colIdx);
+      return Math.min(360, Math.max(rawNeeded + 16, renderedWidth, declaredWidth));
     }
     if (kind === 'tag') {
       return Math.min(160, rawNeeded);
@@ -663,6 +736,9 @@ function autoFitTableColumns(table: HTMLElement, headers: HeaderMeta[]) {
   // “计算机组成原理 / 2026-11-22 15:38 / 学生30”截成“计… / 2026-11-… / 学…”
   // 的根因；覆写列宽还会破坏固定列的定位，让操作按钮被挤出可视区。
   if (viewportWidth > 0 && sumNeeded > viewportWidth) {
+    // 撤销本脚本此前写入的列宽，交还给 el-table 的声明列宽 + 横向滚动。
+    resetAppliedColumnWidths(table);
+    table.dataset.wsAutoFitSig = signature;
     return;
   }
 
