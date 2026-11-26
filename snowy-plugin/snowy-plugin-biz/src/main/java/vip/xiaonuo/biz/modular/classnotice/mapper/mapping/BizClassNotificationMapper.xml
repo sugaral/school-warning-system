@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="vip.xiaonuo.biz.modular.classnotice.mapper.BizClassNotificationMapper">
+
+    <select id="selectReadCountByNoticeIds" resultType="java.util.Map">
+        SELECT NOTIFICATION_ID AS noticeId, COUNT(1) AS cnt
+        FROM BIZ_STUDENT_NOTIFICATION_READ
+        WHERE DELETE_FLAG = 'NOT_DELETE'
+          AND NOTIFICATION_ID IN
+        <foreach collection="noticeIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        GROUP BY NOTIFICATION_ID
+    </select>
+
+    <select id="selectClassStudentCountByClassIds" resultType="java.util.Map">
+        SELECT CLASS_ID AS classId, COUNT(1) AS cnt
+        FROM BIZ_STUDENT_PROFILE
+        WHERE DELETE_FLAG = 'NOT_DELETE'
+          AND STATUS = 'active'
+          AND CLASS_ID IN
+        <foreach collection="classIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        GROUP BY CLASS_ID
+    </select>
+
+    <select id="selectReadStudentsByNoticeId" resultType="java.util.Map">
+        SELECT r.STUDENT_ID AS studentId, sp.STUDENT_NO AS studentNo, sp.NAME AS studentName,
+               DATE_FORMAT(r.READ_AT, '%Y-%m-%d %H:%i:%s') AS readAt
+        FROM BIZ_STUDENT_NOTIFICATION_READ r
+        LEFT JOIN BIZ_STUDENT_PROFILE sp ON sp.ID = r.STUDENT_ID
+        WHERE r.NOTIFICATION_ID = #{noticeId}
+          AND r.DELETE_FLAG = 'NOT_DELETE'
+        ORDER BY r.READ_AT DESC
+    </select>
+
+</mapper>

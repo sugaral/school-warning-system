@@ -56,6 +56,7 @@ Page({
     this.loadCachedStudent();
     await Promise.all([
       this.loadProfile(),
+      this.loadToday(),
       this.loadTrend(),
       this.loadWarnings(),
       this.loadMessages(),
@@ -213,30 +214,7 @@ Page({
     wx.switchTab({ url: '/pages/warnings/warnings' });
   },
   goCheckin() {
-    wx.scanCode({
-      onlyFromCamera: false,
-      scanType: ['qrCode'],
-      success: (res) => {
-        const parsed = parseCheckinQrPayload(res.result || res.path || '');
-        if (!parsed) {
-          toastError('二维码内容无法识别，请确认是课堂签到码');
-          return;
-        }
-        const url =
-          '/pages/checkin/checkin?session_id=' +
-          encodeURIComponent(parsed.sessionId) +
-          '&scan_token=' +
-          encodeURIComponent(parsed.scanToken) +
-          '&auto=1';
-        wx.navigateTo({ url });
-      },
-      fail: (err) => {
-        const msg = String((err && err.errMsg) || '').toLowerCase();
-        if (msg.indexOf('cancel') === -1) {
-          toastError('扫码失败，请重试');
-        }
-      },
-    });
+    wx.navigateTo({ url: '/pages/checkin/checkin' });
   },
   goLeaves() {
     wx.navigateTo({ url: '/pages/leaves/leaves' });

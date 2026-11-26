@@ -1,38 +1,168 @@
 <view class="page">
-  <view class="card" wx:if="{{!scanToken}}">
-    <view class="card-title">课堂扫码签到</view>
-    <view class="hint-clay">
-      请扫描任课教师展示的课堂动态二维码完成签到。
+  <!-- 进行中课次列表 -->
+  <view class="card">
+    <view class="card-head-row">
+      <view class="card-title" style="margin-bottom:0">进行中的课堂签到</view>
+      <button class="btn-inline" bindtap="loadActiveSessions" loading="{{loadingSessions}}">刷新</button>
     </view>
 
-    <button class="btn" bindtap="onScan" loading="{{submitting}}" disabled="{{submitting}}">
-      扫描课堂二维码
-    </button>
+    <block wx:if="{{sessions.length > 0}}">
+      <view
+        wx:for="{{sessions}}"
+        wx:key="session_id"
+        class="session-item {{selectedSession && selectedSession.session_id === item.session_id ? 'active' : ''}}"
+        bindtap="selectSession"
+        data-index="{{index}}"
+      >
+        <view class="session-top">
+          <text class="session-course">{{item.course_name}}</text>
+          <text class="tag {{item.already_checked_in ? 'tag-success' : 'tag-warn'}}">
+            {{item.already_checked_in ? '已签到' : '待签到'}}
+          </text>
+        </view>
+        <view class="session-meta">
+          <text>{{item.teacher_name}} ｜ 截止 {{item.session_end}}</text>
+        </view>
+        <view class="session-modes">
+          <text class="mode-chip" wx:for="{{item.checkin_modes}}" wx:for-item="m" wx:key="*this">{{modeNames[m] || m}}</text>
+        </view>
+      </view>
+    </block>
+    <view class="hint-text" wx:else style="margin-top:14rpx">
+      {{loadingSessions ? '正在加载班级活跃签到课次...' : '当前暂无进行中的指定课次，您仍可直接扫描教师讲台二维码完成签到。'}}
+    </view>
   </view>
 
-  <view class="card" wx:else>
-    <view class="card-title">扫码签到信息</view>
-    <view class="row"><text class="row-label">课次编号</text><text class="row-value">{{sessionId}}</text></view>
-    <view class="row"><text class="row-label">动态口令</text><text class="row-value">{{scanToken}}</text></view>
-    <button class="btn btn-ghost" bindtap="onReset" disabled="{{submitting}}">
-      重新扫码
-    </button>
+  <!-- 签到方式切换栏 -->
+  <view class="card" wx:if="{{availableModes.length > 0}}">
+    <view class="card-title">选择签到方式</view>
+    <view class="mode-tabs">
+      <view
+        wx:for="{{availableModes}}"
+        wx:key="*this"
+        class="mode-tab {{activeMode === item ? 'active' : ''}}"
+        bindtap="switchMode"
+        data-mode="{{item}}"
+      >
+        {{modeNames[item] || item}}
+      </view>
+    </view>
+
+    <!-- 1. 扫码签到 -->
+    <view wx:if="{{activeMode === 'qr'}}" class="mode-body">
+      <view class="hint-clay">
+        请扫描任课教师展示的课堂动态二维码（支持自定义周期自动刷新，旧码作废）。
+      </view>
+      <view wx:if="{{scanToken}}" style="margin: 14rpx 0">
+        <view class="row"><text class="row-label">课次编号</text><text class="row-value">{{sessionId}}</text></view>
+        <view class="row"><text class="row-label">动态口令</text><text class="row-value">{{scanToken}}</text></view>
+      </view>
+      <button class="btn" bindtap="onScan" loading="{{submitting}}" disabled="{{submitting}}">
+        {{scanToken ? '重新扫描课堂二维码' : '扫描课堂二维码'}}
+      </button>
+    </view>
+
+    <!-- 2. 拍照签到 -->
+    <view wx:elif="{{activeMode === 'photo'}}" class="mode-body">
+      <view class="hint-clay">
+        {{(selectedSession && selectedSession.photo_tip) || '请拍摄本人课堂现场照片完成签到。'}}
+      </view>
+      <view class="photo-box" bindtap="onChoosePhoto">
+        <image wx:if="{{photoTempPath}}" src="{{photoTempPath}}" mode="aspectFill" class="photo-preview" />
+        <view wx:else class="photo-placeholder">点击拍照或选择现场照片</view>
+      </view>
+      <button class="btn" bindtap="submitPhotoCheckin" loading="{{submitting}}" disabled="{{submitting || !photoFileId}}">
+        提交拍照签到
+      </button>
+    </view>
+
+    <!-- 3. 手势签到 -->
+    <view wx:elif="{{activeMode === 'gesture'}}" class="mode-body">
+      <view class="hint-clay">
+        按住圆点滑动连线或依次点击圆点（4~25 个点，可重复经过已选点绘制闭合/复杂图形，点击末位点可撤销）。
+      </view>
+      <view class="gesture-wrap">
+        <view
+          id="gesturePad"
+          class="gesture-pad"
+          catchtouchstart="onGestureTouchStart"
+          catchtouchmove="onGestureTouchMove"
+          catchtouchend="onGestureTouchEnd"
+          catchtouchcancel="onGestureTouchEnd"
+        >
+          <view
+            wx:for="{{gestureLines}}"
+            wx:key="key"
+            class="gesture-line"
+            style="left:{{item.x}}%;top:{{item.y}}%;width:{{item.len}}%;transform:rotate({{item.angle}}deg);"
+          />
+          <view
+            wx:if="{{gestureLiveLine}}"
+            class="gesture-line live"
+            style="left:{{gestureLiveLine.x}}%;top:{{gestureLiveLine.y}}%;width:{{gestureLiveLine.len}}%;transform:rotate({{gestureLiveLine.angle}}deg);"
+          />
+          <view
+            wx:for="{{gestureDots}}"
+            wx:key="pt"
+            data-point="{{item.pt}}"
+            class="gesture-dot {{gestureMap[item.pt] ? 'active' : ''}} {{gestureMultiMap[item.pt] ? 'multi' : ''}}"
+            style="left:{{item.cx}}%;top:{{item.cy}}%;"
+          >
+            {{gestureMap[item.pt] ? gestureMap[item.pt] : item.pt}}
+          </view>
+        </view>
+        <view class="gesture-info">
+          <text>已连序列：{{gesturePattern || '请滑动连线或点击圆点'}}</text>
+        </view>
+        <view class="gesture-actions">
+          <button class="btn-inline" bindtap="undoGesture" disabled="{{!gesturePoints.length}}">撤销一步</button>
+          <button class="btn-inline" bindtap="clearGesture" style="margin-left:16rpx" disabled="{{!gesturePoints.length}}">清空重绘</button>
+        </view>
+      </view>
+      <button class="btn" bindtap="submitGestureCheckin" loading="{{submitting}}" disabled="{{submitting}}">
+        提交手势签到
+      </button>
+    </view>
+
+    <!-- 4. 定位签到 -->
+    <view wx:elif="{{activeMode === 'location'}}" class="mode-body">
+      <view class="hint-clay">
+        签到地点：{{(selectedSession && selectedSession.location_name) || '指定教室'}}（允许半径 {{(selectedSession && selectedSession.location_radius_meters) || 150}} 米）
+      </view>
+      <view class="row" wx:if="{{latitude !== null}}">
+        <text class="row-label">当前位置</text>
+        <text class="row-value">{{latitude}}, {{longitude}}</text>
+      </view>
+      <view style="display:flex; gap:16rpx; margin-top: 14rpx">
+        <button class="btn btn-ghost" style="flex:1" bindtap="fetchLocation" loading="{{locating}}">
+          {{latitude !== null ? '重新定位' : '获取位置'}}
+        </button>
+        <button class="btn" style="flex:1" bindtap="submitLocationCheckin" loading="{{submitting}}" disabled="{{submitting || latitude === null}}">
+          确认定位签到
+        </button>
+      </view>
+    </view>
   </view>
 
+  <!-- 签到结果 -->
   <view class="card" wx:if="{{result}}">
     <view class="card-title">签到结果</view>
     <view class="result {{result.ok ? 'ok' : 'bad'}}">{{result.message}}</view>
+    <view class="row" wx:if="{{result.mode}}">
+      <text class="row-label">签到方式</text>
+      <text class="row-value">{{result.mode}}</text>
+    </view>
     <view class="row" wx:if="{{result.status}}">
       <text class="row-label">本次状态</text>
       <text class="row-value">{{result.status}}</text>
+    </view>
+    <view class="row" wx:if="{{result.distance !== null && result.distance !== undefined}}">
+      <text class="row-label">定位距离</text>
+      <text class="row-value">{{result.distance}} 米</text>
     </view>
     <view class="row" wx:if="{{result.time}}">
       <text class="row-label">签到时间</text>
       <text class="row-value">{{result.time}}</text>
     </view>
-  </view>
-
-  <view class="hint-text" style="padding:0 12rpx">
-    课堂二维码采用滚动刷新口令，若提示过期请刷新或重新扫描教师端最新展示的二维码。
   </view>
 </view>

@@ -1,9 +1,9 @@
 {
   "description": "学业预警系统 微信小程序",
-  "appid": "wx23cf1ffeaff6edf1",
+  "appid": "wxd838e792533397d6",
   "projectname": "warnsys-miniprogram",
   "compileType": "miniprogram",
-  "libVersion": "3.5.5",
+  "libVersion": "3.18.0",
   "setting": {
     "urlCheck": false,
     "es6": true,

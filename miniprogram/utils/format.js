@@ -153,6 +153,7 @@ const INBOX_TYPE_CLASS = {
   warning_orange: 'tag-warn',
   warning_yellow: 'tag-amber',
   class_notice: 'tag-info',
+  inbox: 'tag-info',
   system: 'tag-plain',
 };
 

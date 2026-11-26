@@ -47,3 +47,54 @@
   font-size: 22rpx;
   padding: 40rpx 0 20rpx;
 }
+
+.net-bar {
+  margin-top: 20rpx;
+  background: rgba(255, 255, 255, 0.78);
+  border-radius: 20rpx;
+  padding: 18rpx 22rpx;
+  font-size: 22rpx;
+  color: #5b5563;
+}
+
+.net-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.net-link {
+  color: #3f8a5d;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.net-panel {
+  margin-top: 14rpx;
+  padding-top: 14rpx;
+  border-top: 1rpx solid #eceaf2;
+}
+
+.net-presets {
+  display: flex;
+  gap: 12rpx;
+}
+
+.btn-mini {
+  flex: 1;
+  font-size: 22rpx;
+  line-height: 52rpx;
+  height: 52rpx;
+  padding: 0 10rpx;
+  border-radius: 14rpx;
+  background: #f2f4f7;
+  color: #4b5563;
+  border: 1rpx solid #e5e7eb;
+}
+
+.btn-mini.active {
+  background: #4f9e6f;
+  color: #fff;
+  border-color: #4f9e6f;
+}

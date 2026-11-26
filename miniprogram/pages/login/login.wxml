@@ -197,6 +197,34 @@
     <view class="error-box" wx:if="{{recoveryError}}">{{recoveryError}}</view>
   </view>
 
+  <!-- 局域网 / 服务器地址切换 -->
+  <view class="net-bar">
+    <view class="net-toggle" bindtap="toggleNetworkPanel">
+      <text>当前服务器：{{currentBaseUrl}} ({{networkModeLabel}})</text>
+      <text class="net-link">{{showNetworkPanel ? '收起' : '切换网络'}}</text>
+    </view>
+    <view class="net-panel" wx:if="{{showNetworkPanel}}">
+      <view class="net-presets">
+        <button class="btn-mini {{networkMode === 'dev' ? 'active' : ''}}" bindtap="switchNetworkMode" data-mode="dev">本机开发</button>
+        <button class="btn-mini {{networkMode === 'lan' ? 'active' : ''}}" bindtap="switchNetworkMode" data-mode="lan">局域网模式</button>
+        <button class="btn-mini {{networkMode === 'prod' ? 'active' : ''}}" bindtap="switchNetworkMode" data-mode="prod">生产环境</button>
+      </view>
+      <view class="code-row" style="margin-top: 12rpx">
+        <input
+          class="form-input"
+          type="text"
+          placeholder="自定义后端地址 如 http://10.133.86.177:82"
+          value="{{customBaseUrl}}"
+          bindinput="onInput"
+          data-field="customBaseUrl"
+        />
+        <button class="code-btn" bindtap="saveCustomBaseUrl">保存</button>
+        <button class="code-btn" bindtap="testNetwork">测通</button>
+      </view>
+      <view class="hint-text" wx:if="{{netTestMsg}}" style="margin-top:8rpx">{{netTestMsg}}</view>
+    </view>
+  </view>
+
   <view class="footer">
     <text>学业风险闭环治理平台 · 学生端</text>
   </view>

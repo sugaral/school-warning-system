@@ -1,237 +1,369 @@
-# 学业预警系统（WARNSYS）
+<div align="center">
+    <p align="center">
+        <img src="./snowy-admin-web/public/img/logo.png" height="150" alt="logo"/>
+    </p>
+</div>
 
-面向高校的学业预警与考勤闭环平台：教务排课 → 滚动二维码签到 → 缺勤/迟到/早退与学业指标汇总 → 多级预警（黄/橙/红/严重）→ 高风险干预工单 → 申诉/请假/补卡审批 → 多维统计导出与审计留痕。
+## 框架介绍
 
-> **分支说明**：
-> - `master` 分支仅保留 `README.md` 与按时间戳归档的**更新记录**。
-> - `261122` 分支保存最新完整项目源码、一键启停脚本与运行数据快照（本文件仅保留系统详细介绍）。
-> - `261121` 分支保存截至 `2026-11-21` 的历史归档版本。
+Snowy（SnowyAdmin）是国内首个国密前后端分离快速开发平台，集成国密加解密插件，
+软件层面完全符合等保测评要求，同时实现国产化机型、中间件、数据库适配，是您的不二之选！
+将国密能力内置于技术框架底层，让密码技术从"专业门槛"变为"开箱即用"，真正实现业务安全从底层做起。
+历经多年开源社区打磨与企业客户实践验证，新版本在大数据处理能力与安全体系方面实现了全面升级。
 
----
+采用SpringBoot+MybatisPlus+AntDesignVue+Vite 等更多组件及前沿技术开发，注释丰富，代码简洁，开箱即用！
 
-## 一、系统架构与技术栈
+Snowy谐音“小诺”，恰应小诺团队名称；意思为”下雪的、纯洁的“，寓意框架追求简洁至上，大道至简。
 
-| 分层 | 技术栈与定位 | 说明 |
-|---|---|---|
-| 后端 API 与后台 Worker | NestJS 11 + TypeScript + Prisma 5 | API 服务（`dist/main.js`）与独立 Worker（`dist/worker.js`）分离部署 |
-| 数据与缓存存储 | MySQL 8.0.36 + Redis 7.2 + MinIO | 关系型主库 + Redis Streams 异步重算队列/分布式锁 + 对象存储 |
-| Web 管理端 | Vue 3 + Vite + Element Plus + ECharts | Claymorphism 绿系软陶主题，支持全局自适应表格与多角色菜单 |
-| 微信小程序端 | 原生微信小程序（`miniprogram/`） | 面向学生使用，Claymorphism 绿系主题 + 液态玻璃分段/悬浮底栏 |
-| 部署与网关 | Docker Compose + Nginx | 提供单机与生产编排，Nginx 托管前端静态资源并反代后端 `/api` |
+<p align="center">     
+    <p align="center">
+        <a href="https://gitcode.com/xiaonuobase/Snowy">
+            <img src="https://gitcode.com/xiaonuobase/Snowy/star/badge.svg" alt="bootstrap">
+        </a>
+        <a href="https://gitee.com/xiaonuobase/snowy">
+            <img src="https://gitee.com/xiaonuobase/snowy/badge/star.svg?theme=dark" alt="Gitee star">
+        </a>
+        <a href="https://gitee.com/xiaonuobase/snowy">
+            <img src="https://gitee.com/xiaonuobase/snowy/badge/fork.svg?theme=dark" alt="Gitee fork">
+        </a>
+        <a href="https://www.antdv.com/docs/vue/introduce-cn/">
+            <img src="https://img.shields.io/badge/vue-3-blue.svg" alt="bootstrap">
+        </a> 
+        <a href="https://vite.dev">
+            <img src="https://img.shields.io/badge/vite-6-green.svg" alt="vite">
+        </a>
+        <a href="https://www.antdv.com/docs/vue/introduce-cn/">
+            <img src="https://img.shields.io/badge/vue--ant--design-4-blue.svg" alt="bootstrap">
+        </a> 
+        <a href="http://spring.io/projects/spring-boot">
+            <img src="https://img.shields.io/badge/spring--boot-3-green.svg" alt="spring-boot">
+        </a>
+        <a href="http://mp.baomidou.com">
+            <img src="https://img.shields.io/badge/mybatis--plus-3-blue.svg" alt="mybatis-plus">
+        </a>  
+        <a href="./LICENSE">
+            <img src="https://img.shields.io/badge/license-Apache%202-red" alt="license Apache 2.0">
+        </a>
+        <a href="https://old.murphysec.com/dr/mQ1xAybeOLMLOxH8pU" alt="OSCS Status">
+            <img src="https://www.oscs1024.com/platform/badge//xiaonuobase/snowy.git.svg?size=small"/>
+        </a>
+    </p>
+</p>
 
----
+## 快速链接
 
-## 二、核心功能模块介绍
+gitee下载地址：[https://gitee.com/xiaonuobase/snowy](https://gitee.com/xiaonuobase/snowy)
 
-### 1. 组织与教务基础
-- **组织与人员管理**：维护学校/学院层级（`orgs`）、专业与班级（`classes`）、教师与学生档案（`teachers` / `students`），支持学籍状态变更与班主任/教师授课绑定。
-- **课程、排课与成绩**：维护学期起始校历设置（`semester-settings`）、课程与开课班（`course-classes`）、周次课表（`schedules`）及课程成绩、学分与 GPA 管理（`grades-manage`）。
+github下载地址（镜像）：[https://github.com/xiaonuobase/Snowy](https://github.com/xiaonuobase/Snowy)
 
-### 2. 智能考勤与二维码签到
-- **滚动二维码签到**：管理员或任课/班主任教师可创建课次并开启签到看板，二维码按配置周期自动轮换；看板实时轮询展示应到、已到、迟到、请假人数及已签/未签明细。
-- **学生扫码与补录调整**：学生端小程序拉起扫码并校验动态口令与位置权限完成打卡；管理员/教师支持手工调整单个学生考勤状态或录入课堂日记录。
-- **自动结算与统计快照**：支持单次提前结束、批量结束与 Worker 秒级到点自动结算，自动为未签到学生区分已批准请假与缺勤并写入考勤/日报记录，同步维护 `class_session_snapshots` 课次统计快照。
+gitcode下载地址：[https://gitcode.com/xiaonuobase/Snowy](https://gitcode.com/xiaonuobase/Snowy)
 
-### 3. 多窗口分级预警引擎与干预闭环
-- **多指标与分级规则**：支持迟到（`late`）、缺勤（`absent`）、早退（`early_leave`）、作业、课堂表现以及学期挂科数/学分/GPA 等指标，支持学校、学院、班级三级覆盖规则与日/周/月/学期时间窗。
-- **实时与批量计算**：结束签到或批量结算后触发内存聚合计算，支持跨窗口自动升级与原地状态维护（活跃状态表 `warning_current_states` + 历史留痕表 `warnings` + 学生统计快照 `student_warning_snapshots`）。
-- **班级预警中心与高风险干预**：按学院、专业、班级、关键字检索全班学生画像与课程聚合明细；支持学生/管理员双端确认预警、触发高风险干预工单（指派、受理、办结闭环）及站内信/邮件策略分发。
+演示地址：[https://snowy.xiaonuo.vip](https://snowy.xiaonuo.vip)
 
-### 4. 审批、统计报表与系统治理
-- **审批中心**：统一处理学生提交的请假申请、补录申请与预警申诉；审批通过后自动关联更新考勤/预警状态并触发异步重算。
-- **统计看板与异步导出**：提供学院与全校级预警统计图表（按“有预警 ∪ 有学生”统计全量院系），支持按数据范围可见的异步 Excel 报表生成（由 `worker` 生成并存入 MinIO）。
-- **RBAC 权限、审计与安全**：支持 9 类角色视图（系统管理员、教务管理员、教学副院长、学工管理员、班主任、任课教师、班干部、学生等）与 60 项细粒度权限；内置接口 DataScope 隔离、Redis 幂等拦截、登录限流/验证码、文件魔数校验与敏感字段脱敏审计日志。
+文档地址：[https://xiaonuo.vip/doc](https://xiaonuo.vip/doc)
 
-### 5. 微信小程序（纯学生端）
-- 内置 24 个页面与悬浮玻璃底部导航（首页、我的预警、课表、我的），覆盖扫码签到、实时考勤记录、学期课表、成绩与学期汇总、我的预警确认与一键转申诉、请假与凭证图片预览、班级通知与个人站内信、个人资料与通知偏好设置。
+## 商业产品
 
----
+- 如果开源版本不能满足您的需求，还可以看看我们官方推出的基于开源版开发的商业化产品
 
-## 三、前置要求
+<table>
+    <colgroup>
+        <col style="width: 25%"/>
+        <col style="width: 20%"/>
+        <col style="width: 55%"/>
+    </colgroup>
+    <thead>
+        <tr><th>产品名称</th><th>演示</th><th>用途</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>AI智能化零代码开发平台</td>
+            <td><a href="https://alsc.xiaonuo.vip">https://alsc.xiaonuo.vip</a></td>
+            <td>AI智能驱动，拖拉拽即可搭建业务系统，无需编写一行代码。</td>
+        </tr>
+        <tr>
+            <td>国产数据中台</td>
+            <td><a href="https://data.xiaonuo.vip">https://data.xiaonuo.vip</a></td>
+            <td>覆盖数据采集、存储、治理、安全、资产化、服务全流程的一站式数据管理平台。</td>
+        </tr>
+        <tr>
+            <td>统一身份认证平台</td>
+            <td><a href="https://iam.xnark.com">https://iam.xnark.com</a></td>
+            <td>一款企业级统一身份认证平台，全面支持 OAuth、SAML、JWT、CAS 等主流协议，既可作为 IDP 构建企业统一认证中心，也可作为 SP 对接第三方身份源，一个平台统管身份认证、单点登录与权限体系。</td>
+        </tr>
+        <tr>
+            <td>AI大模型平台</td>
+            <td><a href="https://ai.xnark.com">https://ai.xnark.com</a></td>
+            <td>一站式企业级AI应用平台，覆盖从大模型接入、智能体搭建、知识库管理到应用发布的全链路，让企业零门槛构建和运营自己的AI能力。</td>
+        </tr>
+    </tbody>
+</table>
 
-| 依赖 | 版本 | 说明 |
-|---|---|---|
-| Docker Desktop | 24+（含 Compose v2） | 一键拉起 MySQL / Redis / MinIO / 后端 / Worker / 前端 |
-| Node.js | 20 LTS | 仅在「本地开发模式」需要 |
-| 操作系统 | Windows 10/11、macOS、Linux | Windows 提供一键启停脚本，其它系统使用 Docker Compose |
+## 快速启动
 
-确认环境：
+全栈工程师推荐idea
 
-```bash
-docker --version && docker compose version
-node -v    # 可选，本地开发才需要
+### 前端支撑
+
+| 插件      | 版本  | 用途             |
+|---------|-----|----------------|
+| node.js | ≥18 | JavaScript运行环境 |
+
+### 启动前端
+
 ```
-
----
-
-## 四、快速启动
-
-### 方式 A：Windows 一键启停（推荐）
-
-根目录下提供 `start.bat` / `start.ps1` 与 `stop.bat` / `stop.ps1`：
-
-```powershell
-# 默认混合极速模式：Docker 启动 MySQL/Redis/MinIO，本机运行前后端（自动生成 backend/.env 硬链接）
-.\start.bat
-
-# 全容器启动 / 强制重编译 / 后端热重载开发模式
-.\start.bat -Docker
-.\start.bat -Rebuild
-.\start.bat -Dev
-
-# 一键停止：默认停止本地进程并 docker compose stop（保留容器与数据卷，下次秒起）
-.\stop.bat
-.\stop.bat -Purge       # 移除容器与网络（仍保留数据卷）
-.\stop.bat -KeepDocker  # 仅停止本地 Node 进程，保留容器运行
-```
-
-### 方式 B：Docker Compose 从 0 启动（5 步）
-
-1. **准备配置**（根目录 `.env` 为唯一配置源，已忽略不入库）：
-
-   ```bash
-   cp .env.example .env
-   ```
-
-   至少修改以下配置项：
-
-   ```ini
-   MYSQL_ROOT_PASSWORD=换成你的强口令
-   MYSQL_PASSWORD=改成同样的值（与 DATABASE_URL 里保持一致）
-   DATABASE_URL=mysql://warnuser:你的MYSQL_PASSWORD@mysql:3306/warnsys
-
-   JWT_SECRET=至少32位随机串
-   MINIO_ROOT_PASSWORD=换成你的口令
-   MINIO_SECRET_KEY=与 MINIO_ROOT_PASSWORD 相同
-
-   WARNING_BASELINE_DATE=2026-11-19   # 预警统计起点，早于该日期的数据不计入
-   ```
-
-2. **拉起全部容器**：
-
-   ```bash
-   docker compose up -d --build
-   ```
-
-   首次会依次完成镜像构建、依赖服务启动、`minio-init` 创建存储桶、`migrate` 执行 `prisma migrate deploy`（失败则 `db push`），以及启动 `backend` / `worker` / `frontend`。
-
-3. **等待健康就绪**：
-
-   ```bash
-   docker compose ps
-   ```
-
-   期望 `warnsys-mysql / warnsys-redis / warnsys-minio / warnsys-backend / warnsys-worker / warnsys-frontend` 均为 `Up (healthy)`。
-
-4. **登录与初始化数据**：
-
-   浏览器打开 **http://localhost**（自动跳到 `/login`）。如需恢复脱库数据见第六节；若为空库首次初始化 seed，需显式开启授权环境变量后再执行（默认禁用破坏性清库重置）。
-
-5. **验证主链路**：
-
-   - 「课程课次」建课并开课 → 「签到明细」新建课次 → 打开签到看板（二维码轮换 + 已签/未签）
-   - 学生通过小程序扫码签到 → 看板实时刷新
-   - 「预警中心 → 预警列表」查看班级花名册与课程聚合明细
-   - 「系统操作中心 → 审计中心」查看操作审计日志
-
----
-
-## 五、访问地址与端口
-
-| 服务 | 地址 | 端口变量 |
-|---|---|---|
-| 管理端（Nginx + SPA） | http://localhost（或 http://localhost:8080） | `FRONTEND_HTTP_PORT=80` / `FRONTEND_PORT=8080` |
-| 本地 Vite 开发端 | http://127.0.0.1:5173 | 默认 `5173` |
-| 后端 API | http://localhost/api → 容器 3000 | `BACKEND_PORT=3000` |
-| Adminer（可选 DB 客户端） | http://localhost:8081 | `ADMINER_PORT` |
-| MinIO 控制台 | http://localhost:9101 | `MINIO_CONSOLE_PORT` |
-| MinIO API | http://localhost:9100 | `MINIO_API_PORT` |
-| MySQL（宿主机） | 127.0.0.1:3307 | `MYSQL_PORT` |
-| Redis（宿主机） | 127.0.0.1:6380 | `REDIS_PORT` |
-
----
-
-## 六、恢复已有数据（`db/` 目录）
-
-本分支 `db/` 目录包含脱库运行快照（MySQL 逻辑备份、Redis RDB/AOF 快照、MinIO 对象文件），可按以下顺序恢复：
-
-```bash
-# 1) MySQL：结构 + 数据 + 例程 + 触发器
-gunzip -c db/mysql/warnsys.sql.gz | docker compose exec -T mysql \
-  mysql -uroot -p"$MYSQL_ROOT_PASSWORD" --default-character-set=utf8mb4 warnsys
-
-# 2) Redis：RDB 快照
-docker compose stop redis
-docker cp db/redis/dump.rdb warnsys-redis:/data/dump.rdb
-docker compose start redis
-
-# 3) MinIO：bucket 原始数据
-docker compose stop minio
-docker run --rm -v "$(pwd)/db/minio/data:/src" -v warnsys-school_minio-data:/dst \
-  alpine sh -c "cp -a /src/. /dst/"
-docker compose start minio
-```
-
-详细基线行数与说明见 [db/README.md](db/README.md)。
-
----
-
-## 七、本地开发模式（改代码热更新）
-
-```bash
-# 1) 启动基础依赖
-docker compose up -d mysql redis minio minio-init
-
-# 2) 后端
-cd backend
 npm install
-npx prisma generate
-npx prisma migrate deploy
-npm run start:dev                # http://localhost:3000
-
-# 3) 管理端
-cd admin-frontend
-npm install
-npm run dev                      # http://127.0.0.1:5173
 ```
 
-Worker 单独启动：
-
-```bash
-cd backend && npm run worker:dev
+```
+npm run dev
 ```
 
----
+### 后端支撑
 
-## 八、项目目录结构
+| 插件     | 版本        | 用途     |
+|--------|-----------|--------|
+| jdk    | 17        | java环境 |
+| lombok | idea内     | 代码简化插件 |
+| maven  | 最新版       | 包管理工具  |
+| redis  | 最新版       | 缓存库    |
+| mysql  | 8.0 / 5.7 | 数据库    |
 
-```text
-.
-├── backend/                  # NestJS API + Worker
-│   ├── prisma/               # schema、migrations、seed
-│   └── src/
-│       ├── attendance/       # 签到会话、二维码轮换、统计快照
-│       ├── warning/          # 多窗口预警引擎、异步队列与状态快照
-│       ├── warnings/         # 班级预警视图与管理接口
-│       ├── warning-cases/    # 高风险干预工单
-│       ├── scheduler/        # 签到到点自动结算与恢复扫描
-│       ├── rbac/             # 角色、数据范围与用户级权限
-│       └── ...               # auth/users/classes/courses/orgs/reports/audit/...
-├── admin-frontend/           # Vue 3 管理端（Claymorphism 绿系主题）
-├── miniprogram/              # 微信小程序（纯学生端，Claymorphism 绿系主题）
-├── db/                       # 脱库运行数据快照（MySQL / Redis / MinIO）
-├── docs/                     # 变更说明等项目文档
-├── start.bat / start.ps1     # Windows 一键启动脚本
-├── stop.bat / stop.ps1       # Windows 一键停止脚本
-├── docker-compose.yml        # 开发 / 单机 Docker Compose 编排
-├── docker-compose.prod.yml   # 生产 Docker Compose 编排
-└── .env.example              # 环境配置模板（复制为根目录 .env）
+### 启动后端
+
+开发工具内配置好maven并在代码中配置数据库即可启动
+
+## 代码结构
+
+Snowy3.0框架对代码以插件化的模式进行分包，使得包层级结构更加清晰合理，同时降低了耦合度，关于插件模块化开发的规范请查阅文档【SNOWY开源文档——前端手册or后端手册——开发规范】板块。
+
+```
+snowy
+  |-snowy-admin-web == 前端
+    |-public == 基础静态文件
+    |-src == 前端源代码
+      |-api == API接口转发
+      |-assets == 静态文件
+      |-components == VUE组件
+      |-config == 基础配置
+      |-layout == 基础布局
+      |-locales == 多语言配置
+      |-router == 基础路由配置
+      |-store == Pinia缓存配置
+      |-style == 样式风格配置
+      |-utils == 工具类
+      |-views == 所有视图界面
+  |-snowy-common == 基础通用模块
+  |-snowy-plugin == 插件包
+    |-snowy-plugin-auth == 登录鉴权插件
+    |-snowy-plugin-biz == 业务功能插件
+    |-snowy-plugin-client == C端功能插件
+    |-snowy-plugin-dev == 开发工具插件
+    |-snowy-plugin-gen == 代码生成插件
+    |-snowy-plugin-mobile == 移动端管理插件
+    |-snowy-plugin-sys == 系统功能插件
+  |-snowy-plugin-api == 插件api包
+    |-snowy-plugin-auth-api == 登录鉴权插件api接口
+    |-snowy-plugin-biz-api == 业务功能插件api接口
+    |-snowy-plugin-client-api == C端功能插件api接口
+    |-snowy-plugin-dev-api == 开发工具插件api接口
+    |-snowy-plugin-gen == 代码生成插件api接口
+    |-snowy-plugin-mobile == 移动端管理插件api接口
+    |-snowy-plugin-sys-api == 系统功能插件api接口
+  |-snowy-web-app == 主启动模块
 ```
 
----
+## 分支说明
 
-## 九、许可与数据说明
+- master
 
-- 私有项目，未附开源许可。
-- `db/` 内为脱库运行数据（含学生姓名、学号、账号），仅限内部使用，禁止公开或外传。
-- `.env` 与本地测试配置文件不进入版本库，请妥善保管。
+正式稳定版本，具体版本升级内容看更新标签
+
+- dev
+
+团队开发的分支（代码可能随时会推，不保证运行和使用）
+
+- snowy1.8
+
+1.x分支，目前已停止新增功能，只限于bug的维护，推荐使用2x版本
+
+- snowy2.5
+
+2.x分支，目前已停止新增功能，只限于bug的维护，可以平滑过渡至3x版本
+
+## 视频教程
+
+教程地址（免费开放）：[https://space.bilibili.com/50101698/channel/collectiondetail?sid=739071](https://space.bilibili.com/50101698/channel/collectiondetail?sid=739071)
+
+<img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9mhLatA%7D%2F&_etag=1730700699-816553&shareID=-9mhLatA"/>
+
+作者也在上班工作，所以在利用休息时间为大家创作，录制视频的目的也是为各位小伙伴提供文档跟技术交流群聊之外的上手学习资料
+
+> 视频由小诺开源技术团队王同学（每天一点）进行录制
+
+## 架构原理
+
+* 业务架构
+
+<p align="center">
+    <img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9lQAEoQ%7D%2F&_etag=1730690514-197232&shareID=-9lQAEoQ"/>
+</p>
+
+* 应用架构
+
+<p align="center">
+    <img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9lPMbxA%7D%2F&_etag=1730690514-308767&shareID=-9lPMbxA"/>
+</p>
+
+* 数据架构
+
+<p align="center">
+    <img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9lQja5Q%7D%2F&_etag=1730690514-322422&shareID=-9lQja5Q"/>
+</p>
+
+* 技术架构
+
+<p align="center">
+    <img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9lQxASg%7D%2F&_etag=1730690514-152387&shareID=-9lQxASg"/>
+</p>
+
+* 部署架构
+
+<p align="center">
+    <img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9lRBZAw%7D%2F&_etag=1730690514-222880&shareID=-9lRBZAw"/>
+</p>
+
+## 效果展示
+
+<table>
+    <tr>
+        <td><img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9lSg_Dw%7D%2F&_etag=1730384489-1272624&shareID=-9lSg_Dw"/></td>
+        <td><img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9lTCIQQ%7D%2F&_etag=1730384527-354571&shareID=-9lTCIQQ"/></td>
+    </tr>
+    <tr>
+        <td><img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9lTUROA%7D%2F&_etag=1730384568-327201&shareID=-9lTUROA"/></td>
+        <td><img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9lTdB3A%7D%2F&_etag=1730384595-160612&shareID=-9lTdB3A"/></td>
+    </tr>
+    <tr>
+        <td><img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9lTp1iw%7D%2F&_etag=1730384617-182491&shareID=-9lTp1iw"/></td>
+        <td><img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9lTyI5g%7D%2F&_etag=1730384636-144484&shareID=-9lTyI5g"/></td>
+    </tr>
+    <tr>
+        <td><img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9lUAj9A%7D%2F&_etag=1730384732-148422&shareID=-9lUAj9A"/></td>
+        <td><img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9lUWvfg%7D%2F&_etag=1730384836-112114&shareID=-9lUWvfg"/></td>
+    </tr>
+    <tr>
+        <td><img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9lUuk7g%7D%2F&_etag=1730384925-320963&shareID=-9lUuk7g"/></td>
+        <td><img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9mJCOTw%7D%2F&_etag=1730385032-172917&shareID=-9mJCOTw"/></td>
+    </tr>
+    <tr>
+        <td><img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9mJSKTQ%7D%2F&_etag=1730385077-142012&shareID=-9mJSKTQ"/></td>
+        <td><img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9mJfjcg%7D%2F&_etag=1730385168-168192&shareID=-9mJfjcg"/></td>
+    </tr>
+</table>
+
+## 密码分步
+
+| 功能     | 算法类型                 |
+|--------|----------------------|
+| 登录     | SM2前端加密，后端解密         |
+| 登录登出日志 | SM2对登录登出日志做签名完整性保护存储 |
+| 操作日志   | SM2对操作日志做签名完整性保护存储   |
+| 用户密码   | SM3完整性保护存储，登录时做完整性校验 |
+| 用户手机号  | SM4（cbc模式）加解密使用字段脱敏  |
+
+## 官方群聊
+
+QQ技术群：732230670（已满）、685395081
+
+微信技术群：
+
+因群达到200人以上，需加微信拉群，禁止群内艾特群主及管理员，私信提问技术问题无时间精力回答，请群内互动互助交流技术才是建群的意义
+
+<table>
+    <tr>
+        <td>微信群</td>
+        <td><img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9mUnPEw%7D%2F&_etag=1730699307-193261&shareID=-9mUnPEw" width="120"/></td>
+    </tr>
+</table>
+
+## 示例代码
+
+从 v3.6.0，我们把前端示例的一些界面文件拿到了另外一个仓库，使用时可以自行下载：[https://gitee.com/xiaonuoadmin/snowy-exm](https://gitee.com/xiaonuoadmin/snowy-exm)
+
+## 代码贡献
+
+近期有很多热心开源的小伙伴陆续为咱们Snowy框架提交PR或者提出好的建议，基本合格的PR我们都接受，这样您的头像就列入到咱们Snowy仓库的贡献者列表啦！
+
+如何贡献
+
+1、fork一份代码至自己的账号下，本地修改您要提的代码，提交至您fork的仓库
+
+2、登录gitee后到Snowy仓库下创建Pull Requests,选择您的仓库到Snowy的dev分支，提交即可
+
+因为dev分支是团队开发分支，并不是统一发版本的测试过的，所以我们建议提代码至dev即可
+
+## 外包开发
+
+如果您（或您公司）有外包开发需求，可以通过联系客服方式，提交您的需求，经过工作量分析，出具合适的报价，合作开发并交付。
+
+本团队具备雄厚的技术人才力量，均跟随小诺团队发展至今，已完全熟练每一处细节代码，您的产品自然也是由Snowy平台进行开发并交付。
+
+1、工期保障
+2、源码质量保障
+3、节点按时汇报
+
+## 团队成员
+
+| 成员  | 技术 |  昵称   |
+|:---:|:--:|:-----:|
+| 俞宝山 | 全栈 |  俞宝山  |
+| 徐玉祥 | 全栈 | 就是那个锅 |
+| 董夏雨 | 全栈 |  阿董   |
+| 王鹏  | 全栈 | 每天一点  |
+| 陈心雨 | 前端 |   .   |
+
+## 曾获荣誉
+
+🔥 **2021年度OSC中国开源项目评选-最受欢迎项目**
+
+🔥 **2022年度OSC中国开源项目评选-最火热中国开源项目社区**
+
+🔥 **2024 GitCode项目毕业认证-G-Star优秀毕业项目**
+
+🔥 **2024 GitCode开源共创大会-十大新锐项目**
+
+🔥 **2024中国互联网发展创新与投资大赛（开源）-优秀奖**
+
+🔥 **2025年度GitCode百大开源项目**
+
+🔥 **2025年度Gitee开源项目Web应用开发赛道Top3**
+
+<table>
+    <tr>
+        <td style="width: 50%"><img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9mLM-zg%7D%2F&_etag=1730698398-294375&shareID=-9mLM-zg"/></td>
+        <td style="width: 50%"><img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9mLtqmQ%7D%2F&_etag=1730698444-77496&shareID=-9mLtqmQ"/></td>
+    </tr>
+    <tr>
+        <td style="width: 50%"><img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A-9nmI4yQ%7D%2F&_etag=1730707931-764633&shareID=-9nmI4yQ"/></td>
+        <td style="width: 50%"><img src="https://pan.xiaonuo.vip/?explorer/share/fileOut&path=%7BshareItemLink%3A_COsphyQ%7D%2F&_etag=1732688010-447888&shareID=_COsphyQ"/></td>
+    </tr>
+    <tr>
+        <td style="width: 50%"><img src="https://pan.xiaonuo.vip/?explorer/share/file&hash=5f35-ed_a3_uGz1INMaJhSNbI6ixk370tTV5JR0whVe5n8ALraGqmEvRQQMoqeV-Gbs"/></td>
+        <td style="width: 50%"><img src="https://pan.xiaonuo.vip/?explorer/share/file&hash=f6618VQ6vkSFTY9v8sg-7ahUp0Zj6Q33y2zL6LUL63_yDOa0xN4TW31IRrrBZZ836AE"/></td>
+    </tr>
+    <tr>
+        <td style="width: 50%"><img src="https://pan.xiaonuo.vip/?explorer/share/file&hash=6dc31rfG5KA1l0nQukMmUm7gEufv6r5Q98iTgZyHbaPhjvGR-h6h77cvZ1DmBC5D_rY"/></td>
+        <td style="width: 50%"><img src="https://pan.xiaonuo.vip/?explorer/share/file&hash=d7cfk0ftuw2tl1bAL42bl2wgk7sgcm-Z4ULwZu5TIjp4zsvmKBkYfGIoY48Buc4H0s0"/></td>
+    </tr>
+</table>
+
+## 版权说明
+
+- Snowy生态技术框架全系版本采用 Apache License2.0协议
+
+- 代码可用于个人项目等接私活或企业项目脚手架使用，Snowy全系开源版完全免费
+
+- 二次开源不可参与同类竞争，可在其他赛道进行，有好的案例可以提供，我们会挂在本页进行宣传
+
+- 请不要删除和修改Snowy源码头部的版权与作者声明及出处

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="vip.xiaonuo.biz.modular.clazz.mapper.BizClassMapper">
+
+    <select id="selectStudentCountByClassIds" resultType="java.util.Map">
+        SELECT CLASS_ID AS classId, COUNT(1) AS cnt
+        FROM BIZ_STUDENT_PROFILE
+        WHERE DELETE_FLAG = 'NOT_DELETE'
+          AND CLASS_ID IN
+        <foreach collection="classIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        GROUP BY CLASS_ID
+    </select>
+
+    <select id="selectClassRelationSummary" resultType="java.util.Map">
+        SELECT
+            (SELECT COUNT(1) FROM BIZ_STUDENT_PROFILE WHERE CLASS_ID = #{classId} AND DELETE_FLAG = 'NOT_DELETE') AS studentCnt,
+            (SELECT COUNT(1) FROM BIZ_CLASS_SESSION WHERE CLASS_ID = #{classId} AND DELETE_FLAG = 'NOT_DELETE') AS sessionCnt,
+            (SELECT COUNT(1) FROM BIZ_SCHEDULE WHERE CLASS_ID = #{classId} AND DELETE_FLAG = 'NOT_DELETE') AS scheduleCnt,
+            (SELECT COUNT(1) FROM BIZ_COURSE_CLASS WHERE CLASS_ID = #{classId} AND DELETE_FLAG = 'NOT_DELETE') AS courseClassCnt,
+            (SELECT COUNT(1) FROM BIZ_LEAVE_REQUEST WHERE CLASS_ID = #{classId} AND DELETE_FLAG = 'NOT_DELETE') AS leaveCnt,
+            (SELECT COUNT(1) FROM BIZ_WARNING WHERE CLASS_ID = #{classId} AND DELETE_FLAG = 'NOT_DELETE') AS warningCnt,
+            (SELECT COUNT(1) FROM BIZ_WARNING_CASE WHERE CLASS_ID = #{classId} AND DELETE_FLAG = 'NOT_DELETE') AS warningCaseCnt,
+            (SELECT COUNT(1) FROM BIZ_TEACHER_COURSE_BINDING WHERE CLASS_ID = #{classId} AND DELETE_FLAG = 'NOT_DELETE') AS bindingCnt,
+            (SELECT COUNT(1) FROM BIZ_DAILY_RECORD WHERE CLASS_ID = #{classId} AND DELETE_FLAG = 'NOT_DELETE') AS dailyCnt
+    </select>
+
+</mapper>

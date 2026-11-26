@@ -21,15 +21,80 @@ Page({
     recoveryLoading: false,
     cooldownSeconds: 0,
     recoveryError: '',
+
+    // 网络环境配置
+    showNetworkPanel: false,
+    networkMode: 'dev',
+    networkModeLabel: '本机开发',
+    currentBaseUrl: '',
+    customBaseUrl: '',
+    netTestMsg: '',
   },
 
   _timer: null,
 
   onLoad() {
+    this.syncNetworkDisplay();
     const token = wx.getStorageSync(config.STORAGE_TOKEN);
     if (token) {
       wx.reLaunch({ url: '/pages/index/index' });
     }
+  },
+
+  syncNetworkDisplay() {
+    const mode = config.getNetworkMode ? config.getNetworkMode() : 'dev';
+    const url = config.getBaseUrl ? config.getBaseUrl() : config.baseUrl;
+    const labels = { dev: '本机开发', lan: '局域网模式', prod: '生产环境', custom: '自定义' };
+    this.setData({
+      networkMode: mode,
+      networkModeLabel: labels[mode] || mode,
+      currentBaseUrl: url,
+      customBaseUrl: url,
+    });
+  },
+
+  toggleNetworkPanel() {
+    this.setData({ showNetworkPanel: !this.data.showNetworkPanel, netTestMsg: '' });
+  },
+
+  switchNetworkMode(e) {
+    const mode = e.currentTarget.dataset.mode;
+    const preset = (config.ENV && config.ENV[mode]) || {};
+    if (config.setCustomBaseUrl) {
+      config.setCustomBaseUrl(preset.baseUrl || '', mode);
+    }
+    this.syncNetworkDisplay();
+    this.setData({ netTestMsg: '已切换至 ' + (preset.envName || mode) });
+  },
+
+  saveCustomBaseUrl() {
+    const url = String(this.data.customBaseUrl || '').trim();
+    if (!/^https?:\/\/.+/.test(url)) {
+      return toastError('请输入以 http:// 或 https:// 开头的后端地址');
+    }
+    config.setCustomBaseUrl(url, 'custom');
+    this.syncNetworkDisplay();
+    this.setData({ netTestMsg: '已保存自定义服务器地址' });
+  },
+
+  testNetwork() {
+    const baseUrl = config.getBaseUrl ? config.getBaseUrl() : config.baseUrl;
+    this.setData({ netTestMsg: '正在测试连接 ' + baseUrl + ' ...' });
+    wx.request({
+      url: baseUrl + '/auth/b/getPicCaptcha',
+      method: 'GET',
+      timeout: 6000,
+      success: (res) => {
+        if (res.statusCode === 200) {
+          this.setData({ netTestMsg: '连接正常（HTTP 200）' });
+        } else {
+          this.setData({ netTestMsg: '服务响应异常：HTTP ' + res.statusCode });
+        }
+      },
+      fail: (err) => {
+        this.setData({ netTestMsg: '连接失败：' + ((err && err.errMsg) || '请检查局域网互通与域名校验开关') });
+      },
+    });
   },
 
   onUnload() {

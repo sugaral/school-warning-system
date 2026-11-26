@@ -1,4 +1,4 @@
-# 统一行尾；二进制文件不做文本转换，避免 Windows 下 CRLF 破坏快照
+﻿# 统一行尾；二进制文件不做文本转换，避免 Windows 下 CRLF 破坏快照
 * text=auto eol=lf
 *.bat text eol=crlf
 *.cmd text eol=crlf

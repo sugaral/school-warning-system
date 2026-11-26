@@ -1,22 +1,13 @@
 @echo off
-chcp 65001 >nul 2>&1
+chcp 65001 >nul
 setlocal
-cd /d "%~dp0"
-
-REM WARNSYS One-Click Start (delegates to start.ps1)
-REM Options: -Docker | -Rebuild | -Dev | -NoPause
-
-set "NEED_PAUSE=1"
+set "NO_PAUSE=0"
 for %%A in (%*) do (
-  if /I "%%~A"=="-NoPause" set "NEED_PAUSE=0"
-  if /I "%%~A"=="--no-pause" set "NEED_PAUSE=0"
+    if /i "%%~A"=="--no-pause" set "NO_PAUSE=1"
 )
-
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0start.ps1" %*
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start-all.ps1" %*
 set "EXIT_CODE=%ERRORLEVEL%"
-
-if "%NEED_PAUSE%"=="1" (
-  echo.
-  pause
+if "%NO_PAUSE%"=="0" (
+    echo %cmdcmdline% | find /i "/c" >nul && pause
 )
 exit /b %EXIT_CODE%

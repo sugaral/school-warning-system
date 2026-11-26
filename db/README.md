@@ -1,97 +1,65 @@
-# 数据快照（MySQL / Redis / MinIO）
+# 全量数据快照（MySQL / Redis / MinIO）
 
-本目录保存系统当前的**运行数据**，用于换机、重建环境后快速恢复。
-所有文件都是脱库副本，按二进制处理（见仓库根 `.gitattributes`）。
+本目录保存 `261126_snowy` 分支全量运行数据快照，用于异地迁移或全新环境一键恢复。
 
-| 目录 | 内容 | 来源 |
-|---|---|---|
-| `mysql/warnsys.sql` | 完整逻辑备份（结构 + 数据 + 例程 + 触发器 + 事件），utf8mb4；2026-11-24 全量重新导出 | `mysqldump --single-transaction` |
-| `mysql/warnsys.sql.gz` | 同上，gzip 压缩（约 340 KB） | 同上 |
-| `redis/dump.rdb` | Redis RDB 快照（`BGSAVE` 最新导出） | `BGSAVE` 后从容器 `/data` 复制 |
-| `redis/redis-appendonly.tar.gz` | AOF 目录 `appendonlydir/` 打包 | 同上 |
-| `minio/data/` | MinIO 原始数据目录（`warnsys-files`、`warnsys-warning-queue`、`warnsys-warning-dlq` 三个 bucket 与 `.minio.sys` 元数据） | 直接复制容器 `/data` |
+| 文件 | 内容 | 说明 |
+| :--- | :--- | :--- |
+| `mysql/snowy.sql` | Snowy 业务主库全量 SQL（结构 + 数据 + 触发器 + 存储过程 + 事件） | `mysqldump --single-transaction --hex-blob --default-character-set=utf8mb4` |
+| `mysql/snowy.sql.gz` | 同上 gzip 压缩包 | 快速导入用 |
+| `mysql/warnsys.sql.gz` | 历史库 `warnsys` 全量备份（随实例一并留存） | `mysqldump` gzip 压缩 |
+| `redis/dump.rdb` | Redis RDB 快照 | `redis-cli BGSAVE` 导出 |
+| `minio/minio-data.tar.gz` | MinIO 原始 `/data` 数据卷完整归档（含 `warnsys-files` 与 `.minio.sys`） | `tar czf` 打包 |
 
-## 恢复步骤
+---
 
-### 1. MySQL
+## 一、`snowy` 主库核心表记录数（备份时刻基准，`DELETE_FLAG='NOT_DELETE'`）
 
-```bash
-gunzip -c db/mysql/warnsys.sql.gz | docker exec -i warnsys-mysql \
-  mysql -uroot -p"$MYSQL_ROOT_PASSWORD" --default-character-set=utf8mb4 warnsys
+- `SYS_USER`: 13 | `SYS_ORG`: 6 | `SYS_ROLE`: 7 | `CLIENT_USER`: 213
+- `DEV_CONFIG`: 265 | `DEV_FILE`: 39 | `DEV_MESSAGE`: 1769
+- `BIZ_STUDENT_PROFILE`: 213 | `BIZ_COURSE`: 21 | `BIZ_CLASS`: 5
+- `BIZ_CLASS_SESSION`: 125 | `BIZ_ATTENDANCE_RECORD`: 4743
+- `BIZ_WARNING`: 363 | `BIZ_WARNING_CASE`: 159
+- `BIZ_NOTIFICATION_JOB`: 1116 | `BIZ_NOTIFICATION_LOG`: 1242
+- `BIZ_EXPORT_JOB`: 111 | `BIZ_LEAVE_REQUEST`: 6 | `BIZ_APPEAL`: 3
+
+---
+
+## 二、新环境恢复步骤
+
+### 1. 启动基础设施容器
+
+```powershell
+docker compose up -d
 ```
 
-如果库还不存在，先建库：
+### 2. 恢复 MySQL（`snowy` 主库）
 
 ```bash
-docker exec -i warnsys-mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" \
-  -e "CREATE DATABASE IF NOT EXISTS warnsys DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+gunzip -c db/mysql/snowy.sql.gz | docker exec -i warnsys-mysql mysql -uroot -pf20c6f5fa6e763cd --default-character-set=utf8mb4
 ```
 
-恢复后校验关键表行数（应与备份时一致）：
+（若需恢复历史对比库 `warnsys`，可执行 `gunzip -c db/mysql/warnsys.sql.gz | docker exec -i warnsys-mysql mysql -uroot -pf20c6f5fa6e763cd --default-character-set=utf8mb4`。）
 
-```sql
-SELECT 'users', COUNT(*) FROM users
-UNION ALL SELECT 'permissions', COUNT(*) FROM permissions
-UNION ALL SELECT 'role_permissions', COUNT(*) FROM role_permissions
-UNION ALL SELECT 'user_permissions', COUNT(*) FROM user_permissions
-UNION ALL SELECT 'warnings', COUNT(*) FROM warnings
-UNION ALL SELECT 'warning_current_states', COUNT(*) FROM warning_current_states
-UNION ALL SELECT 'attendance_records', COUNT(*) FROM attendance_records
-UNION ALL SELECT 'class_sessions', COUNT(*) FROM class_sessions;
-```
-
-备份时刻的基线（2026-11-24 09:01）：`users 193`、`students 182`、`permissions 60`、`warning_rules 4`、`warnings 274`、`warning_current_states 274`、`attendance_records 851`、`class_sessions 22`。
-
-> 2026-11-22 起，`warnsys` 库只保留本项目 Prisma 的 47 张表（+ `_prisma_migrations`），
-> 原先混在库里的旧系统表（`EDU_*`、`SYS_*`、`DEV_*`、`BIZ_*`、`CLIENT_*`、`AUTH_THIRD_USER`、
-> `GEN_*`、`MOBILE_RESOURCE` 共 47 张）已删除；删除前的备份见 `.artifacts/db-backup/legacy-tables.sql`（本地，不入库）。
-
-### 2. Redis
-
-停 Redis → 覆盖 RDB → 启动（RDB 是快照恢复最简单的方式）：
+### 3. 恢复 Redis
 
 ```bash
-docker compose stop redis
+docker stop warnsys-redis
 docker cp db/redis/dump.rdb warnsys-redis:/data/dump.rdb
-docker compose start redis
-docker exec warnsys-redis redis-cli DBSIZE      # 期望 945
+docker start warnsys-redis
 ```
 
-需要保留 AOF 时再叠加：
+### 4. 恢复 MinIO
 
 ```bash
-docker compose stop redis
-docker cp db/redis/redis-appendonly.tar.gz warnsys-redis:/tmp/aof.tar.gz
-docker exec warnsys-redis sh -c "cd /data && rm -rf appendonlydir && tar xzf /tmp/aof.tar.gz"
-docker compose start redis
+docker stop warnsys-minio
+docker run --rm -v warnsys-school_minio-data:/data -v "$(pwd)/db/minio:/src" alpine sh -c "rm -rf /data/* && tar xzf /src/minio-data.tar.gz -C /data"
+docker start warnsys-minio
 ```
 
-> 注意：Redis 里存的是会话、扫码 token、预警重算 stream。换机恢复后建议让用户重新登录，
-> 避免旧会话与新的 `JWT_SECRET` 不匹配（.env 不入库，换机后是新密钥）。
+### 5. 一键编译并启动前后端
 
-### 3. MinIO
+Windows 下直接执行仓库根目录脚本（首次需打包后端 JAR 可附加 `-RebuildJar`）：
 
-```bash
-docker compose stop minio
-docker run --rm -v "$(pwd)/db/minio/data:/src" -v warnsys-school_minio-data:/dst \
-  alpine sh -c "cp -a /src/. /dst/"
-docker compose start minio
-```
-
-然后确认三个 bucket 在位：
-
-```bash
-docker exec warnsys-minio-init sh -c "mc alias set local http://minio:9000 \$MINIO_ROOT_USER \$MINIO_ROOT_PASSWORD && mc ls local"
-```
-
-## 说明
-
-- 这些是**数据**，不是配置。`.env`（数据库口令、JWT 密钥、MinIO 账号）仍在本地且被 `.gitignore` 排除，换机后需按 `.env.example` 重新生成。
-- 仓库已设为 **private**，但数据含真实学生信息与账号记录，转发/公开前请自行评估。
-- 更新快照：重跑本目录的导出命令（见根 `README` 的「数据备份」一节），或直接：
-
-```bash
-docker exec warnsys-mysql sh -c 'mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" --single-transaction --routines --triggers --events --no-tablespaces --default-character-set=utf8mb4 warnsys' | gzip -9 > db/mysql/warnsys.sql.gz
-docker exec warnsys-redis redis-cli BGSAVE && sleep 3 && docker cp warnsys-redis:/data/dump.rdb db/redis/dump.rdb
-docker cp warnsys-minio:/data db/minio/data
+```bat
+start.bat -RebuildJar
 ```
